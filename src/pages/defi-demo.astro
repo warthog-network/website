@@ -755,7 +755,7 @@ import { deleteSvgPath } from "./defi-demo.astro";
       }
       document.addEventListener("DOMContentLoaded", () => {
         let Module: any;
-        const initModule = import("../scripts/demo").then((module) => {
+    const initModule = import("../../public/defi/demo").then((module) => {
           Module = {
             onRuntimeInitialized: () => {
               console.log("runtime initialized");
