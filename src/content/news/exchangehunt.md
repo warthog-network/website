@@ -11,7 +11,7 @@ The hunt for an exchange post Xeggex event has been concluded. It is not the fin
 <br/><br/>
 a huge thanks to our donors  below for making this listing possible. 
 <br/><br/>
-<h2>list of those who donated-</h2>
+<h1>list of those who donated-</h1>
 <br/><br/>
 BryantD1960
 <br/><br/>
