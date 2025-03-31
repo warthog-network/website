@@ -1,6 +1,6 @@
 function ContentDiv({children}) {
   return (
-    <div className="max-w-[90rem] mx-auto">
+    <div className="max-w-[90rem] mx-auto ">
       {children}
     </div>
   );
