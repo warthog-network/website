@@ -1,5 +1,5 @@
 ---
-import BaseLayout from '../../layouts/BaseLayoutMaxWidth.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection } from "astro:content";
 import { generateArticalIdentity } from '../../scripts/ArticleIdentityGenerator.js';
 import BannerTop from "../../BalkyImages/WarthogTestBanner1.jpg";
@@ -55,7 +55,7 @@ if (!article) {
 
 <style is:global>
     article {
-        max-width: 1440px;
+       
         margin: 0 auto;
         width:100%;
     }
@@ -82,7 +82,7 @@ if (!article) {
         background-size: 100% auto;
         background-position: center 30%;
         background-repeat: no-repeat;
-        aspect-ratio: 12/5; 
+        aspect-ratio: 10/3; 
         width: 100%;
         filter: grayscale(20%) contrast(90%);
     }
