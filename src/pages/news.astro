@@ -1,7 +1,7 @@
 ---
 import { generateArticalIdentity } from '../scripts/ArticleIdentityGenerator.js';
 import { getCollection } from "astro:content";
-import BaseLayout from '../layouts/BaseLayoutMaxWidth.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
 import WhereToBuy from '../components/WhereToBuy.astro';
 import NEWS1 from '../BalkyImages/NewsPost.png';
 import NEWS2 from '../BalkyImages/DevPost.png';
@@ -117,7 +117,7 @@ const latestNewsArticleRelativeLink = `/articles/${generateArticalIdentity(lates
         color: gray;
     }
     section {
-        max-width: 1440px;
+       
         margin: 0 auto;
         width:100%;
     }
