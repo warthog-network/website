@@ -12,7 +12,7 @@ author: "COINMASTERSHIFU"
 I was not one of the original founders but I joined the project very early. At that time, Warthog's GitHub page stated that the project was just a side project of the developers to build their own cryptocurrency for fun. So initially there was no real bigger goal behind the project. 
 But that changed with time because eventually people began to take the project serious. 
 When I came to the project and checked the code, I realized that I could use it as a basis to implement an idea for a new Proof of Work algorithm that I had been thinking about for quite some time: the Janushash algorithm. 
-After that in addition to this algorithm we planned to add light-weight hard-coded DeFi and browser nodes. This makes Warthog primarily a project primarily focused on innovation.
+After that in addition to this algorithm we planned to add light-weight hard-coded DeFi and browser nodes. This makes Warthog a project primarily focused on innovation.
 
 
 <br/><br/>
@@ -73,7 +73,7 @@ Firstly, there is no big fund to dump on investors which could disrupt price and
 In the past, the fast action and update cycle can be considered as a measure to provide security and reliability. Before Warthog had the Janushash algorithm, there was a big farm that mined Warthog with their own closed-source optimized miner and at that time we were there to keep up network stability with various fixes and tweaks to prevent that farm from getting too much total hashrate.
 Nowadays, the Janushash algorithm is doing quite well in providing network security as big farms cannot easily join Warthog mining with their existing hardware specialized on GPU-only or CPU-only mining.
 In the future, as we grow we are relying more and more on a testnet as a playground for new features. That will allow us to catch bugs early before they can get into the main net.
-That being said, we are a experimenting with new features that don't exist today so there are indeed risks involved compared to more established projects. That's we try to do our best avoid any unpleasant surprises
+That being said, we are a experimenting with new features that don't exist today so there are indeed risks involved compared to more established projects. That's why we try to do our best to avoid any unpleasant surprises
 
 <br/><br/>
 <h1>9. How can community members contribute to Warthog's development, and what roles do they play in its evolution?</h1>
@@ -91,7 +91,7 @@ a) I am working on a copy-on-write mechanism for balances. This will allow to "f
 <br/><br/>
 b) Building on top of this functionality it will be possible to give airdrops/dividends to all holders of a particular asset and compared to existing airdrops it will be based on balance held at a specific fork time (similar to how Bitcoin forks in the past worked) instead of some scripts that explicitly call smart contract logic to pay out to a specific off-chain determined list of addresses.
 <br/><br/>
-c) Another major feature for Warthog's DeFi is the new and custom-written matching engine which solves the Sandwich Problem. It won't be possible t front-run and back-run orders within a block anymore. I consider this a major break-through in DeFi technology and Warthog will be the first and only crypto project supporting this tech.
+c) Another major feature for Warthog's DeFi is the new and custom-written matching engine which solves the Sandwich Problem. It won't be possible to front-run and back-run orders within a block anymore. I consider this a major break-through in DeFi technology and Warthog will be the first and only crypto project supporting this tech.
 <br/><br/>
 d) Finally the full browser nodes will be finished which are already working today. But they do need a lot of UI polishing and also peer-to-peer communication support. Then it will be possible to start a node and have full access to the network by just opening a website.
 
@@ -100,5 +100,5 @@ d) Finally the full browser nodes will be finished which are already working tod
 <br/><br/>
 
 <h1>1. How do you envision the role of Warthog in the broader cryptocurrency ecosystem in the next few years?</h1>
-
+<br/><br/>
 It is very difficult to give any forecasts on Warthog's evolution but we hope that when price increases, the WART donated to from the community can be wisely spent to accelerate development. So it is very possible that Warthog gains a lot of more traction in the following months and years and with this I think we will see some of our ideas getting adopted and acknowledged by blockchain industry.
