@@ -49,6 +49,12 @@ import { getContainerRenderer } from "@astrojs/react";
   export const deleteSvgPath = deleteSvg.src;
 ---
 
+<style>
+.fontfamily{
+  font-family: 'Montserrat';
+}
+
+</style>
 <BaseLayout title={title}>
   <Joyride
   client:only="react"
@@ -66,10 +72,10 @@ import { getContainerRenderer } from "@astrojs/react";
   <div class="mx-auto min-h-[550px]">
     <!-- <h1 class="text-3xl text-center text-yellow-600 mb-8">{title}</h1> -->
     <h1
-      class="my-10 text-3xl text-center font-extrabold text-yellow-500 dark:text-white md:text-5xl lg:text-6xl step-0"
+      class="my-14 text-3xl text-center font-extrabold text-yellow-500 dark:text-white md:text-5xl lg:text-6xl step-0"
     >
       <span
-        class="text-transparent bg-clip-text bg-gradient-to-r to-[#FDB913] from-[#F25C05]"
+        class="text-transparent bg-clip-text bg-gray-900"
       >{title}</span
       >
     </h1>
@@ -132,7 +138,7 @@ import { getContainerRenderer } from "@astrojs/react";
                   </div>
                 </div>
                 <button
-                  class="flex select-none justify-center items-center gap-3 rounded-lg bg-gray-900 py-3 px-4 text-center text-base border-white border font-montserrat align-middle font-medium text-white shadow-md shadow-gray-900/10 transition-all hover:shadow-lg hover:shadow-gray-900/20 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+                  class="flex select-none justify-center items-center gap-3 rounded-lg bg-gradient-to-r to-[#FDB913] from-[#F25C05] to-violet-900 py-3 px-4 text-center text-base border-white border font-montserrat align-middle font-medium text-white shadow-md shadow-gray-900/10 transition-all hover:shadow-lg hover:shadow-gray-900/20 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
                   type="button"
                   id="sellButton"
                 >
@@ -147,7 +153,7 @@ import { getContainerRenderer } from "@astrojs/react";
               <thead>
                 <tr>
                   <td
-                    class="px-2 py-2 transition-colors cursor-pointer bg-[#EF5831] hover:bg-blue-gray-50"
+                    class="px-2 py-2 transition-colors cursor-pointer bg-[gray] hover:bg-blue-gray-50"
                   >
                     <p
                       class="items-center justify-between gap-2 text-white text-sm antialiased font-semibold leading-4 font-montserrat"
@@ -156,7 +162,7 @@ import { getContainerRenderer } from "@astrojs/react";
                     </p>
                   </td>
                   <td
-                    class="px-2 py-2 transition-colors cursor-pointer bg-[#EF5831] hover:bg-blue-gray-50"
+                    class="px-2 py-2 transition-colors cursor-pointer bg-[gray] hover:bg-blue-gray-50"
                   >
                     <p
                       class="items-center justify-between gap-2 text-white text-sm antialiased font-semibold leading-4 font-montserrat"
@@ -165,7 +171,7 @@ import { getContainerRenderer } from "@astrojs/react";
                     </p>
                   </td>
                   <td
-                    class="px-2 py-2 transition-colors cursor-pointer bg-[#EF5831] hover:bg-blue-gray-50"
+                    class="px-2 py-2 transition-colors cursor-pointer bg-[gray] hover:bg-blue-gray-50"
                   >
                     <p
                       class="items-center justify-between gap-2 text-white text-sm antialiased font-semibold leading-4 font-montserrat"
@@ -174,7 +180,7 @@ import { getContainerRenderer } from "@astrojs/react";
                     </p>
                   </td>
                   <td
-                    class="px-2 py-2 transition-colors cursor-pointer bg-[#EF5831] hover:bg-blue-gray-50"
+                    class="px-2 py-2 transition-colors cursor-pointer bg-[gray] hover:bg-blue-gray-50"
                   >
                     <p
                       class="items-center justify-between gap-2 text-white text-sm antialiased font-semibold leading-4 font-montserrat"
@@ -240,7 +246,7 @@ import { getContainerRenderer } from "@astrojs/react";
                   </div>
                 </div>
                 <button
-                  class="flex select-none justify-center items-center gap-3 rounded-lg bg-gray-900 py-3 px-4 text-center text-base border-white border font-montserrat align-middle font-medium text-white shadow-md shadow-gray-900/10 transition-all hover:shadow-lg hover:shadow-gray-900/20 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+                  class="flex select-none justify-center items-center gap-3 rounded-lg bg-gradient-to-r to-[#FDB913] from-[#F25C05] to-violet-900 py-3 px-4 text-center text-base border-white border font-montserrat align-middle font-medium text-white shadow-md shadow-gray-900/10 transition-all hover:shadow-lg hover:shadow-gray-900/20 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
                   type="button"
                   id="buyButton"
                 >
@@ -255,7 +261,7 @@ import { getContainerRenderer } from "@astrojs/react";
               <thead>
                 <tr>
                   <td
-                    class="px-2 py-2 transition-colors cursor-pointer bg-[#64bc3b] hover:bg-blue-gray-50"
+                    class="px-2 py-2 transition-colors cursor-pointer bg-[orange] hover:bg-blue-gray-50"
                   >
                     <p
                       class="items-center justify-between gap-2 text-white text-sm antialiased font-semibold leading-4 font-montserrat"
@@ -264,7 +270,7 @@ import { getContainerRenderer } from "@astrojs/react";
                     </p>
                   </td>
                   <td
-                    class="px-2 py-2 transition-colors cursor-pointer bg-[#64bc3b] hover:bg-blue-gray-50"
+                    class="px-2 py-2 transition-colors cursor-pointer bg-[orange] hover:bg-blue-gray-50"
                   >
                     <p
                       class="items-center justify-between gap-2 text-white text-sm antialiased font-semibold leading-4 font-montserrat"
@@ -273,7 +279,7 @@ import { getContainerRenderer } from "@astrojs/react";
                     </p>
                   </td>
                   <td
-                    class="px-2 py-2 transition-colors cursor-pointer bg-[#64bc3b] hover:bg-blue-gray-50"
+                    class="px-2 py-2 transition-colors cursor-pointer bg-[orange] hover:bg-blue-gray-50"
                   >
                     <p
                       class="items-center justify-between gap-2 text-white text-sm antialiased font-semibold leading-4 font-montserrat"
@@ -282,7 +288,7 @@ import { getContainerRenderer } from "@astrojs/react";
                     </p>
                   </td>
                   <td
-                    class="px-2 py-2 transition-colors cursor-pointer bg-[#64bc3b] hover:bg-blue-gray-50"
+                    class="px-2 py-2 transition-colors cursor-pointer bg-[orange] hover:bg-blue-gray-50"
                   >
                     <p
                       class="items-center justify-between gap-2 text-white text-sm antialiased font-semibold leading-4 font-montserrat"
@@ -307,14 +313,14 @@ import { getContainerRenderer } from "@astrojs/react";
         >
           <div
             id="sellTokenArrowPoint"
-            class="bg-[#F25C05] text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden"
+            class="bg-[gray] text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden"
           >
             <span id="sellToken" class="block w-full overflow-auto">0</span> TOKEN
           </div>
           <img src={rightArrowSvg.src} class="w-8 h-8 md:rotate-0 rotate-90" />
           <div
             id="buyWartArrowPoint"
-            class="bg-[#033298] text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden"
+            class="bg-gray-900 text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden"
           >
             <span id="buyWart" class="block w-full overflow-auto">0</span> WART
           </div>
@@ -324,14 +330,14 @@ import { getContainerRenderer } from "@astrojs/react";
         >
           <div
             id="sellWartArrowPoint"
-            class="bg-[#033298] text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden"
+            class="bg-gray-900 text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden"
           >
             <span id="sellWart" class="block w-full overflow-auto">0</span> WART
           </div>
           <img src={rightArrowSvg.src} class="w-8 h-8 md:rotate-0 rotate-90" />
           <div
             id="buyTokenArrowPoint"
-            class="bg-[#F25C05] text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden"
+            class="bg-[gray] text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden"
           >
             <span id="buyToken" class="block w-full overflow-auto">0</span> TOKEN
           </div>
@@ -345,18 +351,18 @@ import { getContainerRenderer } from "@astrojs/react";
         <!-- pool table -->
         <div>
           <h5
-            class="block font-sans text-lg antialiased font-semibold leading-snug tracking-normal text-blue-gray-900"
+            class="block font-sans text-lg antialiased font-semibold leading-snug tracking-normal text-blue-gray-900 "
           >
             Pool
           </h5>
           <div
-            class="flex md:flex-col w-full mt-1 border border-gray-600 rounded-md overflow-hidden"
+            class="flex md:flex-col w-full mt-1 border border-gray-600 rounded-md overflow-hidden "
           >
             <div
-              class="flex md:flex-row flex-col gap-0 text-center overflow-auto w-full"
+              class="flex md:flex-row flex-col gap-0 text-center overflow-auto w-full  bg-gradient-to-r to-[#FDB913] from-[#F25C05] to-violet-900"
             >
               <div
-                class="flex justify-center py-2 w-full transition-colors min-w-6 cursor-pointer bg-[#EF5831] text-white"
+                class="flex justify-center py-2 w-full transition-colors min-w-6 cursor-pointer  text-white"
               >
                 <p
                   class="items-center justify-between gap-2 antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px]"
@@ -365,7 +371,7 @@ import { getContainerRenderer } from "@astrojs/react";
                 </p>
               </div>
               <div
-                class="flex justify-center py-2 w-full transition-colors cursor-pointer bg-[#EF5831] text-white"
+                class="flex justify-center py-2 w-full transition-colors cursor-pointer  text-white"
               >
                 <p
                   class="items-center justify-between gap-2 antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px]"
@@ -374,7 +380,7 @@ import { getContainerRenderer } from "@astrojs/react";
                 </p>
               </div>
               <div
-                class="flex justify-center py-2 w-full transition-colors cursor-pointer bg-[#EF5831] text-white"
+                class="flex justify-center py-2 w-full transition-colors cursor-pointer  text-white"
               >
                 <p
                   class="items-center justify-between gap-2 antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px]"
@@ -383,7 +389,7 @@ import { getContainerRenderer } from "@astrojs/react";
                 </p>
               </div>
               <div
-                class="flex justify-center py-2 w-full transition-colors cursor-pointer bg-[#EF5831] text-white"
+                class="flex justify-center py-2 w-full transition-colors cursor-pointer  text-white"
               >
                 <p
                   class="items-center justify-between gap-2 antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px]"
@@ -400,7 +406,7 @@ import { getContainerRenderer } from "@astrojs/react";
               >
                 <div
                   id="poolInteractedTokenArrowPoint"
-                  class="bg-[#F25C05] m-w-[200px] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden"
+                  class="bg-[gray] m-w-[200px] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden"
                 >
                   <span
                     id="poolInteractedToken"
@@ -424,7 +430,7 @@ import { getContainerRenderer } from "@astrojs/react";
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-[#F25C05] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden"
+                  class="bg-[gray] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden"
                 >
                   <span id="afterToken" class="block w-full overflow-auto"
                     >100</span
@@ -435,7 +441,7 @@ import { getContainerRenderer } from "@astrojs/react";
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-[#F25C05] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] place-content-center text-center overflow-hidden"
+                  class="bg-[gray] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] place-content-center text-center overflow-hidden"
                 >
                   <span id="afterToken" class="block w-full overflow-auto"
                     >TOKEN</span
@@ -451,7 +457,7 @@ import { getContainerRenderer } from "@astrojs/react";
               >
                 <div
                   id="poolInteractedWartArrowPoint"
-                  class="bg-[#033298] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden"
+                  class="bg-gray-900 text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden"
                 >
                   <span
                     id="poolInteractedWart"
@@ -467,7 +473,7 @@ import { getContainerRenderer } from "@astrojs/react";
                   <input
                     id="beforeWart"
                     value="200"
-                    class="border-[#033298] border-2 rounded-md outline-none px-4 pt-2 pb-[26px] text-center text-sm leading-4 sm:w-[80px] w-full h-[50px] overflow-hidden bg-transparent z-50"
+                    class="border-[black] border-2 rounded-md outline-none px-4 pt-2 pb-[26px] text-center text-sm leading-4 sm:w-[80px] w-full h-[50px] overflow-hidden bg-transparent z-50"
                   />
                 </div>
               </div>
@@ -475,7 +481,7 @@ import { getContainerRenderer } from "@astrojs/react";
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-[#033298] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden"
+                  class="bg-gray-900 text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden"
                 >
                   <span id="afterWart" class="block w-full overflow-auto"
                     >200</span
@@ -486,7 +492,7 @@ import { getContainerRenderer } from "@astrojs/react";
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-[#033298] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center place-content-center overflow-hidden"
+                  class="bg-gray-900 text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center place-content-center overflow-hidden"
                 >
                   <span id="afterWart" class="block w-full overflow-auto"
                     >WART</span
@@ -501,7 +507,7 @@ import { getContainerRenderer } from "@astrojs/react";
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-yellow-400 text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center"
+                  class="bg-[orange] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center"
                 >
                   <span
                     id="poolInteractedPrice"
@@ -513,7 +519,7 @@ import { getContainerRenderer } from "@astrojs/react";
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-yellow-400 text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center"
+                  class="bg-[orange] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center"
                 >
                   <span id="beforePrice" class="block w-full overflow-auto"
                     >N/A</span
@@ -524,7 +530,7 @@ import { getContainerRenderer } from "@astrojs/react";
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-yellow-400 text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center"
+                  class="bg-[orange] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center"
                 >
                   <span id="afterPrice" class="block w-full overflow-auto"
                     >N/A</span
@@ -535,7 +541,7 @@ import { getContainerRenderer } from "@astrojs/react";
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-yellow-400 text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center"
+                  class="bg-[orange] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center"
                 >
                   <span id="afterPrice" class="block w-full overflow-auto"
                     >PRICE</span
@@ -557,10 +563,10 @@ import { getContainerRenderer } from "@astrojs/react";
             <table class="w-full text-start">
               <thead>
                 <tr>
-                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[#ef5831]">*</th>
-                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[#ef5831]">FROM (TOKEN)</th>
-                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[#ef5831]">TO (WART)</th>
-                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[#ef5831]">PRICE</th>
+                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[gray]">*</th>
+                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[gray]">FROM (TOKEN)</th>
+                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[gray]">TO (WART)</th>
+                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[gray]">PRICE</th>
                 </tr>
               </thead>
               <tbody id="tbodySellers"> </tbody>
@@ -574,11 +580,11 @@ import { getContainerRenderer } from "@astrojs/react";
             </h5>
             <table class="w-full">
               <thead>
-                <tr>
-                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[#64bc3b]">*</th>
-                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[#64bc3b]">FROM (WART)</th>
-                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[#64bc3b]">TO (TOKEN)</th>
-                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[#64bc3b]">PRICE</th>
+                <tr >
+                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[orange]">*</th>
+                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[orange]">FROM (WART)</th>
+                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[orange]">TO (TOKEN)</th>
+                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[orange]">PRICE</th>
                 </tr>
               </thead>
               <tbody id="tbodyBuyers"> </tbody>
