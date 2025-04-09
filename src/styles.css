@@ -40,12 +40,12 @@ body {
 }
 
 .token::after{
-  color: #f25c05;
+  color: #7c7774;
   content: 'TOKEN';
 }
 
 .wart::after{
-  color: #033298;
+  color: #000000;
   content: 'WART';
 }
 
