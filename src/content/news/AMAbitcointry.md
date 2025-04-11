@@ -1,6 +1,6 @@
 ---
 category: "News Update"
-title: "AMA SESSION WITH COINMASTERSHIFU"
+title: "AMA SESSION WITH CoinFuMasterShifu"
 date: "2025-04-08"
 author: "CoinFuMasterShifu"
 ---
