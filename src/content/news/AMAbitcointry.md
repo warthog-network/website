@@ -1,11 +1,11 @@
 ---
 category: "News Update"
-title: "AMA SESSION WITH COINMASTERSHIFU"
+title: "AMA SESSION WITH CoinFuMasterShifu"
 date: "2025-04-08"
-author: "COINMASTERSHIFU"
+author: "CoinFuMasterShifu"
 ---
 
-<h1>BITCOINTRY AMA SESSION WITH COINMASTERSHIFU</h1>
+<h1>BITCOINTRY AMA SESSION WITH CoinFuMasterShifu</h1>
 <br/><br/>
 <h1>1. What inspired the creation of Warthog Network, and what are its primary objectives?</h1>
 <br/><br/>
@@ -96,9 +96,15 @@ c) Another major feature for Warthog's DeFi is the new and custom-written matchi
 d) Finally the full browser nodes will be finished which are already working today. But they do need a lot of UI polishing and also peer-to-peer communication support. Then it will be possible to start a node and have full access to the network by just opening a website.
 
 <br/><br/>
-<h1>Reserve:</h1>
-<br/><br/>
 
-<h1>1. How do you envision the role of Warthog in the broader cryptocurrency ecosystem in the next few years?</h1>
+
+<h1>11. How do you envision the role of Warthog in the broader cryptocurrency ecosystem in the next few years?</h1>
 <br/><br/>
 It is very difficult to give any forecasts on Warthog's evolution but we hope that when price increases, the WART donated to from the community can be wisely spent to accelerate development. So it is very possible that Warthog gains a lot of more traction in the following months and years and with this I think we will see some of our ideas getting adopted and acknowledged by blockchain industry.
+<br/><br/>
+
+<h1>12: Are there plans to collaborate with other projects or platforms to enhance Warthog's functionalities and reach?</h1>
+<br/><br/>
+ At the moment we are not collaborating with platforms other than exchanges.
+ But with higher WART price we might hire collaborations here and there.
+ Currently we are working with someone from the community who is developing a nicer GUI wallet based on electron.
