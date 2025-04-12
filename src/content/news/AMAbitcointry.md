@@ -52,9 +52,9 @@ I was not involved in the development from scratch, this was done by Rafiki, Pum
 <br/>
 
 The hard-coded DeFi solution that we are implementing in Warthog has two major advantages compared to DeFi based on smart contracts:
-<br/><br/>
+<br/>
 a) Security: Today's DeFi protocols are hacked regularly. This is mainly due to the additional complexity introduced by smart contract peculiarities. Warthog will implement DeFi functionality directly into its core and does not suffer from this intermediate layer's complexities.
-<br/><br/>
+<br/>
 b) No sandwich attacks: we have researched a new kind of matching engine with a scientific paper here:
 [<strong>Fair Batch Matching</strong>](https://github.com/CoinFuMasterShifu/FairBatchMatching/blob/main/FairBatchMatching.pdf) - 
 This matching engine is designed to execute all orders at once by determining a fair price by matching a liquidity pool with DeFi orders. No front-running or back-running is possible and trader's won't be vulnerable to sandwich attacks.
@@ -85,13 +85,13 @@ There are regularly people who are asking for paid jobs and obviously, as a proj
 <br/>
 
 The huge milestone that we are heading to is the DeFi support for Warthog. This won't just be a clone of today's DeFi implementations as we will support many new features that don't exist yet and are not possible or too difficult to implement in smart contract logic. For example:
-<br/><br/>
+<br/>
 a) I am working on a copy-on-write mechanism for balances. This will allow to "fork assets", i.e. everyone's existing balance of an asset will be cloned into the newly forked asset.
-<br/><br/>
+<br/>
 b) Building on top of this functionality it will be possible to give airdrops/dividends to all holders of a particular asset and compared to existing airdrops it will be based on balance held at a specific fork time (similar to how Bitcoin forks in the past worked) instead of some scripts that explicitly call smart contract logic to pay out to a specific off-chain determined list of addresses.
-<br/><br/>
+<br/>
 c) Another major feature for Warthog's DeFi is the new and custom-written matching engine which solves the Sandwich Problem. It won't be possible to front-run and back-run orders within a block anymore. I consider this a major break-through in DeFi technology and Warthog will be the first and only crypto project supporting this tech.
-<br/><br/>
+<br/>
 d) Finally the full browser nodes will be finished which are already working today. But they do need a lot of UI polishing and also peer-to-peer communication support. Then it will be possible to start a node and have full access to the network by just opening a website.
 
 <br/><br/>
