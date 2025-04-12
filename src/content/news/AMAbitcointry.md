@@ -1,11 +1,11 @@
 ---
 category: "News Update"
-title: "AMA SESSION WITH CoinFuMasterShifu"
+title: "AMA SESSION WITH Coin Fu Master Shifu"
 date: "2025-04-08"
-author: "CoinFuMasterShifu"
+author: "CoinFu MasterShifu"
 ---
 
-<h1>BITCOINTRY AMA SESSION WITH CoinFuMasterShifu</h1>
+<h1>BITCOINTRY AMA SESSION WITH Coin Fu Master Shifu</h1>
 <br/><br/>
 <h1>1. What inspired the creation of Warthog Network, and what are its primary objectives?</h1>
 <br/><br/>
