@@ -8,11 +8,16 @@ const links = [
     { name: 'EXPLORER', href: 'https://wartscan.io/', target: '_blank'},
     { name: 'DEFI DEMO', href: '/defi-demo' },
 ];
+
+const Polaire = {href:'http://51.75.21.134:3001', id:'myInput'}
+const Andrew = {href:'http://51.75.21.134:3001', id:'myInput2'}
+const Pumbaa = {href: 'http://65.87.7.86:3001', id:'myInput3'}
+
 const publiNodes = [
-    { name: 'Polaire', href: 'http://51.75.21.134:3001', id:'Polaire'},
-    { name: 'Pumbaa', href: 'http://65.87.7.86:3001'},
-    { name: 'Andrew', href: 'https://node.wartscan.io'},
-    { name: 'Pumbaa', href: 'http://65.87.7.86:3001'},
+    { name: 'Polaire', href: 'http://51.75.21.134:3001', id:'myInput'},
+    { name: 'Andrew', href: 'https://node.wartscan.io', id:'myInput2'},
+    { name: 'Pumbaa', href: 'http://65.87.7.86:3001', id:'myInput3'},
+   
      
 ];
 const networks = [
@@ -25,6 +30,64 @@ const networks = [
 
 ---
 
+<script>
+function myFunction() {
+  // Get the text field
+  var copyText = document.getElementById("myInput") as HTMLInputElement;
+
+  // Select the text field
+  copyText.select();
+  copyText.setSelectionRange(0, 99999); // For mobile devices
+
+  // Copy the text inside the text field
+  navigator.clipboard.writeText(copyText.value);
+  
+  // Alert the copied text
+  alert("Copied the text: " + copyText.value);
+}
+  
+const button = document.getElementById('button');
+
+button.addEventListener('click', myFunction);
+
+
+function myFunction2() {
+  // Get the text field
+  var copyText = document.getElementById("myInput2") as HTMLInputElement;
+
+  // Select the text field
+  copyText.select();
+  copyText.setSelectionRange(0, 99999); // For mobile devices
+
+  // Copy the text inside the text field
+  navigator.clipboard.writeText(copyText.value);
+  
+  // Alert the copied text
+  alert("Copied the text: " + copyText.value);
+}
+const button2 = document.getElementById('button2');
+
+button2.addEventListener('click', myFunction2);
+
+function myFunction3() {
+  // Get the text field
+  var copyText = document.getElementById("myInput3") as HTMLInputElement;
+
+  // Select the text field
+  copyText.select();
+  copyText.setSelectionRange(0, 99999); // For mobile devices
+
+  // Copy the text inside the text field
+  navigator.clipboard.writeText(copyText.value);
+  
+  // Alert the copied text
+  alert("Copied the text: " + copyText.value);
+}
+const button3 = document.getElementById('button3');
+
+button3.addEventListener('click', myFunction3);
+
+</script>
     <style>
       .menu{
           
@@ -60,7 +123,15 @@ const networks = [
         position: relative;
         text-decoration: none;
       }
-
+a{
+  cursor: pointer;
+}
+label{
+  cursor: pointer;
+}
+input{
+  cursor: pointer;
+}
         .underlineText::after {
           content: '';
           position: absolute;
@@ -127,7 +198,10 @@ const networks = [
   text-decoration: none;
   display: block;
 }
-
+input {
+  background: none;
+  border: none;
+}
 /* Change color of dropdown links on hover */
 .dropdown-content a:hover {background-color: #ddd;}
 
@@ -149,10 +223,19 @@ const networks = [
           <div class="dropdown">
   <button class="menuItem Nodes">Public Nodes</button>
   <div class="dropdown-content menuItem">
-    {publiNodes.map((node) => (
-    <a  id={node.id}>{node.name}: {node.href}</a>
-        
-  ))}
+
+    <a id='button' > <label>Polaire</label>
+      <input id={Polaire.id} value={Polaire.href}> </input>
+     </a> 
+     <a id='button2' > <label>Andrew</label>
+      <input id={Andrew.id} value={Andrew.href}> </input>
+     </a> 
+     <a id='button3' > <label>Pumbaa</label>
+      <input id={Pumbaa.id} value={Pumbaa.href}> </input>
+     </a> 
+   
+   
+  
   </div>
 </div>
   </div>
