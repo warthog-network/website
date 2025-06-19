@@ -8,13 +8,21 @@ const links = [
     { name: 'EXPLORER', href: 'https://wartscan.io/', target: '_blank'},
     { name: 'DEFI DEMO', href: '/defi-demo' },
 ];
-
+const publiNodes = [
+    { name: 'Polaire', href: 'http://51.75.21.134:3001', id:'Polaire'},
+    { name: 'Pumbaa', href: 'http://65.87.7.86:3001'},
+    { name: 'Andrew', href: 'https://node.wartscan.io'},
+    { name: 'Pumbaa', href: 'http://65.87.7.86:3001'},
+     
+];
 const networks = [
     { imgSrc: 'github_gray.svg', href: 'https://github.com/warthog-network'},    
     { imgSrc: 'discord_gray.svg', href: 'https://discord.com/invite/QMDV8bGTdQ'},
     { imgSrc: 'telegram_gray.svg', href: 'https://t.me/warthognetwork'},
     { imgSrc: 'twitter_gray.svg', href: 'https://x.com/warthognetwork'},    
 ];
+
+
 ---
 
     <style>
@@ -37,7 +45,17 @@ const networks = [
         text-underline-position: from-font;
         text-decoration-skip-ink: none;
       }
-
+      .node{
+        cursor: pointer;
+        visibility: hidden;
+      }
+      .Nodes{
+        padding: 2rem;
+        cursor: pointer;
+      }
+      .Nodes:hover ~ .node {
+        visibility: visible;
+      }
       .underlineText{
         position: relative;
         text-decoration: none;
@@ -76,6 +94,48 @@ const networks = [
           margin-left: 2rem;
         }
       }
+
+      /* Dropdown Button */
+.dropbtn {
+  background-color: #04AA6D;
+  color: white;
+  padding: 16px;
+  font-size: 16px;
+  border: none;
+}
+
+/* The container <div> - needed to position the dropdown content */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+/* Dropdown Content (Hidden by Default) */
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f1f1f1;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 1;
+}
+
+/* Links inside the dropdown */
+.dropdown-content a {
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+}
+
+/* Change color of dropdown links on hover */
+.dropdown-content a:hover {background-color: #ddd;}
+
+/* Show the dropdown menu on hover */
+.dropdown:hover .dropdown-content {display: block;}
+
+/* Change the background color of the dropdown button when the dropdown content is shown */
+.dropdown:hover .dropbtn {background-color: #e9ca1b;}
     </style>
     <div class='menu'>
     {links.map((link) => (
@@ -84,6 +144,18 @@ const networks = [
             </a>
     ))}
     </div>
+    <div> <p class="menuItem"></p> 
+      
+          <div class="dropdown">
+  <button class="menuItem Nodes">Public Nodes</button>
+  <div class="dropdown-content menuItem">
+    {publiNodes.map((node) => (
+    <a  id={node.id}>{node.name}: {node.href}</a>
+        
+  ))}
+  </div>
+</div>
+  </div>
     <div class='lg:flex flex justify-center '>
       {networks.map((network) => (
           <a href={network.href}>
