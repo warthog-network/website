@@ -12,6 +12,11 @@ const links = [
 const Polaire = {href:'http://51.75.21.134:3001', id:'myInput'}
 const Andrew = {href:'https://node.wartscan.io', id:'myInput2'}
 const Pumbaa = {href: 'http://65.87.7.86:3001', id:'myInput3'}
+const blu_Asia = {href: 'http://62.72.44.89:3001', id:'myInput4'}
+const blu_CentralUS = {href: 'http://89.117.150.162:3001 ', id:'myInput5'}
+const blu_EU = {href: 'http://185.209.228.16:3001', id:'myInput6'}
+const Johnnyb = {href: 'http://dev.node-s.com:3001', id:'myInput7'}
+
 
 const publiNodes = [
     { name: 'Polaire', href: 'http://51.75.21.134:3001', id:'myInput'},
@@ -87,6 +92,82 @@ const button3 = document.getElementById('button3');
 
 button3.addEventListener('click', myFunction3);
 
+function myFunction4() {
+  // Get the text field
+  var copyText = document.getElementById("myInput4") as HTMLInputElement;
+
+  // Select the text field
+  copyText.select();
+  copyText.setSelectionRange(0, 99999); // For mobile devices
+
+  // Copy the text inside the text field
+  navigator.clipboard.writeText(copyText.value);
+  
+  // Alert the copied text
+  alert("Copied the text: " + copyText.value);
+}
+const button4 = document.getElementById('button4');
+
+button4.addEventListener('click', myFunction4);
+
+function myFunction5() {
+  // Get the text field
+  var copyText = document.getElementById("myInput5") as HTMLInputElement;
+
+  // Select the text field
+  copyText.select();
+  copyText.setSelectionRange(0, 99999); // For mobile devices
+
+  // Copy the text inside the text field
+  navigator.clipboard.writeText(copyText.value);
+  
+  // Alert the copied text
+  alert("Copied the text: " + copyText.value);
+}
+const button5 = document.getElementById('button5');
+
+button5.addEventListener('click', myFunction5);
+
+function myFunction6() {
+  // Get the text field
+  var copyText = document.getElementById("myInput6") as HTMLInputElement;
+
+  // Select the text field
+  copyText.select();
+  copyText.setSelectionRange(0, 99999); // For mobile devices
+
+  // Copy the text inside the text field
+  navigator.clipboard.writeText(copyText.value);
+  
+  // Alert the copied text
+  alert("Copied the text: " + copyText.value);
+}
+const button6 = document.getElementById('button6');
+
+button6.addEventListener('click', myFunction6);
+
+function myFunction7() {
+  // Get the text field
+  var copyText = document.getElementById("myInput7") as HTMLInputElement;
+
+  // Select the text field
+  copyText.select();
+  copyText.setSelectionRange(0, 99999); // For mobile devices
+
+  // Copy the text inside the text field
+  navigator.clipboard.writeText(copyText.value);
+  
+  // Alert the copied text
+  alert("Copied the text: " + copyText.value);
+}
+const button7 = document.getElementById('button7');
+
+button7.addEventListener('click', myFunction7);
+
+
+
+
+
 </script>
     <style>
       .menu{
@@ -113,7 +194,8 @@ button3.addEventListener('click', myFunction3);
         visibility: hidden;
       }
       .Nodes{
-        padding: 2rem;
+        margin-bottom: .75rem;
+        padding-right: 2rem;
         cursor: pointer;
       }
       .Nodes:hover ~ .node {
@@ -203,7 +285,7 @@ input {
   border: none;
 }
 /* Change color of dropdown links on hover */
-.dropdown-content a:hover {background-color: #ddd;}
+.dropdown-content a:hover {background-color: rgb(245, 208, 0);}
 
 /* Show the dropdown menu on hover */
 .dropdown:hover .dropdown-content {display: block;}
@@ -221,7 +303,7 @@ input {
     <div> <p class="menuItem"></p> 
       
           <div class="dropdown">
-  <button class="menuItem Nodes">Public Nodes</button>
+  <button class="menuItem Nodes underlineText">PUBLIC NODES</button>
   <div class="dropdown-content menuItem">
 
     <a id='button' > <label>Polaire</label>
@@ -232,6 +314,18 @@ input {
      </a> 
      <a id='button3' > <label>Pumbaa</label>
       <input id={Pumbaa.id} value={Pumbaa.href}> </input>
+     </a> 
+     <a id='button4' > <label>Blu Asia</label>
+      <input id={blu_Asia.id} value={blu_Asia.href}> </input>
+     </a> 
+     <a id='button5' > <label>Blu Central Us</label>
+      <input id={blu_CentralUS.id} value={blu_CentralUS.href}> </input>
+     </a> 
+     <a id='button6' > <label>Blu E.U.</label>
+      <input id={blu_EU.id} value={blu_EU.href}> </input>
+     </a> 
+     <a id='button7' > <label>Johnnyb Us East</label>
+      <input id={Johnnyb.id} value={Johnnyb.href}> </input>
      </a> 
    
    
