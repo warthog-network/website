@@ -31,7 +31,7 @@ right now only the first three are supported. I have not fully  decided on the "
 <br/><br/>
 <p>
 In general I can say that <strong>I have done most architectural changes</strong>, and I am now adapting the code details to the new architecture. I heavily use C++ templates now, also modern C++20 features. Sometimes I wish I could use C++23 features, but that would break our compiler toolchain pipeline, and also most people could not compile Warthog on their machines with their own compiler anymore without installing a sufficiently modern compiler (and this is often not as simple as apt install gcc, because system package repositories of popular old Ubuntu LTS might not have such modern packages). So I opted against that to keep everything simple for the user and have it a bit more difficult on my side.</p>
-
+</br>
 
 
 <h1>CoinFuMasterShifu<h1>
