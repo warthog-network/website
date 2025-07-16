@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import CryptoJS from 'crypto-js';
 import './Wallet.css';
 
-const API_URL = 'http://195.26.246.172:3001/api/wallet';
+const API_URL = '/api/wallet';
 
 const Wallet = () => {
   const [createResult, setCreateResult] = useState(null);
