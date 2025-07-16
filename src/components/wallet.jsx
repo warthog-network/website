@@ -37,7 +37,7 @@ const Wallet = () => {
 
   useEffect(() => {
     if (wallet?.address) {
-      console.log('Fetching balance for address:', wallet.address); // Debug log
+      console.log('Fetching balance for address:', wallet.address);
       fetchBalanceAndNonce(wallet.address);
     }
   }, [wallet]);
@@ -45,11 +45,25 @@ const Wallet = () => {
   const wartToE8 = (wart) => {
     try {
       const num = parseFloat(wart);
-      if (isNaN(num) || num <= 0) return null;
-      return Math.round(num * 100000000);
-    } catch {
+      if (isNaN(num) || num <= 0) {
+        console.warn('wartToE8: Invalid input, returning null', { wart });
+        return null;
+      }
+      const result = Math.round(num * 100000000);
+      console.log('wartToE8: Converted', { wart, result });
+      return result;
+    } catch (err) {
+      console.error('wartToE8: Error converting', { wart, error: err.message });
       return null;
     }
+  };
+
+  const formatBalance = (balance) => {
+    if (balance === null) return 'Loading...';
+    if (balance === undefined) return 'Could not fetch balance';
+    const num = parseFloat(balance);
+    if (isNaN(num)) return 'Invalid balance';
+    return `${num.toFixed(8)} WART`; // Display with 8 decimal places
   };
 
   const fetchBalanceAndNonce = async (address) => {
@@ -57,30 +71,35 @@ const Wallet = () => {
     setBalance(null);
     setNonceId(null);
     try {
-      console.log('Sending balance request to:', `${API_URL}/balance`, { address }); // Debug log
+      console.log('Sending balance request to:', `${API_URL}/balance`, { address });
       const response = await fetch(`${API_URL}/balance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ address }),
       });
-      console.log('Balance response status:', response.status, 'OK:', response.ok); // Debug log
+      console.log('Balance response status:', response.status, 'OK:', response.ok);
       if (!response.ok) {
         const text = await response.text();
         console.error('Balance error response:', text);
         throw new Error(`Could not fetch balance: ${response.status} ${response.statusText}`);
       }
       const contentType = response.headers.get('content-type');
-      console.log('Balance response content-type:', contentType); // Debug log
-      let data;
-      try {
-        data = await response.json();
-        console.log('Balance response data:', data); // Debug log
-      } catch (err) {
+      console.log('Balance response content-type:', contentType);
+      if (!contentType || !contentType.includes('application/json')) {
         const text = await response.text();
-        console.error('Failed to parse JSON:', text);
-        throw new Error('Could not fetch balance: Invalid JSON response');
+        console.error('Balance non-JSON response:', text);
+        throw new Error('Could not fetch balance: Expected JSON response');
       }
-      setBalance(data.balance !== undefined ? data.balance.toString() : '0');
+      const data = await response.json();
+      console.log('Balance response data:', data);
+      if (data.balance === undefined || data.balance === null) {
+        throw new Error('Could not fetch balance: Invalid balance data');
+      }
+      const balanceNum = parseFloat(data.balance);
+      if (isNaN(balanceNum)) {
+        throw new Error('Could not fetch balance: Balance is not a number');
+      }
+      setBalance(balanceNum);
       if (data.nonceId !== undefined) {
         const nonce = Number(data.nonceId);
         if (isNaN(nonce) || nonce < 0 || nonce > 4294967295) {
@@ -92,6 +111,7 @@ const Wallet = () => {
       }
     } catch (err) {
       setError(err.message || 'Could not fetch balance');
+      setBalance(null);
       console.error('Fetch balance error:', err);
     }
   };
@@ -246,29 +266,27 @@ const Wallet = () => {
 
     try {
       const endpoint = walletAction === 'create' ? 'create' : 'derive-from-mnemonic';
-      console.log(`Sending ${walletAction} request to:`, `${API_URL}/${endpoint}`); // Debug log
+      console.log(`Sending ${walletAction} request to:`, `${API_URL}/${endpoint}`);
       const response = await fetch(`${API_URL}/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(walletAction === 'create' ? { wordCount: Number(wordCount) } : { mnemonic, wordCount: Number(wordCount) }),
       });
-      console.log(`${walletAction} response status:`, response.status, 'OK:', response.ok); // Debug log
+      console.log(`${walletAction} response status:`, response.status, 'OK:', response.ok);
       if (!response.ok) {
         const text = await response.text();
         console.error(`Fetch ${endpoint} error response:`, text);
         throw new Error(`Failed to ${walletAction} wallet: ${response.status} ${response.statusText}`);
       }
       const contentType = response.headers.get('content-type');
-      console.log(`${walletAction} response content-type:`, contentType); // Debug log
-      let data;
-      try {
-        data = await response.json();
-        console.log(`${walletAction} response data:`, data); // Debug log
-      } catch (err) {
+      console.log(`${walletAction} response content-type:`, contentType);
+      if (!contentType || !contentType.includes('application/json')) {
         const text = await response.text();
-        console.error('Failed to parse JSON:', text);
-        throw new Error('Received invalid JSON response from server');
+        console.error(`Fetch ${endpoint} non-JSON response:`, text);
+        throw new Error(`Failed to ${walletAction} wallet: Expected JSON response`);
       }
+      const data = await response.json();
+      console.log(`${walletAction} response data:`, data);
       if (walletAction === 'create') {
         setCreateResult(data);
       } else {
@@ -290,29 +308,27 @@ const Wallet = () => {
       return;
     }
     try {
-      console.log('Sending validate request to:', `${API_URL}/validate`, { address }); // Debug log
+      console.log('Sending validate request to:', `${API_URL}/validate`, { address });
       const response = await fetch(`${API_URL}/validate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ address }),
       });
-      console.log('Validate response status:', response.status, 'OK:', response.ok); // Debug log
+      console.log('Validate response status:', response.status, 'OK:', response.ok);
       if (!response.ok) {
         const text = await response.text();
-        console.error('Fetch validate error response:', text); // Fixed syntax error
+        console.error('Fetch validate error response:', text);
         throw new Error(`Failed to validate address: ${response.status} ${response.statusText}`);
       }
       const contentType = response.headers.get('content-type');
-      console.log('Validate response content-type:', contentType); // Debug log
-      let data;
-      try {
-        data = await response.json();
-        console.log('Validate response data:', data); // Debug log
-      } catch (err) {
+      console.log('Validate response content-type:', contentType);
+      if (!contentType || !contentType.includes('application/json')) {
         const text = await response.text();
-        console.error('Failed to parse JSON:', text);
-        throw new Error('Received invalid JSON response from server');
+        console.error('Validate non-JSON response:', text);
+        throw new Error('Failed to validate address: Expected JSON response');
       }
+      const data = await response.json();
+      console.log('Validate response data:', data);
       setValidateResult(data);
     } catch (err) {
       setError(err.message || 'Failed to validate address');
@@ -343,7 +359,7 @@ const Wallet = () => {
       return;
     }
     try {
-      console.log('Sending transaction request to:', `${API_URL}/send`, { toAddr, amountE8, feeE8, nonceId }); // Debug log
+      console.log('Sending transaction request to:', `${API_URL}/send`, { toAddr, amountE8, feeE8, nonceId });
       const response = await fetch(`${API_URL}/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -355,23 +371,21 @@ const Wallet = () => {
           nonceId,
         }),
       });
-      console.log('Send transaction response status:', response.status, 'OK:', response.ok); // Debug log
+      console.log('Send transaction response status:', response.status, 'OK:', response.ok);
       if (!response.ok) {
         const text = await response.text();
         console.error('Fetch send transaction error response:', text);
         throw new Error(`Failed to send transaction: ${response.status} ${response.statusText}`);
       }
       const contentType = response.headers.get('content-type');
-      console.log('Send transaction response content-type:', contentType); // Debug log
-      let data;
-      try {
-        data = await response.json();
-        console.log('Send transaction response data:', data); // Debug log
-      } catch (err) {
+      console.log('Send transaction response content-type:', contentType);
+      if (!contentType || !contentType.includes('application/json')) {
         const text = await response.text();
-        console.error('Failed to parse JSON:', text);
-        throw new Error('Received invalid JSON response from server');
+        console.error('Send transaction non-JSON response:', text);
+        throw new Error('Failed to send transaction: Expected JSON response');
       }
+      const data = await response.json();
+      console.log('Send transaction response data:', data);
       setSendResult(data);
       if (wallet?.address) {
         fetchBalanceAndNonce(wallet.address);
@@ -414,7 +428,7 @@ const Wallet = () => {
         <section>
           <h2>Wallet</h2>
           <p className="wallet-address"><strong>Address:</strong> {wallet.address}</p>
-          <p><strong>Balance:</strong> {balance !== null ? `${balance} WART` : 'Loading...'}</p>
+          <p><strong>Balance:</strong> {formatBalance(balance)}</p>
           <button onClick={() => fetchBalanceAndNonce(wallet.address)}>Refresh Balance</button>
           <button onClick={clearWallet}>Clear Wallet</button>
           <p className="warning">Warning: Private key is encrypted in localStorage. Keep your password secure.</p>
@@ -550,7 +564,8 @@ const Wallet = () => {
         <button onClick={handleValidateAddress}>Validate Address</button>
         {validateResult && (
           <div className="result">
-            <pre>{JSON.stringify(validateResult, null, 2)}</pre>
+            <p><strong>Valid:</strong> {validateResult.valid ? 'Yes' : 'No'}</p>
+            {validateResult.message && <p><strong>Message:</strong> {validateResult.message}</p>}
           </div>
         )}
       </section>
