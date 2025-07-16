@@ -3,3 +3,36 @@
   [headers.values]
     X-Frame-Options = "SAMEORIGIN"
     
+[build]
+  command = "npm run build" # Adjust based on your Astro build command
+  functions = "functions"
+  publish = "dist" # Adjust based on your Astro output directory
+[[redirects]]
+  from = "/api/account/:account/balance"
+  to = "/.netlify/functions/account_balance/:account"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/wallet/create"
+  to = "/.netlify/functions/wallet_create"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/wallet/derive-from-mnemonic"
+  to = "/.netlify/functions/wallet_derive_from_mnemonic"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/wallet/send"
+  to = "/.netlify/functions/wallet_send"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/tools/encode16bit/from_string/:fee"
+  to = "/.netlify/functions/encode_fee/:fee"
+  status = 200
+  force = true

@@ -1,0 +1,154 @@
+/* Import retro and modern fonts from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700&family=Roboto:wght@400;500&display=swap');
+
+/* Main container for the Wallet component */
+.container {
+  background-color: #000000; /* Warthog black */
+  color: #FFFFFF;
+  font-family: 'Roboto', sans-serif;
+  padding: 20px;
+  min-height: 100vh;
+  max-width: 800px;
+  margin: 0 auto;
+  border: 3px solid #FFC107; /* Warthog yellow */
+  box-shadow: 0 0 10px #FFC107;
+}
+
+/* Headings inside the container */
+.container h1,
+.container h2 {
+  font-family: 'Press Start 2P', cursive;
+  color: #FFC107;
+  text-shadow: 2px 2px 4px #000000;
+  margin-bottom: 20px;
+}
+
+.container h1 {
+  font-size: 24px;
+  text-align: center;
+}
+
+.container h2 {
+  font-size: 18px;
+}
+
+/* Sections within the container */
+.container section {
+  background-color: #4A4A4A; /* Dark gray for depth */
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  border: 2px solid #FFC107;
+  box-shadow: 0 0 5px #FFC107;
+}
+
+/* Form groups */
+.container .form-group {
+  margin-bottom: 15px;
+}
+
+.container .form-group label {
+  display: block;
+  font-family: 'Orbitron', sans-serif;
+  color: #FFECB3; /* Light yellow */
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+/* Inputs and selects */
+.container .input,
+.container input[type="file"] {
+  width: 100%;
+  padding: 10px;
+  background-color: #1C2526;
+  color: #FFFFFF;
+  border: 2px solid #FFC107;
+  border-radius: 4px;
+  font-family: 'Roboto', sans-serif;
+  font-size: 16px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.container .input:focus,
+.container input[type="file"]:focus {
+  outline: none;
+  border-color: #FFECB3;
+  box-shadow: 0 0 8px #FFECB3;
+}
+
+/* Buttons */
+.container button {
+  background: linear-gradient(45deg, #FFC107, #FFECB3);
+  color: #1C2526;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  padding: 10px 20px;
+  border: 2px solid #1C2526;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  margin-right: 10px;
+  margin-bottom: 10px;
+}
+
+.container button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 10px #FFC107;
+}
+
+.container button:active {
+  transform: scale(0.95);
+}
+
+/* Result and error sections */
+.container .result,
+.container .error {
+  background-color: #1C2526;
+  padding: 15px;
+  border: 2px solid #FFC107;
+  border-radius: 4px;
+  margin-top: 15px;
+  font-family: 'Roboto', sans-serif;
+}
+
+.container .result p,
+.container .error {
+  color: #FFECB3;
+  font-size: 14px;
+}
+
+.container .result pre {
+  color: #FFFFFF;
+  background-color: #4A4A4A;
+  padding: 10px;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+/* Warning text */
+.container .warning {
+  color: #FFC107;
+  font-size: 12px;
+  font-style: italic;
+  margin-top: 10px;
+}
+
+/* Responsive design */
+@media (max-width: 600px) {
+  .container {
+    padding: 10px;
+  }
+
+  .container h1 {
+    font-size: 20px;
+  }
+
+  .container h2 {
+    font-size: 16px;
+  }
+
+  .container button {
+    width: 100%;
+    margin-right: 0;
+  }
+}
