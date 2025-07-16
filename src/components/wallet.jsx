@@ -3,7 +3,8 @@ import CryptoJS from 'crypto-js';
 import './Wallet.css';
 
 const API_URL = '/api/wallet';
-{/*FOR_LOCAL: const API_URL = 'http://195.26.246.172:3001/api/wallet'; */}
+// const API_URL = 'http://195.26.246.172:3001/api/wallet'; // Uncomment for local testing
+
 const Wallet = () => {
   const [createResult, setCreateResult] = useState(null);
   const [deriveResult, setDeriveResult] = useState(null);
@@ -24,6 +25,8 @@ const Wallet = () => {
   const [saveWalletConsent, setSaveWalletConsent] = useState(false);
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
+  const [isWalletProcessed, setIsWalletProcessed] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     const encryptedWallet = localStorage.getItem('warthogWallet');
@@ -34,6 +37,7 @@ const Wallet = () => {
 
   useEffect(() => {
     if (wallet?.address) {
+      console.log('Fetching balance for address:', wallet.address); // Debug log
       fetchBalanceAndNonce(wallet.address);
     }
   }, [wallet]);
@@ -53,28 +57,43 @@ const Wallet = () => {
     setBalance(null);
     setNonceId(null);
     try {
+      console.log('Sending balance request to:', `${API_URL}/balance`, { address }); // Debug log
       const response = await fetch(`${API_URL}/balance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ address }),
       });
-      const data = await response.json();
-      if (response.ok) {
-        setBalance(data.balance ? data.balance.toString() : '0');
-        if (data.nonceId !== undefined) {
-          const nonce = Number(data.nonceId);
-          if (isNaN(nonce) || nonce < 0 || nonce > 4294967295) {
-            throw new Error('Invalid nonceId: must be a 32-bit unsigned integer');
-          }
-          setNonceId(nonce);
-        } else {
-          setNonceId(0); // Default to 0 if nonceId is not provided
+      console.log('Balance response status:', response.status, 'OK:', response.ok); // Debug log
+      if (!response.ok) {
+        const text = await response.text();
+        console.error('Balance error response:', text);
+        throw new Error(`Failed to fetch balance: ${response.status} ${response.statusText}`);
+      }
+      const contentType = response.headers.get('content-type');
+      console.log('Balance response content-type:', contentType); // Debug log
+      let data;
+      try {
+        data = await response.json();
+        console.log('Balance response data:', data); // Debug log
+      } catch (err) {
+        const text = await response.text();
+        console.error('Failed to parse JSON:', text);
+        throw new Error('Received invalid JSON response from server');
+      }
+      setBalance(data.balance !== undefined ? data.balance.toString() : '0');
+      if (data.nonceId !== undefined) {
+        const nonce = Number(data.nonceId);
+        if (isNaN(nonce) || nonce < 0 || nonce > 4294967295) {
+          throw new Error('Invalid nonceId: must be a 32-bit unsigned integer');
         }
+        setNonceId(nonce);
       } else {
-        setError(data.error || 'Failed to fetch balance');
+        setNonceId(0);
       }
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Failed to fetch balance');
+      setBalance('0'); // Fallback to show 0 instead of "Loading..."
+      console.error('Fetch balance error:', err);
     }
   };
 
@@ -107,6 +126,12 @@ const Wallet = () => {
       setWallet(walletData);
       setShowPasswordPrompt(false);
       setError(null);
+      setIsWalletProcessed(true);
+      setCreateResult(null);
+      setDeriveResult(null);
+      setPassword('');
+      setSaveWalletConsent(false);
+      setIsLoggedIn(true);
       return true;
     } catch (err) {
       setError(err.message);
@@ -127,6 +152,11 @@ const Wallet = () => {
     a.download = 'warthog_wallet.txt';
     a.click();
     URL.revokeObjectURL(url);
+    setIsWalletProcessed(true);
+    setCreateResult(null);
+    setDeriveResult(null);
+    setPassword('');
+    setSaveWalletConsent(false);
   };
 
   const handleFileUpload = (event) => {
@@ -138,7 +168,6 @@ const Wallet = () => {
     const reader = new FileReader();
     reader.onload = (e) => {
       setUploadedFile(e.target.result);
-      setShowPasswordPrompt(true);
     };
     reader.onerror = () => setError('Failed to read file');
     reader.readAsText(file);
@@ -162,6 +191,10 @@ const Wallet = () => {
       setShowPasswordPrompt(false);
       setUploadedFile(null);
       setError(null);
+      setIsWalletProcessed(false);
+      setCreateResult(null);
+      setDeriveResult(null);
+      setIsLoggedIn(true);
     } catch (err) {
       setError(err.message);
     }
@@ -176,12 +209,27 @@ const Wallet = () => {
     setPassword('');
     setSaveWalletConsent(false);
     setUploadedFile(null);
+    setIsWalletProcessed(false);
+    setCreateResult(null);
+    setDeriveResult(null);
+    setIsLoggedIn(false);
   };
 
   const handleWalletAction = async () => {
     setError(null);
     setCreateResult(null);
     setDeriveResult(null);
+    setIsWalletProcessed(false);
+
+    if (walletAction === 'login' && !uploadedFile) {
+      setError('Please upload the warthog_wallet.txt file');
+      return;
+    }
+
+    if (walletAction === 'login') {
+      loadWallet();
+      return;
+    }
 
     if (walletAction === 'derive' && !mnemonic) {
       setError('Please enter a seed phrase');
@@ -199,30 +247,39 @@ const Wallet = () => {
 
     try {
       const endpoint = walletAction === 'create' ? 'create' : 'derive-from-mnemonic';
-      const body = walletAction === 'create'
-        ? { wordCount: Number(wordCount) }
-        : { mnemonic, wordCount: Number(wordCount) };
-
+      console.log(`Sending ${walletAction} request to:`, `${API_URL}/${endpoint}`); // Debug log
       const response = await fetch(`${API_URL}/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify(walletAction === 'create' ? { wordCount: Number(wordCount) } : { mnemonic, wordCount: Number(wordCount) }),
       });
-      const data = await response.json();
-      if (response.ok) {
-        if (walletAction === 'create') {
-          setCreateResult(data);
-        } else {
-          setDeriveResult(data);
-        }
-        setShowPasswordPrompt(true);
-      } else {
-        setError(data.error || `Failed to ${walletAction} wallet`);
-        clearWallet();
+      console.log(`${walletAction} response status:`, response.status, 'OK:', response.ok); // Debug log
+      if (!response.ok) {
+        const text = await response.text();
+        console.error(`Fetch ${endpoint} error response:`, text);
+        throw new Error(`Failed to ${walletAction} wallet: ${response.status} ${response.statusText}`);
       }
+      const contentType = response.headers.get('content-type');
+      console.log(`${walletAction} response content-type:`, contentType); // Debug log
+      let data;
+      try {
+        data = await response.json();
+        console.log(`${walletAction} response data:`, data); // Debug log
+      } catch (err) {
+        const text = await response.text();
+        console.error('Failed to parse JSON:', text);
+        throw new Error('Received invalid JSON response from server');
+      }
+      if (walletAction === 'create') {
+        setCreateResult(data);
+      } else {
+        setDeriveResult(data);
+      }
+      setShowPasswordPrompt(true);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || `Failed to ${walletAction} wallet`);
       clearWallet();
+      console.error(`Fetch ${walletAction} error:`, err);
     }
   };
 
@@ -234,19 +291,33 @@ const Wallet = () => {
       return;
     }
     try {
+      console.log('Sending validate request to:', `${API_URL}/validate`, { address }); // Debug log
       const response = await fetch(`${API_URL}/validate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ address }),
       });
-      const data = await response.json();
-      if (response.ok) {
-        setValidateResult(data);
-      } else {
-        setError(data.error || 'Failed to validate address');
+      console.log('Validate response status:', response.status, 'OK:', response.ok); // Debug log
+      if (!response.ok) {
+        const text = await response.text();
+        console.error('Fetch validate error response:', text);
+        throw new Error(`Failed to validate address: ${response.status} ${response.statusText}`);
       }
+      const contentType = response.headers.get('content-type');
+      console.log('Validate response content-type:', contentType); // Debug log
+      let data;
+      try {
+        data = await response.json();
+        console.log('Validate response data:', data); // Debug log
+      } catch (err) {
+        const text = await response.text();
+        console.error('Failed to parse JSON:', text);
+        throw new Error('Received invalid JSON response from server');
+      }
+      setValidateResult(data);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Failed to validate address');
+      console.error('Fetch validate error:', err);
     }
   };
 
@@ -265,7 +336,7 @@ const Wallet = () => {
     }
     const txPrivateKey = wallet?.privateKey;
     if (!txPrivateKey) {
-      setError('No wallet saved. Please create or derive a wallet first.');
+      setError('No wallet saved. Please create, derive, or log in with a wallet first.');
       return;
     }
     if (nonceId === null) {
@@ -273,6 +344,7 @@ const Wallet = () => {
       return;
     }
     try {
+      console.log('Sending transaction request to:', `${API_URL}/send`, { toAddr, amountE8, feeE8, nonceId }); // Debug log
       const response = await fetch(`${API_URL}/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -284,17 +356,30 @@ const Wallet = () => {
           nonceId,
         }),
       });
-      const data = await response.json();
-      if (response.ok) {
-        setSendResult(data);
-        if (wallet?.address) {
-          fetchBalanceAndNonce(wallet.address); // Refresh balance and nonce
-        }
-      } else {
-        setError(data.error || 'Failed to send transaction');
+      console.log('Send transaction response status:', response.status, 'OK:', response.ok); // Debug log
+      if (!response.ok) {
+        const text = await response.text();
+        console.error('Fetch send transaction error response:', text);
+        throw new Error(`Failed to send transaction: ${response.status} ${response.statusText}`);
+      }
+      const contentType = response.headers.get('content-type');
+      console.log('Send transaction response content-type:', contentType); // Debug log
+      let data;
+      try {
+        data = await response.json();
+        console.log('Send transaction response data:', data); // Debug log
+      } catch (err) {
+        const text = await response.text();
+        console.error('Failed to parse JSON:', text);
+        throw new Error('Received invalid JSON response from server');
+      }
+      setSendResult(data);
+      if (wallet?.address) {
+        fetchBalanceAndNonce(wallet.address);
       }
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Failed to send transaction');
+      console.error('Fetch send transaction error:', err);
     }
   };
 
@@ -337,88 +422,119 @@ const Wallet = () => {
         </section>
       )}
 
-      <section>
-        <h2>Wallet Management</h2>
-        <div className="form-group">
-          <label>Action:</label>
-          <select
-            value={walletAction}
-            onChange={(e) => {
-              setWalletAction(e.target.value);
-              setError(null);
-              setCreateResult(null);
-              setDeriveResult(null);
-              setMnemonic('');
-            }}
-            className="input"
-          >
-            <option value="create">Create New Wallet</option>
-            <option value="derive">Derive Wallet from Seed Phrase</option>
-          </select>
-        </div>
-        {walletAction === 'derive' && (
+      {!isLoggedIn && (
+        <section>
+          <h2>Wallet Management</h2>
           <div className="form-group">
-            <label>Seed Phrase:</label>
-            <input
-              type="text"
-              value={mnemonic}
-              onChange={(e) => setMnemonic(e.target.value)}
-              placeholder="Enter 12 or 24-word seed phrase"
+            <label>Action:</label>
+            <select
+              value={walletAction}
+              onChange={(e) => {
+                setWalletAction(e.target.value);
+                setError(null);
+                setCreateResult(null);
+                setDeriveResult(null);
+                setMnemonic('');
+                setUploadedFile(null);
+                setPassword('');
+                setIsWalletProcessed(false);
+              }}
               className="input"
-            />
+            >
+              <option value="create">Create New Wallet</option>
+              <option value="derive">Derive Wallet from Seed Phrase</option>
+              <option value="login">Login with Wallet File</option>
+            </select>
           </div>
-        )}
-        <div className="form-group">
-          <label>Word Count:</label>
-          <select
-            value={wordCount}
-            onChange={(e) => setWordCount(e.target.value)}
-            className="input"
-          >
-            <option value="12">12 Words</option>
-            <option value="24">24 Words</option>
-          </select>
-        </div>
-        <button onClick={handleWalletAction}>
-          {walletAction === 'create' ? 'Create Wallet' : 'Derive Wallet'}
-        </button>
-        {(createResult || deriveResult) && (
-          <div className="result">
-            <p><strong>Seed Phrase:</strong> {(createResult || deriveResult).mnemonic}</p>
-            <p><strong>Word Count:</strong> {(createResult || deriveResult).wordCount}</p>
-            <p><strong>Private Key:</strong> {(createResult || deriveResult).privateKey}</p>
-            <p><strong>Public Key:</strong> {(createResult || deriveResult).publicKey}</p>
-            <p><strong>Address:</strong> {(createResult || deriveResult).address}</p>
+          {walletAction === 'derive' && (
             <div className="form-group">
-              <label>Password to Encrypt Wallet:</label>
+              <label>Seed Phrase:</label>
               <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password to encrypt wallet"
+                type="text"
+                value={mnemonic}
+                onChange={(e) => setMnemonic(e.target.value)}
+                placeholder="Enter 12 or 24-word seed phrase"
                 className="input"
               />
             </div>
-            <div className="form-group">
-              <label>
+          )}
+          {walletAction === 'login' && (
+            <>
+              <div className="form-group">
+                <label>Upload Wallet File (warthog_wallet.txt):</label>
                 <input
-                  type="checkbox"
-                  checked={saveWalletConsent}
-                  onChange={(e) => setSaveWalletConsent(e.target.checked)}
+                  type="file"
+                  accept=".txt"
+                  onChange={handleFileUpload}
+                  className="input"
                 />
-                Save wallet to localStorage (encrypted)
-              </label>
+              </div>
+              <div className="form-group">
+                <label>Password:</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter password to decrypt wallet"
+                  className="input"
+                />
+              </div>
+            </>
+          )}
+          {walletAction !== 'login' && (
+            <div className="form-group">
+              <label>Word Count:</label>
+              <select
+                value={wordCount}
+                onChange={(e) => setWordCount(e.target.value)}
+                className="input"
+              >
+                <option value="12">12 Words</option>
+                <option value="24">24 Words</option>
+              </select>
             </div>
-            <button onClick={() => saveWallet(createResult || deriveResult)}>
-              Save Wallet
-            </button>
-            <button onClick={() => downloadWallet(createResult || deriveResult)}>
-              Download Wallet File
-            </button>
-            <p className="warning">Warning: Store the seed phrase and password securely. Do not share them.</p>
-          </div>
-        )}
-      </section>
+          )}
+          <button onClick={handleWalletAction}>
+            {walletAction === 'create' ? 'Create Wallet' : walletAction === 'derive' ? 'Derive Wallet' : 'Login'}
+          </button>
+          {(createResult || deriveResult) && !isWalletProcessed && (
+            <div className="result">
+              <p><strong>Seed Phrase:</strong> {(createResult || deriveResult).mnemonic}</p>
+              <p><strong>Word Count:</strong> {(createResult || deriveResult).wordCount}</p>
+              <p><strong>Private Key:</strong> {(createResult || deriveResult).privateKey}</p>
+              <p><strong>Public Key:</strong> {(createResult || deriveResult).publicKey}</p>
+              <p><strong>Address:</strong> {(createResult || deriveResult).address}</p>
+              <div className="form-group">
+                <label>Password to Encrypt Wallet:</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter password to encrypt wallet"
+                  className="input"
+                />
+              </div>
+              <div className="form-group">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={saveWalletConsent}
+                    onChange={(e) => setSaveWalletConsent(e.target.checked)}
+                  />
+                  Save wallet to localStorage (encrypted)
+                </label>
+              </div>
+              <button onClick={() => saveWallet(createResult || deriveResult)}>
+                Save Wallet
+              </button>
+              <button onClick={() => downloadWallet(createResult || deriveResult)}>
+                Download Wallet File
+              </button>
+              <p className="warning">Warning: Store the seed phrase and password securely. Do not share them.</p>
+            </div>
+          )}
+        </section>
+      )}
 
       <section>
         <h2>Validate Address</h2>
