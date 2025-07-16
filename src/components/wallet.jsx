@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { generateMnemonic, mnemonicToSeed } from 'bip39';
+import { getPublicKey } from '@noble/secp256k1';
+import { ripemd160 } from '@noble/hashes/ripemd160';
+import { sha256 } from '@noble/hashes/sha256';
 import CryptoJS from 'crypto-js';
 import './Wallet.css';
 
 const API_URL = '/api/wallet';
-// const API_URL = 'http://195.26.246.172:3001/api/wallet'; // Uncomment for local testing
 
 const Wallet = () => {
   const [createResult, setCreateResult] = useState(null);
@@ -46,7 +49,7 @@ const Wallet = () => {
     try {
       const num = parseFloat(wart);
       if (isNaN(num) || num <= 0) {
-        console.warn('wartToE8: Invalid input, returning null', { wart });
+        console.warn('wartToE8: Invalid input', { wart });
         return null;
       }
       const result = Math.round(num * 100000000);
@@ -61,9 +64,9 @@ const Wallet = () => {
   const formatBalance = (balance) => {
     if (balance === null) return 'Loading...';
     if (balance === undefined) return 'Could not fetch balance';
-    const num = parseFloat(balance);
+    const num = parseFloat(balance) / 100000000; // Convert E8 to WART
     if (isNaN(num)) return 'Invalid balance';
-    return `${num.toFixed(8)} WART`; // Display with 8 decimal places
+    return `${num.toFixed(8)} WART`;
   };
 
   const fetchBalanceAndNonce = async (address) => {
@@ -77,38 +80,17 @@ const Wallet = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ address }),
       });
-      console.log('Balance response status:', response.status, 'OK:', response.ok);
       if (!response.ok) {
         const text = await response.text();
         console.error('Balance error response:', text);
-        throw new Error(`Could not fetch balance: ${response.status} ${response.statusText}`);
-      }
-      const contentType = response.headers.get('content-type');
-      console.log('Balance response content-type:', contentType);
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        console.error('Balance non-JSON response:', text);
-        throw new Error('Could not fetch balance: Expected JSON response');
+        throw new Error(`Could not fetch balance: ${response.status}`);
       }
       const data = await response.json();
       console.log('Balance response data:', data);
-      if (data.balance === undefined || data.balance === null) {
-        throw new Error('Could not fetch balance: Invalid balance data');
-      }
       const balanceNum = parseFloat(data.balance);
-      if (isNaN(balanceNum)) {
-        throw new Error('Could not fetch balance: Balance is not a number');
-      }
+      if (isNaN(balanceNum)) throw new Error('Invalid balance');
       setBalance(balanceNum);
-      if (data.nonceId !== undefined) {
-        const nonce = Number(data.nonceId);
-        if (isNaN(nonce) || nonce < 0 || nonce > 4294967295) {
-          throw new Error('Invalid nonceId: must be a 32-bit unsigned integer');
-        }
-        setNonceId(nonce);
-      } else {
-        setNonceId(0);
-      }
+      setNonceId(Number(data.nonceId) || 0);
     } catch (err) {
       setError(err.message || 'Could not fetch balance');
       setBalance(null);
@@ -116,11 +98,51 @@ const Wallet = () => {
     }
   };
 
+  const generateWallet = async (wordCount) => {
+    try {
+      const mnemonic = generateMnemonic(wordCount * 32); // 128 bits for 12 words, 256 for 24
+      const seed = await mnemonicToSeed(mnemonic);
+      const privateKey = sha256(seed.slice(0, 32)); // Derive private key
+      const publicKey = getPublicKey(privateKey, true); // Compressed public key
+      const address = Buffer.from(ripemd160(sha256(publicKey))).toString('hex').padStart(48, '0');
+      return {
+        mnemonic,
+        privateKey: Buffer.from(privateKey).toString('hex'),
+        publicKey: Buffer.from(publicKey).toString('hex'),
+        address,
+        wordCount,
+      };
+    } catch (err) {
+      throw new Error('Failed to generate wallet: ' + err.message);
+    }
+  };
+
+  const deriveWallet = async (mnemonic, wordCount) => {
+    try {
+      const words = mnemonic.trim().split(/\s+/);
+      if (words.length !== Number(wordCount)) {
+        throw new Error(`Seed phrase must have exactly ${wordCount} words`);
+      }
+      const seed = await mnemonicToSeed(mnemonic);
+      const privateKey = sha256(seed.slice(0, 32));
+      const publicKey = getPublicKey(privateKey, true);
+      const address = Buffer.from(ripemd160(sha256(publicKey))).toString('hex').padStart(48, '0');
+      return {
+        mnemonic,
+        privateKey: Buffer.from(privateKey).toString('hex'),
+        publicKey: Buffer.from(publicKey).toString('hex'),
+        address,
+        wordCount,
+      };
+    } catch (err) {
+      throw new Error('Failed to derive wallet: ' + err.message);
+    }
+  };
+
   const encryptWallet = (walletData, password) => {
     const { privateKey, publicKey, address } = walletData;
     const walletToSave = { privateKey, publicKey, address };
-    const encrypted = CryptoJS.AES.encrypt(JSON.stringify(walletToSave), password).toString();
-    return encrypted;
+    return CryptoJS.AES.encrypt(JSON.stringify(walletToSave), password).toString();
   };
 
   const decryptWallet = (encrypted, password) => {
@@ -185,9 +207,7 @@ const Wallet = () => {
       return;
     }
     const reader = new FileReader();
-    reader.onload = (e) => {
-      setUploadedFile(e.target.result);
-    };
+    reader.onload = (e) => setUploadedFile(e.target.result);
     reader.onerror = () => setError('Failed to read file');
     reader.readAsText(file);
   };
@@ -250,53 +270,19 @@ const Wallet = () => {
       return;
     }
 
-    if (walletAction === 'derive' && !mnemonic) {
-      setError('Please enter a seed phrase');
-      return;
-    }
-
-    if (walletAction === 'derive') {
-      const words = mnemonic.trim().split(/\s+/);
-      const expectedWordCount = Number(wordCount);
-      if (words.length !== expectedWordCount) {
-        setError(`Seed phrase must have exactly ${expectedWordCount} words`);
-        return;
-      }
-    }
-
     try {
-      const endpoint = walletAction === 'create' ? 'create' : 'derive-from-mnemonic';
-      console.log(`Sending ${walletAction} request to:`, `${API_URL}/${endpoint}`);
-      const response = await fetch(`${API_URL}/${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(walletAction === 'create' ? { wordCount: Number(wordCount) } : { mnemonic, wordCount: Number(wordCount) }),
-      });
-      console.log(`${walletAction} response status:`, response.status, 'OK:', response.ok);
-      if (!response.ok) {
-        const text = await response.text();
-        console.error(`Fetch ${endpoint} error response:`, text);
-        throw new Error(`Failed to ${walletAction} wallet: ${response.status} ${response.statusText}`);
-      }
-      const contentType = response.headers.get('content-type');
-      console.log(`${walletAction} response content-type:`, contentType);
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        console.error(`Fetch ${endpoint} non-JSON response:`, text);
-        throw new Error(`Failed to ${walletAction} wallet: Expected JSON response`);
-      }
-      const data = await response.json();
-      console.log(`${walletAction} response data:`, data);
       if (walletAction === 'create') {
-        setCreateResult(data);
+        const walletData = await generateWallet(Number(wordCount));
+        setCreateResult(walletData);
       } else {
-        setDeriveResult(data);
+        const walletData = await deriveWallet(mnemonic, wordCount);
+        setDeriveResult(walletData);
       }
       setShowPasswordPrompt(true);
     } catch (err) {
-      setError(err.message || `Failed to ${walletAction} wallet`);
+      setError(err.message);
       clearWallet();
-      console.error(`Fetch ${walletAction} error:`, err);
+      console.error('Wallet action error:', err);
     }
   };
 
@@ -308,31 +294,19 @@ const Wallet = () => {
       return;
     }
     try {
-      console.log('Sending validate request to:', `${API_URL}/validate`, { address });
       const response = await fetch(`${API_URL}/validate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ address }),
       });
-      console.log('Validate response status:', response.status, 'OK:', response.ok);
       if (!response.ok) {
         const text = await response.text();
-        console.error('Fetch validate error response:', text);
-        throw new Error(`Failed to validate address: ${response.status} ${response.statusText}`);
-      }
-      const contentType = response.headers.get('content-type');
-      console.log('Validate response content-type:', contentType);
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        console.error('Validate non-JSON response:', text);
-        throw new Error('Failed to validate address: Expected JSON response');
+        throw new Error(`Failed to validate address: ${response.status}`);
       }
       const data = await response.json();
-      console.log('Validate response data:', data);
       setValidateResult(data);
     } catch (err) {
-      setError(err.message || 'Failed to validate address');
-      console.error('Fetch validate error:', err);
+      setError(err.message);
     }
   };
 
@@ -346,20 +320,19 @@ const Wallet = () => {
     const amountE8 = wartToE8(amount);
     const feeE8 = wartToE8(fee);
     if (!amountE8 || !feeE8) {
-      setError('Invalid amount or fee: must be positive numbers');
+      setError('Invalid amount or fee');
       return;
     }
     const txPrivateKey = wallet?.privateKey;
     if (!txPrivateKey) {
-      setError('No wallet saved. Please create, derive, or log in with a wallet first.');
+      setError('No wallet saved');
       return;
     }
     if (nonceId === null) {
-      setError('Nonce not available. Please refresh balance and try again.');
+      setError('Nonce not available');
       return;
     }
     try {
-      console.log('Sending transaction request to:', `${API_URL}/send`, { toAddr, amountE8, feeE8, nonceId });
       const response = await fetch(`${API_URL}/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -371,28 +344,17 @@ const Wallet = () => {
           nonceId,
         }),
       });
-      console.log('Send transaction response status:', response.status, 'OK:', response.ok);
       if (!response.ok) {
         const text = await response.text();
-        console.error('Fetch send transaction error response:', text);
-        throw new Error(`Failed to send transaction: ${response.status} ${response.statusText}`);
-      }
-      const contentType = response.headers.get('content-type');
-      console.log('Send transaction response content-type:', contentType);
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        console.error('Send transaction non-JSON response:', text);
-        throw new Error('Failed to send transaction: Expected JSON response');
+        throw new Error(`Failed to send transaction: ${response.status}`);
       }
       const data = await response.json();
-      console.log('Send transaction response data:', data);
       setSendResult(data);
       if (wallet?.address) {
         fetchBalanceAndNonce(wallet.address);
       }
     } catch (err) {
-      setError(err.message || 'Failed to send transaction');
-      console.error('Fetch send transaction error:', err);
+      setError(err.message);
     }
   };
 
@@ -431,7 +393,7 @@ const Wallet = () => {
           <p><strong>Balance:</strong> {formatBalance(balance)}</p>
           <button onClick={() => fetchBalanceAndNonce(wallet.address)}>Refresh Balance</button>
           <button onClick={clearWallet}>Clear Wallet</button>
-          <p className="warning">Warning: Private key is encrypted in localStorage. Keep your password secure.</p>
+          <p className="warning">Warning: Private key is encrypted in localStorage or file. Keep your password secure.</p>
         </section>
       )}
 
