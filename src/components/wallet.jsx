@@ -413,7 +413,7 @@ const Wallet = () => {
       {wallet && (
         <section>
           <h2>Wallet</h2>
-          <p><strong>Address:</strong> {wallet.address}</p>
+          <p className="wallet-address"><strong>Address:</strong> {wallet.address}</p>
           <p><strong>Balance:</strong> {balance !== null ? `${balance} WART` : 'Loading...'}</p>
           <button onClick={() => fetchBalanceAndNonce(wallet.address)}>Refresh Balance</button>
           <button onClick={clearWallet}>Clear Wallet</button>

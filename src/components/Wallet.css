@@ -1,5 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700&family=Roboto:wght@400;500&display=swap');
-
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Press+Start+2P&family=Orbitron:wght@400;700&family=Roboto:wght@400;500&display=swap');
 .container {
   background-color: #070707;
   color: #FFFFFF;
@@ -10,11 +9,13 @@
   margin: 0 auto;
   border: 3px solid #FFC107;
   box-shadow: 0 0 10px #FFC107;
+  overflow-x: hidden; /* Ensure no horizontal overflow */
+  box-sizing: border-box;
 }
 
 .container h1,
 .container h2 {
-  font-family: 'Press Start 2P', cursive;
+  font-family: 'Montserrat';
   color: #FFC107;
   text-shadow: 2px 2px 4px #000000;
   margin-bottom: 20px;
@@ -36,6 +37,9 @@
   border-radius: 8px;
   border: 2px solid #FFC107;
   box-shadow: 0 0 5px #FFC107;
+  max-width: 100%;
+  overflow-x: hidden; /* Prevent section overflow */
+  box-sizing: border-box;
 }
 
 .container .form-group {
@@ -44,7 +48,7 @@
 
 .container .form-group label {
   display: block;
-  font-family: 'Orbitron', sans-serif;
+  font-family: 'Montserrat';
   color: #FFECB3;
   margin-bottom: 5px;
   font-size: 14px;
@@ -61,6 +65,7 @@
   font-family: 'Roboto', sans-serif;
   font-size: 16px;
   transition: border-color 0.3s, box-shadow 0.3s;
+  box-sizing: border-box;
 }
 
 .container .input:focus,
@@ -73,7 +78,7 @@
 .container button {
   background: linear-gradient(45deg, #FFC107, #FFECB3);
   color: #1C2526;
-  font-family: 'Orbitron', sans-serif;
+  font-family: 'Montserrat';
   font-weight: 700;
   padding: 10px 20px;
   border: 2px solid #1C2526;
@@ -82,6 +87,7 @@
   transition: transform 0.2s, box-shadow 0.2s;
   margin-right: 10px;
   margin-bottom: 10px;
+  box-sizing: border-box;
 }
 
 .container button:hover {
@@ -134,9 +140,41 @@
   margin-top: 10px;
 }
 
+.container .wallet-address {
+  color: #FFECB3;
+  font-size: 14px;
+  word-break: break-all;
+  overflow-wrap: break-word;
+  white-space: normal;
+  max-width: 100%;
+  margin: 0;
+  padding: 5px 0;
+}
+
+/* Optional: Truncate wallet address instead of wrapping */
+/*
+.container .wallet-address {
+  color: #FFECB3;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  margin: 0;
+  padding: 5px 0;
+}
+.container .wallet-address:hover {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+*/
+
 @media (max-width: 600px) {
   .container {
     padding: 10px;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   .container h1 {
@@ -149,6 +187,8 @@
 
   .container section {
     padding: 15px;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   .container .form-group label {
@@ -182,4 +222,28 @@
   .container .result pre {
     font-size: 10px;
   }
+
+  .container .wallet-address {
+    font-size: 12px;
+    word-break: break-all;
+    overflow-wrap: break-word;
+    white-space: normal;
+    max-width: 100%;
+  }
+
+  /* Optional: Truncate wallet address on mobile */
+  /*
+  .container .wallet-address {
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .container .wallet-address:hover {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+  */
 }
