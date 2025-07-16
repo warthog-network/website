@@ -3,7 +3,7 @@ import CryptoJS from 'crypto-js';
 import './Wallet.css';
 
 const API_URL = '/api/wallet';
-
+{/*FOR_LOCAL: const API_URL = 'http://195.26.246.172:3001/api/wallet'; */}
 const Wallet = () => {
   const [createResult, setCreateResult] = useState(null);
   const [deriveResult, setDeriveResult] = useState(null);
