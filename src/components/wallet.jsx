@@ -67,7 +67,7 @@ const Wallet = () => {
       if (!response.ok) {
         const text = await response.text();
         console.error('Balance error response:', text);
-        throw new Error(`Failed to fetch balance: ${response.status} ${response.statusText}`);
+        throw new Error(`Could not fetch balance: ${response.status} ${response.statusText}`);
       }
       const contentType = response.headers.get('content-type');
       console.log('Balance response content-type:', contentType); // Debug log
@@ -78,7 +78,7 @@ const Wallet = () => {
       } catch (err) {
         const text = await response.text();
         console.error('Failed to parse JSON:', text);
-        throw new Error('Received invalid JSON response from server');
+        throw new Error('Could not fetch balance: Invalid JSON response');
       }
       setBalance(data.balance !== undefined ? data.balance.toString() : '0');
       if (data.nonceId !== undefined) {
@@ -91,8 +91,7 @@ const Wallet = () => {
         setNonceId(0);
       }
     } catch (err) {
-      setError(err.message || 'Failed to fetch balance');
-      setBalance('0'); // Fallback to show 0 instead of "Loading..."
+      setError(err.message || 'Could not fetch balance');
       console.error('Fetch balance error:', err);
     }
   };
@@ -300,7 +299,7 @@ const Wallet = () => {
       console.log('Validate response status:', response.status, 'OK:', response.ok); // Debug log
       if (!response.ok) {
         const text = await response.text();
-        console.error('Fetch validate error response:', text);
+        console.error('Fetch validate error response:', text); // Fixed syntax error
         throw new Error(`Failed to validate address: ${response.status} ${response.statusText}`);
       }
       const contentType = response.headers.get('content-type');
@@ -556,45 +555,47 @@ const Wallet = () => {
         )}
       </section>
 
-      <section>
-        <h2>Send Transaction</h2>
-        <div className="form-group">
-          <label>To Address:</label>
-          <input
-            type="text"
-            value={toAddr}
-            onChange={(e) => setToAddr(e.target.value.trim())}
-            placeholder="Enter 48-character to address"
-            className="input"
-          />
-        </div>
-        <div className="form-group">
-          <label>Amount (WART):</label>
-          <input
-            type="text"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value.trim())}
-            placeholder="Enter amount in WART (e.g., 1)"
-            className="input"
-          />
-        </div>
-        <div className="form-group">
-          <label>Fee (WART):</label>
-          <input
-            type="text"
-            value={fee}
-            onChange={(e) => setFee(e.target.value.trim())}
-            placeholder="Enter fee in WART (e.g., 0.0001)"
-            className="input"
-          />
-        </div>
-        <button onClick={handleSendTransaction}>Send Transaction</button>
-        {sendResult && (
-          <div className="result">
-            <pre>{JSON.stringify(sendResult, null, 2)}</pre>
+      {isLoggedIn && (
+        <section>
+          <h2>Send Transaction</h2>
+          <div className="form-group">
+            <label>To Address:</label>
+            <input
+              type="text"
+              value={toAddr}
+              onChange={(e) => setToAddr(e.target.value.trim())}
+              placeholder="Enter 48-character to address"
+              className="input"
+            />
           </div>
-        )}
-      </section>
+          <div className="form-group">
+            <label>Amount (WART):</label>
+            <input
+              type="text"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value.trim())}
+              placeholder="Enter amount in WART (e.g., 1)"
+              className="input"
+            />
+          </div>
+          <div className="form-group">
+            <label>Fee (WART):</label>
+            <input
+              type="text"
+              value={fee}
+              onChange={(e) => setFee(e.target.value.trim())}
+              placeholder="Enter fee in WART (e.g., 0.0001)"
+              className="input"
+            />
+          </div>
+          <button onClick={handleSendTransaction}>Send Transaction</button>
+          {sendResult && (
+            <div className="result">
+              <pre>{JSON.stringify(sendResult, null, 2)}</pre>
+            </div>
+          )}
+        </section>
+      )}
 
       {error && (
         <div className="error">
