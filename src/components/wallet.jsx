@@ -6,7 +6,8 @@ import { sha256 } from '@noble/hashes/sha256';
 import CryptoJS from 'crypto-js';
 import './Wallet.css';
 
-const API_URL = 'http://195.26.246.172:3001/api/wallet'; // Proxy to http://195.26.246.172:3001/api/wallet
+const WARTHOG_NODE_URL = 'http://51.75.21.134:3001'; // Direct Warthog node URL
+const API_URL = `http://195.26.246.172:3001/api/wallet`; // Proxy to backend API
 
 const Wallet = () => {
   const [createResult, setCreateResult] = useState(null);
@@ -65,7 +66,7 @@ const Wallet = () => {
     if (apiError) return `Error: ${apiError}`;
     if (balance === null) return 'Loading...';
     if (balance === undefined) return 'Could not fetch balance';
-    const num = parseFloat(balance) * 1; // Convert E8 to WART
+    const num = parseFloat(balance) * 100000000; // Already in WART from server
     if (isNaN(num)) return 'Invalid balance';
     return `${num.toFixed(8)} WART`;
   };
@@ -83,8 +84,8 @@ const Wallet = () => {
       });
       if (!response.ok) {
         const text = await response.text();
-        console.error('Balance error response:', text);
-        throw new Error(`Could not fetch balance: ${response.status}`);
+        console.error('Balance error response:', { status: response.status, text });
+        throw new Error(`Could not fetch balance: ${response.status} - ${text}`);
       }
       const data = await response.json();
       console.log('Balance response data:', data);
@@ -110,7 +111,10 @@ const Wallet = () => {
       const seed = await mnemonicToSeed(mnemonic);
       const privateKey = sha256(seed.slice(0, 32)); // Derive private key
       const publicKey = getPublicKey(privateKey, true); // Compressed public key
-      const address = Buffer.from(ripemd160(sha256(publicKey))).toString('hex').padStart(48, '0');
+      const sha = sha256(publicKey);
+      const addrRaw = ripemd160(sha);
+      const checksum = sha256(addrRaw).slice(0, 4);
+      const address = Buffer.concat([addrRaw, checksum]).toString('hex');
       return {
         mnemonic,
         privateKey: Buffer.from(privateKey).toString('hex'),
@@ -132,7 +136,10 @@ const Wallet = () => {
       const seed = await mnemonicToSeed(mnemonic);
       const privateKey = sha256(seed.slice(0, 32));
       const publicKey = getPublicKey(privateKey, true);
-      const address = Buffer.from(ripemd160(sha256(publicKey))).toString('hex').padStart(48, '0');
+      const sha = sha256(publicKey);
+      const addrRaw = ripemd160(sha);
+      const checksum = sha256(addrRaw).slice(0, 4);
+      const address = Buffer.concat([addrRaw, checksum]).toString('hex');
       return {
         mnemonic,
         privateKey: Buffer.from(privateKey).toString('hex'),
@@ -303,7 +310,7 @@ const Wallet = () => {
       });
       if (!response.ok) {
         const text = await response.text();
-        throw new Error(`Failed to validate address: ${response.status}`);
+        throw new Error(`Failed to validate address: ${response.status} - ${text}`);
       }
       const data = await response.json();
       setValidateResult(data);
@@ -313,101 +320,105 @@ const Wallet = () => {
   };
 
   const handleSendTransaction = async () => {
-  setError(null);
-  setSendResult(null);
-  if (!toAddr || !amount || !fee) {
-    setError('Please fill in all transaction fields');
-    return;
-  }
-  const amountE8 = wartToE8(amount);
-  const feeE8 = wartToE8(fee);
-  if (!amountE8 || !feeE8) {
-    setError('Invalid amount or fee');
-    return;
-  }
-  const txPrivateKey = wallet?.privateKey;
-  if (!txPrivateKey) {
-    setError('No wallet saved');
-    return;
-  }
-  if (nonceId === null) {
-    setError('Nonce not available');
-    return;
-  }
-  try {
-    // Fetch chain head to get pinHeight and pinHash
-    const headResponse = await fetch(`${API_URL}/chain/head`);
-    if (!headResponse.ok) {
-      throw new Error(`Failed to fetch chain head: ${headResponse.status}`);
+    setError(null);
+    setSendResult(null);
+    if (!toAddr || !amount || !fee) {
+      setError('Please fill in all transaction fields');
+      return;
     }
-    const head = await headResponse.json();
-    const { pinHeight, pinHash } = head.data;
-
-    // Encode feeE8 to match server's roundedFeeE8
-    const encodeResponse = await fetch(`${API_URL}/tools/encode16bit/from_e8/${feeE8}`);
-    if (!encodeResponse.ok) {
-      throw new Error(`Failed to encode fee: ${encodeResponse.status}`);
+    const amountE8 = wartToE8(amount);
+    const feeE8 = wartToE8(fee);
+    if (!amountE8 || !feeE8) {
+      setError('Invalid amount or fee');
+      return;
     }
-    const encodeResult = await encodeResponse.json();
-    const roundedFeeE8 = encodeResult.data.roundedE8;
-
-    // Construct the message to sign (matching server logic)
-    const buf1 = Buffer.from(pinHash, 'hex');
-    const buf2 = Buffer.alloc(19);
-    buf2.writeUInt32BE(pinHeight, 0);
-    buf2.writeUInt32BE(nonceId, 4);
-    buf2.writeUInt8(0, 8);
-    buf2.writeUInt8(0, 9);
-    buf2.writeUInt8(0, 10);
-    buf2.writeBigUInt64BE(BigInt(roundedFeeE8), 11);
-    const buf3 = Buffer.from(toAddr.slice(0, 40), 'hex'); // Use first 40 chars (20 bytes)
-    const buf4 = Buffer.alloc(8);
-    buf4.writeBigUInt64BE(BigInt(amountE8), 0);
-    const toSign = Buffer.concat([buf1, buf2, buf3, buf4]);
-
-    // Sign the message
-    const messageHash = sha256(toSign);
-    const signature = await sign(messageHash, txPrivateKey); // Returns [signature, recovery]
-    const signatureWithoutRecid = Buffer.from(signature[0]);
-    // Normalize signature to ensure low-S form
-    const signatureWithoutRecidNormalized = signatureWithoutRecid; // @noble/secp256k1 already normalizes
-    const recid = signature[1];
-    const recidBuffer = Buffer.alloc(1);
-    recidBuffer.writeUInt8(recid);
-    const signature65 = Buffer.concat([signatureWithoutRecidNormalized, recidBuffer]);
-
-    // Prepare transaction data
-    const tx = {
-      pinHeight,
-      nonceId,
-      toAddr,
-      amountE8,
-      feeE8: roundedFeeE8,
-      signature65: signature65.toString('hex'),
-    };
-    console.log('Sending transaction:', tx);
-
-    // Send transaction to server
-    const response = await fetch(`${API_URL}/send`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(tx),
-    });
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`Failed to send transaction: ${response.status} - ${text}`);
+    const txPrivateKey = wallet?.privateKey;
+    if (!txPrivateKey) {
+      setError('No wallet saved');
+      return;
     }
-    const data = await response.json();
-    console.log('Transaction response:', data);
-    setSendResult(data);
-    if (wallet?.address) {
-      fetchBalanceAndNonce(wallet.address);
+    if (nonceId === null) {
+      setError('Nonce not available');
+      return;
     }
-  } catch (err) {
-    setError(err.message || 'Failed to send transaction');
-    console.error('Send transaction error:', err);
-  }
-};
+    try {
+      // Fetch chain head to get pinHeight and pinHash
+      console.log('Fetching chain head from:', `${WARTHOG_NODE_URL}/chain/head`);
+      const headResponse = await fetch(`${WARTHOG_NODE_URL}/chain/head`);
+      if (!headResponse.ok) {
+        const text = await headResponse.text();
+        throw new Error(`Failed to fetch chain head: ${headResponse.status} - ${text}`);
+      }
+      const head = await headResponse.json();
+      console.log('Chain head response:', head);
+      const { pinHeight, pinHash } = head.data;
+
+      // Encode feeE8 to match server's roundedFeeE8
+      console.log('Fetching encoded fee from:', `${WARTHOG_NODE_URL}/tools/encode16bit/from_e8/${feeE8}`);
+      const encodeResponse = await fetch(`${WARTHOG_NODE_URL}/tools/encode16bit/from_e8/${feeE8}`);
+      if (!encodeResponse.ok) {
+        const text = await encodeResponse.text();
+        throw new Error(`Failed to encode fee: ${encodeResponse.status} - ${text}`);
+      }
+      const encodeResult = await encodeResponse.json();
+      console.log('Encoded fee response:', encodeResult);
+      const roundedFeeE8 = encodeResult.data.roundedE8;
+
+      // Construct the message to sign (matching server logic)
+      const buf1 = Buffer.from(pinHash, 'hex');
+      const buf2 = Buffer.alloc(19);
+      buf2.writeUInt32BE(pinHeight, 0);
+      buf2.writeUInt32BE(nonceId, 4);
+      buf2.writeUInt8(0, 8);
+      buf2.writeUInt8(0, 9);
+      buf2.writeUInt8(0, 10);
+      buf2.writeBigUInt64BE(BigInt(roundedFeeE8), 11);
+      const buf3 = Buffer.from(toAddr.slice(0, 40), 'hex'); // Use first 40 chars (20 bytes)
+      const buf4 = Buffer.alloc(8);
+      buf4.writeBigUInt64BE(BigInt(amountE8), 0);
+      const toSign = Buffer.concat([buf1, buf2, buf3, buf4]);
+
+      // Sign the message
+      const messageHash = sha256(toSign);
+      const signature = await sign(messageHash, txPrivateKey, { canonical: true }); // Ensure low-S signature
+      const signatureWithoutRecid = Buffer.from(signature[0]);
+      const recid = signature[1];
+      const recidBuffer = Buffer.alloc(1);
+      recidBuffer.writeUInt8(recid);
+      const signature65 = Buffer.concat([signatureWithoutRecid, recidBuffer]);
+
+      // Prepare transaction data
+      const tx = {
+        pinHeight,
+        nonceId,
+        toAddr,
+        amountE8,
+        feeE8: roundedFeeE8,
+        signature65: signature65.toString('hex'),
+      };
+      console.log('Sending transaction:', tx);
+
+      // Send transaction to server
+      const response = await fetch(`${API_URL}/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(tx),
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Failed to send transaction: ${response.status} - ${text}`);
+      }
+      const data = await response.json();
+      console.log('Transaction response:', data);
+      setSendResult(data);
+      if (wallet?.address) {
+        fetchBalanceAndNonce(wallet.address);
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to send transaction');
+      console.error('Send transaction error:', err);
+    }
+  };
 
   return (
     <div className="container">
@@ -431,7 +442,13 @@ const Wallet = () => {
             />
           </div>
           <button onClick={loadWallet}>Unlock Wallet</button>
-          <button onClick={() => { setShowPasswordPrompt(false); setPassword(''); setUploadedFile(null); }}>
+          <button
+            onClick={() => {
+              setShowPasswordPrompt(false);
+              setPassword('');
+              setUploadedFile(null);
+            }}
+          >
             Cancel
           </button>
         </section>
@@ -488,12 +505,7 @@ const Wallet = () => {
             <>
               <div className="form-group">
                 <label>Upload Wallet File (warthog_wallet.txt):</label>
-                <input
-                  type="file"
-                  accept=".txt"
-                  onChange={handleFileUpload}
-                  className="input"
-                />
+                <input type="file" accept=".txt" onChange={handleFileUpload} className="input" />
               </div>
               <div className="form-group">
                 <label>Password:</label>
@@ -550,9 +562,7 @@ const Wallet = () => {
                   Save wallet to localStorage (encrypted)
                 </label>
               </div>
-              <button onClick={() => saveWallet(createResult || deriveResult)}>
-                Save Wallet
-              </button>
+              <button onClick={() => saveWallet(createResult || deriveResult)}>Save Wallet</button>
               <button onClick={() => downloadWallet(createResult || deriveResult)}>
                 Download Wallet File
               </button>
@@ -577,7 +587,7 @@ const Wallet = () => {
         <button onClick={handleValidateAddress}>Validate Address</button>
         {validateResult && (
           <div className="result">
-            <p><strong>Valid:</strong> {validateResult.valid ? 'No' : 'Yes'}</p>
+            <p><strong>Valid:</strong> {validateResult.isValid ? 'Yes' : 'No'}</p>
             {validateResult.message && <p><strong>Message:</strong> {validateResult.message}</p>}
           </div>
         )}
