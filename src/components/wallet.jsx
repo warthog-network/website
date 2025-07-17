@@ -65,7 +65,7 @@ const Wallet = () => {
     if (apiError) return `Error: ${apiError}`;
     if (balance === null) return 'Loading...';
     if (balance === undefined) return 'Could not fetch balance';
-    const num = parseFloat(balance) * 100000000; // Convert E8 to WART
+    const num = parseFloat(balance) * 1; // Convert E8 to WART
     if (isNaN(num)) return 'Invalid balance';
     return `${num.toFixed(8)} WART`;
   };
@@ -271,20 +271,16 @@ const Wallet = () => {
       return;
     }
 
-    if (walletAction === 'login') {
-      loadWallet();
-      return;
-    }
-
     try {
       if (walletAction === 'create') {
         const walletData = await generateWallet(Number(wordCount));
         setCreateResult(walletData);
-      } else {
+      } else if (walletAction === 'derive') {
         const walletData = await deriveWallet(mnemonic, wordCount);
         setDeriveResult(walletData);
+      } else if (walletAction === 'login') {
+        loadWallet();
       }
-      setShowPasswordPrompt(true);
     } catch (err) {
       setError(err.message);
       clearWallet();
@@ -317,61 +313,101 @@ const Wallet = () => {
   };
 
   const handleSendTransaction = async () => {
-    setError(null);
-    setSendResult(null);
-    if (!toAddr || !amount || !fee) {
-      setError('Please fill in all transaction fields');
-      return;
+  setError(null);
+  setSendResult(null);
+  if (!toAddr || !amount || !fee) {
+    setError('Please fill in all transaction fields');
+    return;
+  }
+  const amountE8 = wartToE8(amount);
+  const feeE8 = wartToE8(fee);
+  if (!amountE8 || !feeE8) {
+    setError('Invalid amount or fee');
+    return;
+  }
+  const txPrivateKey = wallet?.privateKey;
+  if (!txPrivateKey) {
+    setError('No wallet saved');
+    return;
+  }
+  if (nonceId === null) {
+    setError('Nonce not available');
+    return;
+  }
+  try {
+    // Fetch chain head to get pinHeight and pinHash
+    const headResponse = await fetch(`${API_URL}/chain/head`);
+    if (!headResponse.ok) {
+      throw new Error(`Failed to fetch chain head: ${headResponse.status}`);
     }
-    const amountE8 = wartToE8(amount);
-    const feeE8 = wartToE8(fee);
-    if (!amountE8 || !feeE8) {
-      setError('Invalid amount or fee');
-      return;
+    const head = await headResponse.json();
+    const { pinHeight, pinHash } = head.data;
+
+    // Encode feeE8 to match server's roundedFeeE8
+    const encodeResponse = await fetch(`${API_URL}/tools/encode16bit/from_e8/${feeE8}`);
+    if (!encodeResponse.ok) {
+      throw new Error(`Failed to encode fee: ${encodeResponse.status}`);
     }
-    const txPrivateKey = wallet?.privateKey;
-    if (!txPrivateKey) {
-      setError('No wallet saved');
-      return;
+    const encodeResult = await encodeResponse.json();
+    const roundedFeeE8 = encodeResult.data.roundedE8;
+
+    // Construct the message to sign (matching server logic)
+    const buf1 = Buffer.from(pinHash, 'hex');
+    const buf2 = Buffer.alloc(19);
+    buf2.writeUInt32BE(pinHeight, 0);
+    buf2.writeUInt32BE(nonceId, 4);
+    buf2.writeUInt8(0, 8);
+    buf2.writeUInt8(0, 9);
+    buf2.writeUInt8(0, 10);
+    buf2.writeBigUInt64BE(BigInt(roundedFeeE8), 11);
+    const buf3 = Buffer.from(toAddr.slice(0, 40), 'hex'); // Use first 40 chars (20 bytes)
+    const buf4 = Buffer.alloc(8);
+    buf4.writeBigUInt64BE(BigInt(amountE8), 0);
+    const toSign = Buffer.concat([buf1, buf2, buf3, buf4]);
+
+    // Sign the message
+    const messageHash = sha256(toSign);
+    const signature = await sign(messageHash, txPrivateKey); // Returns [signature, recovery]
+    const signatureWithoutRecid = Buffer.from(signature[0]);
+    // Normalize signature to ensure low-S form
+    const signatureWithoutRecidNormalized = signatureWithoutRecid; // @noble/secp256k1 already normalizes
+    const recid = signature[1];
+    const recidBuffer = Buffer.alloc(1);
+    recidBuffer.writeUInt8(recid);
+    const signature65 = Buffer.concat([signatureWithoutRecidNormalized, recidBuffer]);
+
+    // Prepare transaction data
+    const tx = {
+      pinHeight,
+      nonceId,
+      toAddr,
+      amountE8,
+      feeE8: roundedFeeE8,
+      signature65: signature65.toString('hex'),
+    };
+    console.log('Sending transaction:', tx);
+
+    // Send transaction to server
+    const response = await fetch(`${API_URL}/send`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(tx),
+    });
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Failed to send transaction: ${response.status} - ${text}`);
     }
-    if (nonceId === null) {
-      setError('Nonce not available');
-      return;
+    const data = await response.json();
+    console.log('Transaction response:', data);
+    setSendResult(data);
+    if (wallet?.address) {
+      fetchBalanceAndNonce(wallet.address);
     }
-    try {
-      const message = JSON.stringify({ toAddr, amountE8, feeE8, nonceId });
-      const messageHash = sha256(message);
-      const signature = await sign(messageHash, txPrivateKey, { canonical: true });
-      const tx = {
-        toAddr,
-        amountE8,
-        feeE8,
-        nonceId,
-        signature: Buffer.from(signature).toString('hex'),
-        publicKey: wallet.publicKey,
-        address: wallet.address,
-      };
-      console.log('Sending transaction:', tx);
-      const response = await fetch(`${API_URL}/send`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(tx),
-      });
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`Failed to send transaction: ${response.status} - ${text}`);
-      }
-      const data = await response.json();
-      console.log('Transaction response:', data);
-      setSendResult(data);
-      if (wallet?.address) {
-        fetchBalanceAndNonce(wallet.address);
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to send transaction');
-      console.error('Send transaction error:', err);
-    }
-  };
+  } catch (err) {
+    setError(err.message || 'Failed to send transaction');
+    console.error('Send transaction error:', err);
+  }
+};
 
   return (
     <div className="container">
@@ -541,7 +577,7 @@ const Wallet = () => {
         <button onClick={handleValidateAddress}>Validate Address</button>
         {validateResult && (
           <div className="result">
-            <p><strong>Valid:</strong> {validateResult.valid ? 'Yes' : 'No'}</p>
+            <p><strong>Valid:</strong> {validateResult.valid ? 'No' : 'Yes'}</p>
             {validateResult.message && <p><strong>Message:</strong> {validateResult.message}</p>}
           </div>
         )}
