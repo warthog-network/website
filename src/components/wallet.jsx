@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { generateMnemonic, mnemonicToSeed } from 'bip39';
-import { getPublicKey } from '@noble/secp256k1';
+import { getPublicKey, sign } from '@noble/secp256k1';
 import { ripemd160 } from '@noble/hashes/ripemd160';
 import { sha256 } from '@noble/hashes/sha256';
 import CryptoJS from 'crypto-js';
 import './Wallet.css';
 
-const API_URL = '/api/wallet';
+const API_URL = 'http://195.26.246.172:3001/api/wallet'; // Proxy to http://195.26.246.172:3001/api/wallet
 
 const Wallet = () => {
   const [createResult, setCreateResult] = useState(null);
@@ -61,10 +61,11 @@ const Wallet = () => {
     }
   };
 
-  const formatBalance = (balance) => {
+  const formatBalance = (balance, apiError) => {
+    if (apiError) return `Error: ${apiError}`;
     if (balance === null) return 'Loading...';
     if (balance === undefined) return 'Could not fetch balance';
-    const num = parseFloat(balance) / 100000000; // Convert E8 to WART
+    const num = parseFloat(balance) * 100000000; // Convert E8 to WART
     if (isNaN(num)) return 'Invalid balance';
     return `${num.toFixed(8)} WART`;
   };
@@ -87,6 +88,11 @@ const Wallet = () => {
       }
       const data = await response.json();
       console.log('Balance response data:', data);
+      if (data.error) {
+        setError(data.error);
+        setBalance(null);
+        return;
+      }
       const balanceNum = parseFloat(data.balance);
       if (isNaN(balanceNum)) throw new Error('Invalid balance');
       setBalance(balanceNum);
@@ -333,28 +339,37 @@ const Wallet = () => {
       return;
     }
     try {
+      const message = JSON.stringify({ toAddr, amountE8, feeE8, nonceId });
+      const messageHash = sha256(message);
+      const signature = await sign(messageHash, txPrivateKey, { canonical: true });
+      const tx = {
+        toAddr,
+        amountE8,
+        feeE8,
+        nonceId,
+        signature: Buffer.from(signature).toString('hex'),
+        publicKey: wallet.publicKey,
+        address: wallet.address,
+      };
+      console.log('Sending transaction:', tx);
       const response = await fetch(`${API_URL}/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          privateKey: txPrivateKey,
-          toAddr,
-          amountE8,
-          feeE8,
-          nonceId,
-        }),
+        body: JSON.stringify(tx),
       });
       if (!response.ok) {
         const text = await response.text();
-        throw new Error(`Failed to send transaction: ${response.status}`);
+        throw new Error(`Failed to send transaction: ${response.status} - ${text}`);
       }
       const data = await response.json();
+      console.log('Transaction response:', data);
       setSendResult(data);
       if (wallet?.address) {
         fetchBalanceAndNonce(wallet.address);
       }
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Failed to send transaction');
+      console.error('Send transaction error:', err);
     }
   };
 
@@ -390,7 +405,7 @@ const Wallet = () => {
         <section>
           <h2>Wallet</h2>
           <p className="wallet-address"><strong>Address:</strong> {wallet.address}</p>
-          <p><strong>Balance:</strong> {formatBalance(balance)}</p>
+          <p><strong>Balance:</strong> {formatBalance(balance, error)}</p>
           <button onClick={() => fetchBalanceAndNonce(wallet.address)}>Refresh Balance</button>
           <button onClick={clearWallet}>Clear Wallet</button>
           <p className="warning">Warning: Private key is encrypted in localStorage or file. Keep your password secure.</p>

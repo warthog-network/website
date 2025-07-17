@@ -25,3 +25,7 @@ pnpm-debug.log*
 
 # Local Netlify folder
 .netlify
+
+*.log
+warthog_wallet.txt
+dist/
