@@ -4,3 +4,9 @@
     X-Frame-Options = "SAMEORIGIN"
 
 
+[[redirects]]
+  from = "/api/proxy"
+  to = "/.netlify/functions/proxy"
+  status = 200
+  force = true
+  query = {nodePath = ":nodePath", nodeBase = ":nodeBase"}
