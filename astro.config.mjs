@@ -12,5 +12,5 @@ import netlify from '@astrojs/netlify';
 export default defineConfig({
   output: 'server',
   integrations: [react(), tailwind(), mdx()],
-  adapter: netlify()
+  adapter: netlify({edgeMiddleware: true,})
 });
