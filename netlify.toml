@@ -8,9 +8,11 @@
   command = "npm run build"
   publish = "dist"
 
+
+
 # General SSR redirect: Routes all requests to the Astro entry function
 [[redirects]]
-  from = "/*"
+  from = "/api/proxy"
   to = "/.netlify/functions/entry"
   status = 200
   force = true
