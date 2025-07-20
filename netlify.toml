@@ -8,10 +8,10 @@
   command = "npm run build"
   publish = "dist"
 
-# Add this to ensure /api/proxy routes to the Astro-generated function
+# General SSR redirect: Routes all requests to the Astro entry function
 [[redirects]]
-  from = "/api/proxy"
-  to = "/.netlify/functions/__api_proxy"
+  from = "/*"
+  to = "/.netlify/functions/entry"
   status = 200
   force = true
 
