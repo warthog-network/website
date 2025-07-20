@@ -5,8 +5,10 @@
     
 [build]
   command = "npm run build" # Adjust based on your Astro build command
-  functions = "netlify/functions"
+  # functions = "functions"  # Comment or remove this; adapter handles functions
   publish = "dist" # Adjust based on your Astro output directory
+
+# Keep your existing redirects for other /api/* paths
 [[redirects]]
   from = "/api/account/:account/balance"
   to = "/.netlify/functions/account_balance/:account"
