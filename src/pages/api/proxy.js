@@ -1,3 +1,4 @@
+// src/pages/api/proxy.js
 export const prerender = false;
 
 export const GET = async ({ request }) => {
@@ -5,6 +6,7 @@ export const GET = async ({ request }) => {
     const url = new URL(request.url);
     const nodePath = url.searchParams.get('nodePath');
     const nodeBase = url.searchParams.get('nodeBase') || 'https://node.wartscan.io';
+    console.log(`[GET] Proxying to: ${nodeBase}/${nodePath}`); // Debug log
     if (!nodePath) {
       return new Response(JSON.stringify({ error: 'Missing nodePath query parameter' }), { status: 400 });
     }
@@ -13,12 +15,13 @@ export const GET = async ({ request }) => {
       headers: { 'Content-Type': 'application/json' },
     });
     const data = await response.text();
+    console.log(`[GET] Response status: ${response.status}, data: ${data}`); // Debug log
     return new Response(data, {
       status: response.status,
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    console.error('Proxy GET error:', err);
+    console.error('[GET] Proxy error:', err);
     return new Response(JSON.stringify({ error: err.message }), { status: 500 });
   }
 };
@@ -27,7 +30,8 @@ export const POST = async ({ request }) => {
   try {
     const url = new URL(request.url);
     const nodePath = url.searchParams.get('nodePath');
-    const nodeBase = url.searchParams.get('nodeBase') || 'https://node.wartscan.io';
+    const nodeBase = url.searchParams.get('nodeBase') || 'https://node.wartscan.io'; 
+    console.log(`[POST] Proxying to: ${nodeBase}/${nodePath}`); // Debug log
     if (!nodePath) {
       return new Response(JSON.stringify({ error: 'Missing nodePath query parameter' }), { status: 400 });
     }
@@ -39,12 +43,13 @@ export const POST = async ({ request }) => {
       body: JSON.stringify(body),
     });
     const data = await response.text();
+    console.log(`[POST] Response status: ${response.status}, data: ${data}`); // Debug log
     return new Response(data, {
       status: response.status,
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    console.error('Proxy POST error:', err);
+    console.error('[POST] Proxy error:', err);
     return new Response(JSON.stringify({ error: err.message }), { status: 500 });
   }
 };

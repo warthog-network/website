@@ -1,14 +1,21 @@
+# netlify.toml
 [[headers]]
   for = "/*"
   [headers.values]
     X-Frame-Options = "SAMEORIGIN"
-    
-[build]
-  command = "npm run build" # Adjust based on your Astro build command
-  # functions = "functions"  # Comment or remove this; adapter handles functions
-  publish = "dist" # Adjust based on your Astro output directory
 
-# Keep your existing redirects for other /api/* paths
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Add this to ensure /api/proxy routes to the Astro-generated function
+[[redirects]]
+  from = "/api/proxy"
+  to = "/.netlify/functions/__api_proxy"
+  status = 200
+  force = true
+
+# Keep existing redirects
 [[redirects]]
   from = "/api/account/:account/balance"
   to = "/.netlify/functions/account_balance/:account"
