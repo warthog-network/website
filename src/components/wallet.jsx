@@ -92,7 +92,7 @@ const Wallet = () => {
       const balanceData = balanceResponse.data.data || balanceResponse.data;
       console.log('Balance response data:', balanceData);
 
-      const balanceInWart = balanceData.balance !== undefined ? (balanceData.balance / 1).toFixed(8) : '0';
+      const balanceInWart = balanceData.balance !== undefined ? (balanceData.balance / 100000000).toFixed(8) : '0';
       setBalance(balanceInWart);
 
       if (balanceData.nonceId !== undefined) {
@@ -237,7 +237,7 @@ const Wallet = () => {
   };
 
   const generateWallet = async (wordCount) => {
-    const strengthBytes = wordCount === '12' ? 16 : 32;
+    const strengthBytes = wordCount === 12 ? 16 : 32;
     const entropy = window.crypto.getRandomValues(new Uint8Array(strengthBytes));
     const mnemonicObj = ethers.Mnemonic.fromEntropy(ethers.hexlify(entropy));
     const mnemonic = mnemonicObj.phrase;
