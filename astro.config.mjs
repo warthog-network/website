@@ -13,7 +13,7 @@ export default defineConfig({
   output: 'server',
   integrations: [react(), tailwind(), mdx()],
   adapter: netlify({
-    functionPerRoute: true  // Already set; keeps separate Functions
+    functionPerRoute: false  // Already set; keeps separate Functions
   }),
   vite: {
     // Removed server.proxy entirely – no need for dev proxying
