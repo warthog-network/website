@@ -12,8 +12,10 @@ import netlify from '@astrojs/netlify';
 export default defineConfig({
   output: 'server',
   integrations: [react(), tailwind(), mdx()],
-  adapter: netlify(),
-  vite: {  // Add this vite configuration object
+  adapter: netlify({
+    functionPerRoute: true  // Enable this to generate separate functions per route
+  }),
+  vite: {  
     resolve: {
       alias: {
         crypto: 'crypto-browserify',
@@ -22,7 +24,7 @@ export default defineConfig({
       },
     },
     ssr: {
-      noExternal: ['crypto-browserify'],  // Ensure the polyfill is bundled in SSR
+      noExternal: ['crypto-browserify'],  
     },
   },
 });

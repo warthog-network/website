@@ -8,7 +8,28 @@
   command = "npm run build"
   publish = "dist"
 
-# Keep existing specific redirects (if these point to custom functions outside Astro SSR)
+# Redirect for home page (root /)
+[[redirects]]
+  from = "/"
+  to = "/.netlify/functions/index"  # Matches generated index function
+  status = 200
+  force = true
+
+# Redirect for wallet page (/webwallet)
+[[redirects]]
+  from = "/webwallet"
+  to = "/.netlify/functions/webwallet"  # Matches generated webwallet function
+  status = 200
+  force = true
+
+# Redirect for API proxy
+[[redirects]]
+  from = "/api/proxy"
+  to = "/.netlify/functions/api__proxy"  # Matches generated api__proxy function
+  status = 200
+  force = true
+
+# Keep existing redirects for custom functions
 [[redirects]]
   from = "/api/account/:account/balance"
   to = "/.netlify/functions/account_balance/:account"
@@ -39,9 +60,9 @@
   status = 200
   force = true
 
-# Specific redirect for API proxy (adjust name if build shows different, e.g., api_proxy)
-[[redirects]]
-  from = "/api/proxy"
-  to = "/.netlify/functions/api__proxy"
-  status = 200
-  force = true
+# Optional catch-all (only if other routes 404; test without first)
+# [[redirects]]
+#   from = "/*"
+#   to = "/.netlify/functions/entry"
+#   status = 200
+#   force = true
