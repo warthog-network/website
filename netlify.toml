@@ -60,9 +60,3 @@
   status = 200
   force = true
 
-# Optional catch-all (only if other routes 404; test without first)
-# [[redirects]]
-#   from = "/*"
-#   to = "/.netlify/functions/entry"
-#   status = 200
-#   force = true
