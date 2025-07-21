@@ -8,19 +8,8 @@
   command = "npm run build"
   publish = "dist"
 
-# Redirect for home page (root /)
-[[redirects]]
-  from = "/"
-  to = "/.netlify/functions/index"  # Matches generated index function
-  status = 200
-  force = true
 
-# Redirect for wallet page (/webwallet)
-[[redirects]]
-  from = "/webwallet"
-  to = "/.netlify/functions/webwallet"  # Matches generated webwallet function
-  status = 200
-  force = true
+
 
 # Redirect for API proxy
 [[redirects]]
