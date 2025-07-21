@@ -39,9 +39,9 @@
   status = 200
   force = true
 
-# Catch-all SSR redirect: Routes all requests (including /api/proxy and pages) to the Astro entry function
+# Specific redirect for API proxy (adjust name if build shows different, e.g., api_proxy)
 [[redirects]]
-  from = "/*"
-  to = "/.netlify/functions/entry"
+  from = "/api/proxy"
+  to = "/.netlify/functions/api__proxy"
   status = 200
   force = true
