@@ -7,7 +7,13 @@
 [build]
   command = "npm run build"
   publish = "dist"
-
+  environment = { NODE_VERSION = "24.3.0" }
+  
+[[redirects]]
+  from = "/api/proxy/*"  # Catches query params and paths
+  to = "/.netlify/functions/api__proxy/:splat"
+  status = 200
+  force = true
 
 # Keep existing redirects for custom functions
 [[redirects]]
