@@ -1,12 +1,17 @@
+# netlify.toml
 [[headers]]
   for = "/*"
   [headers.values]
     X-Frame-Options = "SAMEORIGIN"
-    
+
 [build]
-  command = "npm run build" # Adjust based on your Astro build command
-  functions = "functions"
-  publish = "dist" # Adjust based on your Astro output directory
+  command = "npm run build"
+  publish = "dist"
+  environment = { NODE_VERSION = "24.3.0" }
+
+
+
+# Keep existing redirects for custom functions
 [[redirects]]
   from = "/api/account/:account/balance"
   to = "/.netlify/functions/account_balance/:account"
@@ -36,3 +41,9 @@
   to = "/.netlify/functions/encode_fee/:fee"
   status = 200
   force = true
+
+# Optional: Functions config (e.g., increase timeout)
+[functions]
+  node_bundler = "esbuild"
+  [functions."api__proxy"]
+    timeout = 15  # Seconds, adjust if needed for slow proxies
