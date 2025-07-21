@@ -263,7 +263,7 @@ const Wallet = () => {
       if (words.length !== expectedWordCount) {
         throw new Error(`Invalid mnemonic: must have exactly ${expectedWordCount} words`);
       }
-      const hdWallet = ethers.HDNodeWallet.fromPhrase(mMnemonic, '', "m/44'/2070'/0'/0/0");
+      const hdWallet = ethers.HDNodeWallet.fromPhrase(mnemonic, '', "m/44'/2070'/0'/0/0");
       const publicKey = hdWallet.publicKey.slice(2);
       const sha = ethers.sha256('0x' + publicKey).slice(2);
       const ripemd = ethers.ripemd160('0x' + sha).slice(2);
@@ -448,6 +448,10 @@ const Wallet = () => {
       const data = response.data;
       console.log('Send transaction response data:', data);
       setSendResult(data);
+      // Clear input fields on success
+      setToAddr('');
+      setAmount('');
+      setFee('');
       if (wallet?.address) {
         fetchBalanceAndNonce(wallet.address);
       }
