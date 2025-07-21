@@ -10,7 +10,7 @@ import netlify from '@astrojs/netlify';
 
 // https://astro.build/config
 export default defineConfig({
-  output: 'server',
+  output: 'hybrid',
   integrations: [react(), tailwind(), mdx()],
   adapter: netlify(),
   vite: {  // Add this vite configuration object
