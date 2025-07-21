@@ -3,9 +3,11 @@ import react from '@vitejs/plugin-react';
 import { Buffer } from 'buffer';
 
 export default defineConfig({
+  
   plugins: [react()],
   define: {
     global: 'globalThis',
     'global.Buffer': Buffer,
   },
+  
 });

@@ -13,4 +13,16 @@ export default defineConfig({
   output: 'server',
   integrations: [react(), tailwind(), mdx()],
   adapter: netlify(),
+  vite: {  // Add this vite configuration object
+    resolve: {
+      alias: {
+        crypto: 'crypto-browserify',
+        stream: 'stream-browserify',
+        buffer: 'buffer',
+      },
+    },
+    ssr: {
+      noExternal: ['crypto-browserify'],  // Ensure the polyfill is bundled in SSR
+    },
+  },
 });
