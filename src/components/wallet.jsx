@@ -237,7 +237,7 @@ const Wallet = () => {
   };
 
   const generateWallet = async (wordCount) => {
-    const strengthBytes = wordCount === '12' ? 16 : 32;
+    const strengthBytes = wordCount === 12 ? 16 : 32;
     const entropy = window.crypto.getRandomValues(new Uint8Array(strengthBytes));
     const mnemonicObj = ethers.Mnemonic.fromEntropy(ethers.hexlify(entropy));
     const mnemonic = mnemonicObj.phrase;
