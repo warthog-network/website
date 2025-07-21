@@ -16,6 +16,17 @@ export default defineConfig({
     functionPerRoute: true  // Enable this to generate separate functions per route
   }),
   vite: {  
+    vite: {
+    server: {
+      proxy: {
+        '/api/proxy': {
+          target: 'https://warthognode.duckdns.org:3000/',
+          changeOrigin: true,
+          secure: false,
+        },
+      },
+    },
+  },
     resolve: {
       alias: {
         crypto: 'crypto-browserify',
