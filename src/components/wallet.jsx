@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import CryptoJS from 'crypto-js';
 import axios from 'axios';
-import * as bip39 from 'bip39';
 import { ethers } from 'ethers';
 import './Wallet.css';
 
@@ -39,7 +38,7 @@ const Wallet = () => {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [isWalletProcessed, setIsWalletProcessed] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [selectedNode, setSelectedNode] = useState(defaultNodeList[3]); // Default to mainnet[](https://node.wartscan.io)
+  const [selectedNode, setSelectedNode] = useState(defaultNodeList[4]); // Default to https://node.wartscan.io
 
   useEffect(() => {
     const encryptedWallet = localStorage.getItem('warthogWallet');
@@ -74,31 +73,26 @@ const Wallet = () => {
 
     try {
       const nodeBaseParam = `nodeBase=${encodeURIComponent(selectedNode)}`;
-      // Step 1: Fetch chain head to verify chain state
       console.log('Sending chain head request to:', `${API_URL}?nodePath=chain/head&${nodeBaseParam}`);
       const chainHeadResponse = await axios.get(`${API_URL}?nodePath=chain/head&${nodeBaseParam}`, {
         headers: { 'Content-Type': 'application/json' },
       });
       console.log('Chain head response status:', chainHeadResponse.status);
-
       const chainHeadData = chainHeadResponse.data.data || chainHeadResponse.data;
       console.log('Chain head response data:', chainHeadData);
 
       setPinHeight(chainHeadData.pinHeight);
       setPinHash(chainHeadData.pinHash);
 
-      // Step 2: Fetch balance and nonce
       console.log('Sending balance request to:', `${API_URL}?nodePath=account/${address}/balance&${nodeBaseParam}`);
       const balanceResponse = await axios.get(`${API_URL}?nodePath=account/${address}/balance&${nodeBaseParam}`, {
         headers: { 'Content-Type': 'application/json' },
       });
       console.log('Balance response status:', balanceResponse.status);
-
       const balanceData = balanceResponse.data.data || balanceResponse.data;
       console.log('Balance response data:', balanceData);
 
-      // Convert balance to WART (assuming balance is in E8 units)
-      const balanceInWart = balanceData.balance !== undefined ? (balanceData.balance / 1).toFixed(8) : '0';
+      const balanceInWart = balanceData.balance !== undefined ? (balanceData.balance / 100000000).toFixed(8) : '0';
       setBalance(balanceInWart);
 
       if (balanceData.nonceId !== undefined) {
@@ -111,7 +105,6 @@ const Wallet = () => {
         setNonceId(0);
       }
 
-      // Log chain head data for debugging
       console.log('Chain head data:', chainHeadData);
     } catch (err) {
       const errorMessage =
@@ -243,9 +236,11 @@ const Wallet = () => {
     setIsLoggedIn(false);
   };
 
-  const generateWallet = (wordCount) => {
-    const strength = wordCount === 12 ? 128 : 256;
-    const mnemonic = bip39.generateMnemonic(strength);
+  const generateWallet = async (wordCount) => {
+    const strengthBytes = wordCount === '12' ? 16 : 32;
+    const entropy = window.crypto.getRandomValues(new Uint8Array(strengthBytes));
+    const mnemonicObj = ethers.Mnemonic.fromEntropy(ethers.hexlify(entropy));
+    const mnemonic = mnemonicObj.phrase;
     const hdWallet = ethers.HDNodeWallet.fromPhrase(mnemonic, '', "m/44'/2070'/0'/0/0");
     const publicKey = hdWallet.publicKey.slice(2);
     const sha = ethers.sha256('0x' + publicKey).slice(2);
@@ -262,25 +257,31 @@ const Wallet = () => {
   };
 
   const deriveWallet = (mnemonic, wordCount) => {
-    if (!bip39.validateMnemonic(mnemonic)) {
+    try {
+      const words = mnemonic.trim().split(/\s+/);
+      const expectedWordCount = Number(wordCount);
+      if (words.length !== expectedWordCount) {
+        throw new Error(`Invalid mnemonic: must have exactly ${expectedWordCount} words`);
+      }
+      const hdWallet = ethers.HDNodeWallet.fromPhrase(mMnemonic, '', "m/44'/2070'/0'/0/0");
+      const publicKey = hdWallet.publicKey.slice(2);
+      const sha = ethers.sha256('0x' + publicKey).slice(2);
+      const ripemd = ethers.ripemd160('0x' + sha).slice(2);
+      const checksum = ethers.sha256('0x' + ripemd).slice(2, 10);
+      const address = ripemd + checksum;
+      return {
+        mnemonic,
+        wordCount,
+        privateKey: hdWallet.privateKey.slice(2),
+        publicKey,
+        address,
+      };
+    } catch (err) {
       throw new Error('Invalid mnemonic');
     }
-    const hdWallet = ethers.HDNodeWallet.fromPhrase(mnemonic, '', "m/44'/2070'/0'/0/0");
-    const publicKey = hdWallet.publicKey.slice(2);
-    const sha = ethers.sha256('0x' + publicKey).slice(2);
-    const ripemd = ethers.ripemd160('0x' + sha).slice(2);
-    const checksum = ethers.sha256('0x' + ripemd).slice(2, 10);
-    const address = ripemd + checksum;
-    return {
-      mnemonic,
-      wordCount,
-      privateKey: hdWallet.privateKey.slice(2),
-      publicKey,
-      address,
-    };
   };
 
-  const handleWalletAction = () => {
+  const handleWalletAction = async () => {
     setError(null);
     setCreateResult(null);
     setDeriveResult(null);
@@ -313,7 +314,7 @@ const Wallet = () => {
     try {
       let data;
       if (walletAction === 'create') {
-        data = generateWallet(Number(wordCount));
+        data = await generateWallet(Number(wordCount));
         setCreateResult(data);
       } else {
         data = deriveWallet(mnemonic, Number(wordCount));
@@ -395,7 +396,6 @@ const Wallet = () => {
       return;
     }
     try {
-      // Construct message bytes
       const pinHashBytes = ethers.getBytes('0x' + pinHash);
       const heightBytes = new Uint8Array(4);
       new DataView(heightBytes.buffer).setUint32(0, pinHeight, false);
