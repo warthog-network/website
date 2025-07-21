@@ -8,16 +8,7 @@
   command = "npm run build"
   publish = "dist"
 
-
-
-# General SSR redirect: Routes all requests to the Astro entry function
-[[redirects]]
-  from = "/api/proxy/*"
-  to = "/.netlify/functions/entry"
-  status = 200
-  force = true
-
-# Keep existing redirects
+# Keep existing specific redirects (if these point to custom functions outside Astro SSR)
 [[redirects]]
   from = "/api/account/:account/balance"
   to = "/.netlify/functions/account_balance/:account"
@@ -45,5 +36,12 @@
 [[redirects]]
   from = "/api/tools/encode16bit/from_string/:fee"
   to = "/.netlify/functions/encode_fee/:fee"
+  status = 200
+  force = true
+
+# Catch-all SSR redirect: Routes all requests (including /api/proxy and pages) to the Astro entry function
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/entry"
   status = 200
   force = true
