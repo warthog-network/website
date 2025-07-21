@@ -9,7 +9,7 @@
     "preview": "astro preview",
     "astro": "astro"
   },
-   "proxy": "https://warthognode.duckdns.org:3000/",
+   "proxy": "https://warthognode.duckdns.org/",
   "dependencies": {
     "@astrojs/mdx": "^4.0.5",
     "@astrojs/netlify": "^6.5.1",

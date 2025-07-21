@@ -20,7 +20,7 @@ export default defineConfig({
     server: {
       proxy: {
         '/api/proxy': {
-          target: 'https://warthognode.duckdns.org:3000/',
+          target: 'https://warthognode.duckdns.org',
           changeOrigin: true,
           secure: false,
         },
