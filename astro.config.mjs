@@ -1,31 +1,37 @@
 import { defineConfig } from 'astro/config';
-
 import react from '@astrojs/react';
-
 import tailwind from '@astrojs/tailwind';
-
 import mdx from '@astrojs/mdx';
-
 import netlify from '@astrojs/netlify';
 
-// https://astro.build/config
 export default defineConfig({
   output: 'server',
   integrations: [react(), tailwind(), mdx()],
   adapter: netlify({
-    functionPerRoute: false  // Already set; keeps separate Functions
+    functionPerRoute: false,
+    cacheOnDemandPages: true,
   }),
   vite: {
-    // Removed server.proxy entirely – no need for dev proxying
     resolve: {
       alias: {
         crypto: 'crypto-browserify',
         stream: 'stream-browserify',
-        buffer: 'buffer',
       },
     },
     ssr: {
-      noExternal: ['crypto-browserify'],  
+      noExternal: ['crypto-browserify', 'stream-browserify'],
+    },
+    optimizeDeps: {
+      esbuildOptions: {
+        define: {
+          global: 'globalThis',
+        },
+      },
+    },
+    build: {
+      commonjsOptions: {
+        transformMixedEsModules: true,
+      },
     },
   },
 });
