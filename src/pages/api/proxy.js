@@ -1,4 +1,8 @@
 // src/pages/api/proxy.js
+// Update: Hardcode or env-var the prod nodeBase for safety.
+// Use process.env.NODE_BASE if set (add to Netlify env vars: NODE_BASE=https://warthognode.duckdns.org),
+// fallback to public node for dev.
+
 import https from 'https';  // For custom agent
 
 export const prerender = false;
@@ -11,7 +15,7 @@ export const GET = async ({ request }) => {
   try {
     const url = new URL(request.url);
     const nodePath = url.searchParams.get('nodePath');
-    const nodeBase = url.searchParams.get('nodeBase') || 'https://node.wartscan.io';
+    const nodeBase = url.searchParams.get('nodeBase') || process.env.NODE_BASE || 'https://node.wartscan.io';
     console.log(`[GET] Proxying to: ${nodeBase}/${nodePath}`); // Debug log
     if (!nodePath) {
       return new Response(JSON.stringify({ error: 'Missing nodePath query parameter' }), { status: 400 });
@@ -42,7 +46,7 @@ export const POST = async ({ request }) => {
   try {
     const url = new URL(request.url);
     const nodePath = url.searchParams.get('nodePath');
-    const nodeBase = url.searchParams.get('nodeBase') || 'https://node.wartscan.io'; 
+    const nodeBase = url.searchParams.get('nodeBase') || process.env.NODE_BASE || 'https://node.wartscan.io'; 
     console.log(`[POST] Proxying to: ${nodeBase}/${nodePath}`); // Debug log
     if (!nodePath) {
       return new Response(JSON.stringify({ error: 'Missing nodePath query parameter' }), { status: 400 });
