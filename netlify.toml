@@ -8,9 +8,6 @@
   command = "npm run build"
   publish = "dist"
 
-
-
-
 # Redirect for API proxy
 [[redirects]]
   from = "/api/proxy"
@@ -49,3 +46,8 @@
   status = 200
   force = true
 
+# Optional: Functions config (e.g., increase timeout)
+[functions]
+  node_bundler = "esbuild"
+  [functions."api__proxy"]
+    timeout = 15  # Seconds, adjust if needed for slow proxies

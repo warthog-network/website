@@ -13,20 +13,10 @@ export default defineConfig({
   output: 'server',
   integrations: [react(), tailwind(), mdx()],
   adapter: netlify({
-    functionPerRoute: true  // Enable this to generate separate functions per route
+    functionPerRoute: true  // Already set; keeps separate Functions
   }),
-  vite: {  
-    vite: {
-    server: {
-      proxy: {
-        '/api/proxy': {
-          target: 'https://warthognode.duckdns.org',
-          changeOrigin: true,
-          secure: false,
-        },
-      },
-    },
-  },
+  vite: {
+    // Removed server.proxy entirely – no need for dev proxying
     resolve: {
       alias: {
         crypto: 'crypto-browserify',
