@@ -30,6 +30,7 @@ const Wallet = () => {
   const [amount, setAmount] = useState('');
   const [fee, setFee] = useState('');
   const [wordCount, setWordCount] = useState('12');
+  const [pathType, setPathType] = useState('hardened'); // New state for path type
   const [walletAction, setWalletAction] = useState('create');
   const [error, setError] = useState(null);
   const [password, setPassword] = useState('');
@@ -236,12 +237,13 @@ const Wallet = () => {
     setIsLoggedIn(false);
   };
 
-  const generateWallet = async (wordCount) => {
+  const generateWallet = async (wordCount, pathType) => {
     const strengthBytes = wordCount === 12 ? 16 : 32;
     const entropy = window.crypto.getRandomValues(new Uint8Array(strengthBytes));
     const mnemonicObj = ethers.Mnemonic.fromEntropy(ethers.hexlify(entropy));
     const mnemonic = mnemonicObj.phrase;
-    const hdWallet = ethers.HDNodeWallet.fromPhrase(mnemonic, '', "m/44'/2070'/0'/0/0");
+    const path = pathType === 'hardened' ? "m/44'/2070'/0'/0/0" : "m/44'/2070'/0/0/0";
+    const hdWallet = ethers.HDNodeWallet.fromPhrase(mnemonic, '', path);
     const publicKey = hdWallet.publicKey.slice(2);
     const sha = ethers.sha256('0x' + publicKey).slice(2);
     const ripemd = ethers.ripemd160('0x' + sha).slice(2);
@@ -250,20 +252,22 @@ const Wallet = () => {
     return {
       mnemonic,
       wordCount,
+      pathType, // Include pathType in result for display
       privateKey: hdWallet.privateKey.slice(2),
       publicKey,
       address,
     };
   };
 
-  const deriveWallet = (mnemonic, wordCount) => {
+  const deriveWallet = (mnemonic, wordCount, pathType) => {
     try {
       const words = mnemonic.trim().split(/\s+/);
       const expectedWordCount = Number(wordCount);
       if (words.length !== expectedWordCount) {
         throw new Error(`Invalid mnemonic: must have exactly ${expectedWordCount} words`);
       }
-      const hdWallet = ethers.HDNodeWallet.fromPhrase(mnemonic, '', "m/44'/2070'/0'/0/0");
+      const path = pathType === 'hardened' ? "m/44'/2070'/0'/0/0" : "m/44'/2070'/0/0/0";
+      const hdWallet = ethers.HDNodeWallet.fromPhrase(mnemonic, '', path);
       const publicKey = hdWallet.publicKey.slice(2);
       const sha = ethers.sha256('0x' + publicKey).slice(2);
       const ripemd = ethers.ripemd160('0x' + sha).slice(2);
@@ -272,6 +276,7 @@ const Wallet = () => {
       return {
         mnemonic,
         wordCount,
+        pathType, // Include pathType in result for display
         privateKey: hdWallet.privateKey.slice(2),
         publicKey,
         address,
@@ -314,10 +319,10 @@ const Wallet = () => {
     try {
       let data;
       if (walletAction === 'create') {
-        data = await generateWallet(Number(wordCount));
+        data = await generateWallet(Number(wordCount), pathType);
         setCreateResult(data);
       } else {
-        data = deriveWallet(mnemonic, Number(wordCount));
+        data = deriveWallet(mnemonic, Number(wordCount), pathType);
         setDeriveResult(data);
       }
       setShowPasswordPrompt(true);
@@ -609,6 +614,19 @@ const Wallet = () => {
               </select>
             </div>
           )}
+          {walletAction !== 'login' && wordCount === '12' && (
+            <div className="form-group">
+              <label>Derivation Path Type:</label>
+              <select
+                value={pathType}
+                onChange={(e) => setPathType(e.target.value)}
+                className="input"
+              >
+                <option value="hardened">Hardened (m/44'/2070'/0'/0/0)</option>
+                <option value="non-hardened">Non-Hardened (m/44'/2070'/0/0/0)</option>
+              </select>
+            </div>
+          )}
           <button onClick={handleWalletAction}>
             {walletAction === 'create'
               ? 'Create Wallet'
@@ -623,6 +641,9 @@ const Wallet = () => {
               </p>
               <p>
                 <strong>Word Count:</strong> {(createResult || deriveResult).wordCount}
+              </p>
+              <p>
+                <strong>Path Type:</strong> {(createResult || deriveResult).pathType}
               </p>
               <p>
                 <strong>Private Key:</strong> {(createResult || deriveResult).privateKey}
