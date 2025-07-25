@@ -15,8 +15,9 @@ const defaultNodeList = [
 ];
 
 const Wallet = () => {
-  const [createResult, setCreateResult] = useState(null);
-  const [deriveResult, setDeriveResult] = useState(null);
+  const [walletData, setWalletData] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [consentToClose, setConsentToClose] = useState(false);
   const [validateResult, setValidateResult] = useState(null);
   const [sendResult, setSendResult] = useState(null);
   const [wallet, setWallet] = useState(null);
@@ -25,12 +26,13 @@ const Wallet = () => {
   const [pinHeight, setPinHeight] = useState(null);
   const [pinHash, setPinHash] = useState(null);
   const [mnemonic, setMnemonic] = useState('');
+  const [privateKeyInput, setPrivateKeyInput] = useState('');
   const [address, setAddress] = useState('');
   const [toAddr, setToAddr] = useState('');
   const [amount, setAmount] = useState('');
   const [fee, setFee] = useState('');
   const [wordCount, setWordCount] = useState('12');
-  const [pathType, setPathType] = useState('hardened'); // New state for path type
+  const [pathType, setPathType] = useState('hardened');
   const [walletAction, setWalletAction] = useState('create');
   const [error, setError] = useState(null);
   const [password, setPassword] = useState('');
@@ -39,7 +41,8 @@ const Wallet = () => {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [isWalletProcessed, setIsWalletProcessed] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [selectedNode, setSelectedNode] = useState(defaultNodeList[4]); // Default to https://node.wartscan.io
+  const [selectedNode, setSelectedNode] = useState(defaultNodeList[4]);
+  const [showDownloadPrompt, setShowDownloadPrompt] = useState(false);
 
   useEffect(() => {
     const encryptedWallet = localStorage.getItem('warthogWallet');
@@ -54,6 +57,12 @@ const Wallet = () => {
       fetchBalanceAndNonce(wallet.address);
     }
   }, [wallet, selectedNode]);
+
+  useEffect(() => {
+    if (showModal) {
+      window.alert("If you haven't backed up the information elsewhere, do not close the next window without saving or downloading your private key.");
+    }
+  }, [showModal]);
 
   const wartToE8 = (wart) => {
     try {
@@ -147,8 +156,6 @@ const Wallet = () => {
       setShowPasswordPrompt(false);
       setError(null);
       setIsWalletProcessed(true);
-      setCreateResult(null);
-      setDeriveResult(null);
       setPassword('');
       setSaveWalletConsent(false);
       setIsLoggedIn(true);
@@ -173,8 +180,6 @@ const Wallet = () => {
     a.click();
     URL.revokeObjectURL(url);
     setIsWalletProcessed(true);
-    setCreateResult(null);
-    setDeriveResult(null);
     setPassword('');
     setSaveWalletConsent(false);
   };
@@ -212,8 +217,6 @@ const Wallet = () => {
       setUploadedFile(null);
       setError(null);
       setIsWalletProcessed(false);
-      setCreateResult(null);
-      setDeriveResult(null);
       setIsLoggedIn(true);
     } catch (err) {
       setError(err.message);
@@ -232,8 +235,6 @@ const Wallet = () => {
     setSaveWalletConsent(false);
     setUploadedFile(null);
     setIsWalletProcessed(false);
-    setCreateResult(null);
-    setDeriveResult(null);
     setIsLoggedIn(false);
   };
 
@@ -252,7 +253,7 @@ const Wallet = () => {
     return {
       mnemonic,
       wordCount,
-      pathType, // Include pathType in result for display
+      pathType,
       privateKey: hdWallet.privateKey.slice(2),
       publicKey,
       address,
@@ -276,7 +277,7 @@ const Wallet = () => {
       return {
         mnemonic,
         wordCount,
-        pathType, // Include pathType in result for display
+        pathType,
         privateKey: hdWallet.privateKey.slice(2),
         publicKey,
         address,
@@ -286,10 +287,26 @@ const Wallet = () => {
     }
   };
 
+  const importFromPrivateKey = (privKey) => {
+    try {
+      const signer = new ethers.Wallet('0x' + privKey);
+      const publicKey = signer.publicKey.slice(2);
+      const sha = ethers.sha256('0x' + publicKey).slice(2);
+      const ripemd = ethers.ripemd160('0x' + sha).slice(2);
+      const checksum = ethers.sha256('0x' + ripemd).slice(2, 10);
+      const address = ripemd + checksum;
+      return {
+        privateKey: privKey,
+        publicKey,
+        address,
+      };
+    } catch (err) {
+      throw new Error('Invalid private key');
+    }
+  };
+
   const handleWalletAction = async () => {
     setError(null);
-    setCreateResult(null);
-    setDeriveResult(null);
     setIsWalletProcessed(false);
 
     if (walletAction === 'login' && !uploadedFile) {
@@ -307,6 +324,11 @@ const Wallet = () => {
       return;
     }
 
+    if (walletAction === 'import' && !privateKeyInput) {
+      setError('Please enter a private key');
+      return;
+    }
+
     if (walletAction === 'derive') {
       const words = mnemonic.trim().split(/\s+/);
       const expectedWordCount = Number(wordCount);
@@ -320,12 +342,14 @@ const Wallet = () => {
       let data;
       if (walletAction === 'create') {
         data = await generateWallet(Number(wordCount), pathType);
-        setCreateResult(data);
-      } else {
+      } else if (walletAction === 'derive') {
         data = deriveWallet(mnemonic, Number(wordCount), pathType);
-        setDeriveResult(data);
+      } else if (walletAction === 'import') {
+        data = importFromPrivateKey(privateKeyInput);
       }
-      setShowPasswordPrompt(true);
+      setWalletData(data);
+      setShowModal(true);
+      setConsentToClose(false);
     } catch (err) {
       const errorMessage = err.message || `Failed to ${walletAction} wallet`;
       setError(errorMessage);
@@ -474,120 +498,32 @@ const Wallet = () => {
     <div className="container">
       <h1>Warthog Wallet</h1>
 
-      <section>
-        <h2>Node Selection</h2>
-        <div className="form-group">
-          <label>Select Node:</label>
-          <select
-            value={selectedNode}
-            onChange={(e) => setSelectedNode(e.target.value)}
-            className="input"
-          >
-            {defaultNodeList.map((node, index) => (
-              <option key={index} value={node}>
-                {node}
-              </option>
-            ))}
-          </select>
-        </div>
-      </section>
-
-      {showPasswordPrompt && !wallet && (
-        <section>
-          <h2>Unlock Wallet</h2>
-          <div className="form-group">
-            <label>Upload Wallet File (optional):</label>
-            <input type="file" accept=".txt" onChange={handleFileUpload} className="input" />
-          </div>
-          <div className="form-group">
-            <label>Password:</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter password to unlock wallet"
-              className="input"
-            />
-          </div>
-          <button onClick={loadWallet}>Unlock Wallet</button>
-          <button
-            onClick={() => {
-              setShowPasswordPrompt(false);
-              setPassword('');
-              setUploadedFile(null);
-            }}
-          >
-            Cancel
-          </button>
-        </section>
-      )}
-
-      {wallet && (
-        <section>
-          <h2>Wallet</h2>
-          <p className="wallet-address">
-            <strong>Address:</strong> {wallet.address}
-          </p>
-          <p>
-            <strong>Balance:</strong>{' '}
-            {balance !== null ? `${balance} WART` : 'Loading...'}
-          </p>
-          <button onClick={() => fetchBalanceAndNonce(wallet.address)}>
-            Refresh Balance
-          </button>
-          <button onClick={clearWallet}>Clear Wallet</button>
-          <p className="warning">
-            Warning: Private key is encrypted in localStorage. Keep your password secure.
-          </p>
-        </section>
-      )}
-
-      {!isLoggedIn && (
-        <section>
-          <h2>Wallet Management</h2>
-          <div className="form-group">
-            <label>Action:</label>
-            <select
-              value={walletAction}
-              onChange={(e) => {
-                setWalletAction(e.target.value);
-                setError(null);
-                setCreateResult(null);
-                setDeriveResult(null);
-                setMnemonic('');
-                setUploadedFile(null);
-                setPassword('');
-                setIsWalletProcessed(false);
-              }}
-              className="input"
-            >
-              <option value="create">Create New Wallet</option>
-              <option value="derive">Derive Wallet from Seed Phrase</option>
-              <option value="login">Login with Wallet File</option>
-            </select>
-          </div>
-          {walletAction === 'derive' && (
+      {!showModal && (
+        <>
+          <section>
+            <h2>Node Selection</h2>
             <div className="form-group">
-              <label>Seed Phrase:</label>
-              <input
-                type="text"
-                value={mnemonic}
-                onChange={(e) => setMnemonic(e.target.value)}
-                placeholder="Enter 12 or 24-word seed phrase"
+              <label>Select Node:</label>
+              <select
+                value={selectedNode}
+                onChange={(e) => setSelectedNode(e.target.value)}
                 className="input"
-              />
+             >
+                {defaultNodeList.map((node, index) => (
+                  <option key={index} value={node}>
+                    {node}
+                  </option>
+                ))}
+              </select>
             </div>
-          )}
-          {walletAction === 'login' && (
-            <>
+          </section>
+
+          {showPasswordPrompt && !wallet && (
+            <section>
+              <h2>Unlock Wallet</h2>
               <div className="form-group">
-                <label>Upload Wallet File (warthog_wallet.txt):</label>
-                <input
-                  type="file"
-                  accept=".txt"
-                  onChange={handleFileUpload}
-                  className="input"
-                />
+                <label>Upload Wallet File (optional):</label>
+                <input type="file" accept=".txt" onChange={handleFileUpload} className="input" />
               </div>
               <div className="form-group">
                 <label>Password:</label>
@@ -595,166 +531,379 @@ const Wallet = () => {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter password to decrypt wallet"
+                  placeholder="Enter password to unlock wallet"
                   className="input"
                 />
               </div>
-            </>
-          )}
-          {walletAction !== 'login' && (
-            <div className="form-group">
-              <label>Word Count:</label>
-              <select
-                value={wordCount}
-                onChange={(e) => setWordCount(e.target.value)}
-                className="input"
+              <button onClick={loadWallet}>Unlock Wallet</button>
+              <button
+                onClick={() => {
+                  setShowPasswordPrompt(false);
+                  setPassword('');
+                  setUploadedFile(null);
+                }}
               >
-                <option value="12">12 Words</option>
-                <option value="24">24 Words</option>
-              </select>
-            </div>
+                Cancel
+              </button>
+            </section>
           )}
-          {walletAction !== 'login' && wordCount === '12' && (
-            <div className="form-group">
-              <label>Derivation Path Type:</label>
-              <select
-                value={pathType}
-                onChange={(e) => setPathType(e.target.value)}
-                className="input"
-              >
-                <option value="hardened">Hardened (m/44'/2070'/0'/0/0)</option>
-                <option value="non-hardened">Non-Hardened (m/44'/2070'/0/0/0)</option>
-              </select>
-            </div>
-          )}
-          <button onClick={handleWalletAction}>
-            {walletAction === 'create'
-              ? 'Create Wallet'
-              : walletAction === 'derive'
-              ? 'Derive Wallet'
-              : 'Login'}
-          </button>
-          {(createResult || deriveResult) && !isWalletProcessed && (
-            <div className="result">
-              <p>
-                <strong>Seed Phrase:</strong> {(createResult || deriveResult).mnemonic}
-              </p>
-              <p>
-                <strong>Word Count:</strong> {(createResult || deriveResult).wordCount}
-              </p>
-              <p>
-                <strong>Path Type:</strong> {(createResult || deriveResult).pathType}
-              </p>
-              <p>
-                <strong>Private Key:</strong> {(createResult || deriveResult).privateKey}
-              </p>
-              <p>
-                <strong>Public Key:</strong> {(createResult || deriveResult).publicKey}
-              </p>
-              <p>
-                <strong>Address:</strong> {(createResult || deriveResult).address}
-              </p>
-              <div className="form-group">
-                <label>Password to Encrypt Wallet:</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter password to encrypt wallet"
-                  className="input"
-                />
-              </div>
-              <div className="form-group">
-                <label>
+
+          {wallet && (
+  <section>
+    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+      <h2>Wallet</h2>
+      <button
+        className="download-wallet-btn"
+        onClick={() => setShowDownloadPrompt(true)}
+      >
+        Download Wallet File
+      </button>
+    </div>
+    <p className="wallet-address">
+      <strong>Address:</strong> {wallet.address}
+    </p>
+    <p>
+      <strong>Balance:</strong>{' '}
+      {balance !== null ? `${balance} WART` : 'Loading...'}
+    </p>
+    <button onClick={() => fetchBalanceAndNonce(wallet.address)}>
+      Refresh Balance
+    </button>
+    <button onClick={clearWallet}>Clear Wallet</button>
+    <p className="warning">
+      Warning: Private key is encrypted in localStorage. Keep your password secure.
+    </p>
+  </section>
+)}
+
+          {showDownloadPrompt && (
+            <div className="modal-overlay" style={{background: '#000'}}>
+              <div className="modal-content" style={{maxHeight: 'none'}}>
+                <h2>Download Wallet File</h2>
+                <div className="form-group">
+                  <label>Password to Encrypt Wallet:</label>
                   <input
-                    type="checkbox"
-                    checked={saveWalletConsent}
-                    onChange={(e) => setSaveWalletConsent(e.target.checked)}
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter password to encrypt wallet"
+                    className="input"
                   />
-                  Save wallet to localStorage (encrypted)
-                </label>
+                </div>
+                <button onClick={() => { downloadWallet(wallet); setShowDownloadPrompt(false); }}>
+                  Download
+                </button>
+                <button onClick={() => { setShowDownloadPrompt(false); setPassword(''); }}>
+                  Cancel
+                </button>
               </div>
-              <button onClick={() => saveWallet(createResult || deriveResult)}>
-                Save Wallet
-              </button>
-              <button onClick={() => downloadWallet(createResult || deriveResult)}>
-                Download Wallet File
-              </button>
-              <p className="warning">
-                Warning: Store the seed phrase and password securely. Do not share them.
-              </p>
             </div>
           )}
-        </section>
+
+          {!isLoggedIn && (
+            <section>
+              <h2>Wallet Management</h2>
+              <div className="form-group">
+                <label>Action:</label>
+                <select
+                  value={walletAction}
+                  onChange={(e) => {
+                    setWalletAction(e.target.value);
+                    setError(null);
+                    setMnemonic('');
+                    setPrivateKeyInput('');
+                    setUploadedFile(null);
+                    setPassword('');
+                    setIsWalletProcessed(false);
+                  }}
+                  className="input"
+                >
+                  <option value="create">Create New Wallet</option>
+                  <option value="derive">Derive Wallet from Seed Phrase</option>
+                  <option value="import">Import from Private Key</option>
+                  <option value="login">Login with Wallet File</option>
+                </select>
+              </div>
+              {walletAction === 'derive' && (
+                <div className="form-group">
+                  <label>Seed Phrase:</label>
+                  <input
+                    type="text"
+                    value={mnemonic}
+                    onChange={(e) => setMnemonic(e.target.value)}
+                    placeholder="Enter 12 or 24-word seed phrase"
+                    className="input"
+                  />
+                </div>
+              )}
+              {walletAction === 'import' && (
+                <div className="form-group">
+                  <label>Private Key:</label>
+                  <input
+                    type="text"
+                    value={privateKeyInput}
+                    onChange={(e) => setPrivateKeyInput(e.target.value.trim())}
+                    placeholder="Enter 64-character hex private key"
+                    className="input"
+                  />
+                </div>
+              )}
+              {walletAction === 'login' && (
+                <>
+                  <div className="form-group">
+                    <label>Upload Wallet File (warthog_wallet.txt):</label>
+                    <input
+                      type="file"
+                      accept=".txt"
+                      onChange={handleFileUpload}
+                      className="input"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Password:</label>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter password to decrypt wallet"
+                      className="input"
+                    />
+                  </div>
+                </>
+              )}
+              {(walletAction === 'create' || walletAction === 'derive') && (
+                <div className="form-group">
+                  <label>Word Count:</label>
+                  <select
+                    value={wordCount}
+                    onChange={(e) => setWordCount(e.target.value)}
+                    className="input"
+                  >
+                    <option value="12">12 Words</option>
+                    <option value="24">24 Words</option>
+                  </select>
+                </div>
+              )}
+              {(walletAction === 'create' || walletAction === 'derive') && wordCount === '12' && (
+                <div className="form-group">
+                  <label>Derivation Path Type:</label>
+                  <select
+                    value={pathType}
+                    onChange={(e) => setPathType(e.target.value)}
+                    className="input"
+                  >
+                    <option value="hardened">Hardened (m/44'/2070'/0'/0/0)</option>
+                    <option value="non-hardened">Non-Hardened (m/44'/2070'/0/0/0)</option>
+                  </select>
+                </div>
+              )}
+              <button onClick={handleWalletAction}>
+                {walletAction === 'create'
+                  ? 'Create Wallet'
+                  : walletAction === 'derive'
+                  ? 'Derive Wallet'
+                  : walletAction === 'import'
+                  ? 'Import Wallet'
+                  : 'Login'}
+              </button>
+            </section>
+          )}
+
+          <section>
+            <h2>Validate Address</h2>
+            <div className="form-group">
+              <label>Address:</label>
+              <input
+                type="text"
+                value={address}
+                onChange={(e) => setAddress(e.target.value.trim())}
+                placeholder="Enter 48-character address"
+                className="input"
+              />
+            </div>
+            <button onClick={handleValidateAddress}>Validate Address</button>
+            {validateResult && (
+              <div className="result">
+                <pre>{JSON.stringify(validateResult, null, 2)}</pre>
+              </div>
+            )}
+          </section>
+
+          {isLoggedIn && (
+            <section>
+              <h2>Send Transaction</h2>
+              <div className="form-group">
+                <label>To Address:</label>
+                <input
+                  type="text"
+                  value={toAddr}
+                  onChange={(e) => setToAddr(e.target.value.trim())}
+                  placeholder="Enter 48-character to address"
+                  className="input"
+                />
+              </div>
+              <div className="form-group">
+                <label>Amount (WART):</label>
+                <input
+                  type="text"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value.trim())}
+                  placeholder="Enter amount in WART (e.g., 1)"
+                  className="input"
+                />
+              </div>
+              <div className="form-group">
+                <label>Fee (WART):</label>
+                <input
+                  type="text"
+                  value={fee}
+                  onChange={(e) => setFee(e.target.value.trim())}
+                  placeholder="Enter fee in WART (e.g., 0.0001)"
+                  className="input"
+                />
+              </div>
+              <button onClick={handleSendTransaction}>Send Transaction</button>
+              {sendResult && (
+                <div className="result">
+                  <pre>{JSON.stringify(sendResult, null, 2)}</pre>
+                </div>
+              )}
+            </section>
+          )}
+
+          {error && (
+            <div className="error">
+              <strong>Error:</strong> {error}
+            </div>
+          )}
+        </>
       )}
 
-      <section>
-        <h2>Validate Address</h2>
-        <div className="form-group">
-          <label>Address:</label>
-          <input
-            type="text"
-            value={address}
-            onChange={(e) => setAddress(e.target.value.trim())}
-            placeholder="Enter 48-character address"
-            className="input"
-          />
+     {showModal && walletData && (
+  <div className="modal-overlay" style={{background: '#000', fontFamily: 'Montserrat'}}>
+    <div className="modal-content" style={{textAlign: 'center', maxHeight: 'none'}}>
+      <h2>Wallet Information</h2>
+      <p className="warning">
+        Warning: Please write down your seed phrase (if available) and private key on a piece of paper and store them securely. Do not share them with anyone.
+      </p>
+      <p style={{color: '#FFECB3'}}>Options for securing your wallet:</p>
+      <ul style={{color: '#FFECB3'}}>
+        <li>Save the wallet to localStorage (encrypted with your password). This allows easy access but is tied to this browser.</li>
+        <li>Download the wallet as an encrypted file (warthog_wallet.txt). You can store this file securely and upload it later to login.</li>
+      </ul>
+       {walletData.wordCount && (
+        <p  style={{padding: '1rem',fontFamily: 'Montserrat'}}>
+          <strong>Word Count:</strong> {walletData.wordCount}
+        </p>
+      )}
+      {walletData.mnemonic && (
+        <div>
+          <strong style={{color: '#e9e6dbff'}}>Seed Phrase:</strong>
+        <p style={{backgroundColor: '#ffecb33d', padding: '10px', borderRadius: '5px'}}>
+           <span style={{color: '#caa21eff', fontSize:"large", fontFamily: 'Montserrat', fontWeight: 'bold', textShadow: '1px 1px 1px rgba(0, 0, 0, 0.5)'}}>{walletData.mnemonic}</span>
+        </p>
         </div>
-        <button onClick={handleValidateAddress}>Validate Address</button>
-        {validateResult && (
-          <div className="result">
-            <pre>{JSON.stringify(validateResult, null, 2)}</pre>
-          </div>
-        )}
-      </section>
-
-      {isLoggedIn && (
-        <section>
-          <h2>Send Transaction</h2>
-          <div className="form-group">
-            <label>To Address:</label>
-            <input
-              type="text"
-              value={toAddr}
-              onChange={(e) => setToAddr(e.target.value.trim())}
-              placeholder="Enter 48-character to address"
-              className="input"
-            />
-          </div>
-          <div className="form-group">
-            <label>Amount (WART):</label>
-            <input
-              type="text"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value.trim())}
-              placeholder="Enter amount in WART (e.g., 1)"
-              className="input"
-            />
-          </div>
-          <div className="form-group">
-            <label>Fee (WART):</label>
-            <input
-              type="text"
-              value={fee}
-              onChange={(e) => setFee(e.target.value.trim())}
-              placeholder="Enter fee in WART (e.g., 0.0001)"
-              className="input"
-            />
-          </div>
-          <button onClick={handleSendTransaction}>Send Transaction</button>
-          {sendResult && (
-            <div className="result">
-              <pre>{JSON.stringify(sendResult, null, 2)}</pre>
-            </div>
-          )}
-        </section>
       )}
-
+     
+      {walletData.pathType && (
+        <p style={{padding: '.75rem'}}>
+          <strong>Path Type:</strong> {walletData.pathType}
+        </p>
+      )}
+      <p>
+        <strong>Private Key:</strong><br /><span className="wallet-info-value">{walletData.privateKey}</span>
+      </p>
+      <p>
+        <strong>Public Key:</strong><br /><span className="wallet-info-value">{walletData.publicKey}</span>
+      </p>
+      <p>
+        <strong>Address:</strong><br /> <span className="wallet-info-value">{walletData.address}</span>
+      </p>
+      <div className="form-group" style={{padding: '.75rem'}}>
+        <label>Password to Encrypt Wallet:</label>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Enter password to encrypt wallet"
+          className="input"
+        />
+      </div>
       {error && (
-        <div className="error">
+        <div className="error" style={{marginBottom: '10px'}}>
           <strong>Error:</strong> {error}
         </div>
       )}
+      <div className="form-group">
+        <label>
+          <input
+            type="checkbox"
+            checked={saveWalletConsent}
+            onChange={(e) => setSaveWalletConsent(e.target.checked)}
+          />
+          Save wallet to localStorage (encrypted)
+        </label>
+      </div>
+      <div style={{marginBottom: '20px'}}>
+        <button
+          onClick={() => {
+            if (!password) {
+              setError('Please provide a password to encrypt and save the wallet.');
+              return;
+            }
+            if (!saveWalletConsent) {
+              setError('Please consent to save the wallet.');
+              return;
+            }
+            setError(null);
+            saveWallet(walletData);
+            setShowModal(false);
+            setWalletData(null);
+          }}
+        >
+          Save Wallet
+        </button>
+        <button
+          onClick={() => {
+            if (!password) {
+              setError('Please provide a password to encrypt and download the wallet file.');
+              return;
+            }
+            setError(null);
+            downloadWallet(walletData);
+            setShowModal(false);
+            setWalletData(null);
+          }}
+        >
+          Download Wallet File
+        </button>
+      </div>
+      <div style={{display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '10px'}}>
+        <label>
+          <input
+            type="checkbox"
+            checked={consentToClose}
+            onChange={(e) => setConsentToClose(e.target.checked)}
+          />
+          I consent to close without saving to local storage or downloading the wallet file
+        </label>
+        <button
+          disabled={!consentToClose}
+          onClick={() => {
+            setShowModal(false);
+            setWalletData(null);
+            setPassword('');
+            setSaveWalletConsent(false);
+            setConsentToClose(false);
+            setError(null);
+          }}
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };
