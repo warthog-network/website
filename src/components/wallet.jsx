@@ -779,86 +779,131 @@ const Wallet = () => {
         </>
       )}
 
-      {showModal && walletData && (
-        <div className="modal-overlay" style={{background: '#000', fontFamily:'Montserrat'}}>
-          <div className="modal-content" style={{textAlign: 'center', maxHeight: 'none'}}>
-            <h2>Wallet Information</h2>
-            <p className="warning">
-              Warning: Please write down your seed phrase (if available) and private key on a piece of paper and store them securely. Do not share them with anyone.
-            </p>
-            <p style={{color: 'blue'}}>Options for securing your wallet:</p>
-            <ul style={{color: 'blue'}}>
-              <li>Save the wallet to localStorage (encrypted with your password). This allows easy access but is tied to this browser.</li>
-              <li>Download the wallet as an encrypted file (warthog_wallet.txt). You can store this file securely and upload it later to login.</li>
-            </ul>
-            {walletData.mnemonic && (
-              <p style={{backgroundColor: '#fff', padding: '10px', borderRadius: '5px'}}>
-                <strong style={{color: 'black'}}>Seed Phrase:</strong> <span style={{color: '#DAA520', fontWeight:'bold', }}>{walletData.mnemonic}</span>
-              </p>
-            )}
-            {walletData.wordCount && (
-              <p>
-                <strong>Word Count:</strong> {walletData.wordCount}
-              </p>
-            )}
-            {walletData.pathType && (
-              <p>
-                <strong>Path Type:</strong> {walletData.pathType}
-              </p>
-            )}
-           <p>
-  <strong>Private Key:</strong> <span className="wallet-info-value">{walletData.privateKey}</span>
-</p>
-<p>
-  <strong>Public Key:</strong> <span className="wallet-info-value">{walletData.publicKey}</span>
-</p>
-<p>
-  <strong>Address:</strong> <span className="wallet-info-value">{walletData.address}</span>
-</p>
-            <div className="form-group">
-              <label>Password to Encrypt Wallet:</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password to encrypt wallet"
-                className="input"
-              />
-            </div>
-            <div className="form-group">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={saveWalletConsent}
-                  onChange={(e) => setSaveWalletConsent(e.target.checked)}
-                />
-                Save wallet to localStorage (encrypted)
-              </label>
-            </div>
-            <div style={{marginBottom: '20px'}}>
-              <button onClick={() => { saveWallet(walletData); setShowModal(false); setWalletData(null); }}>
-                Save Wallet
-              </button>
-              <button onClick={() => { downloadWallet(walletData); setShowModal(false); setWalletData(null); }}>
-                Download Wallet File
-              </button>
-            </div>
-            <div style={{display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '10px'}}>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={consentToClose}
-                  onChange={(e) => setConsentToClose(e.target.checked)}
-                />
-                I consent to close without saving to local storage or downloading the wallet file
-              </label>
-              <button disabled={!consentToClose} onClick={() => { setShowModal(false); setWalletData(null); setPassword(''); setSaveWalletConsent(false); setConsentToClose(false); }}>
-                Close
-              </button>
-            </div>
-          </div>
+     {showModal && walletData && (
+  <div className="modal-overlay" style={{background: '#000', fontFamily: 'Montserrat'}}>
+    <div className="modal-content" style={{textAlign: 'center', maxHeight: 'none'}}>
+      <h2>Wallet Information</h2>
+      <p className="warning">
+        Warning: Please write down your seed phrase (if available) and private key on a piece of paper and store them securely. Do not share them with anyone.
+      </p>
+      <p style={{color: '#FFECB3'}}>Options for securing your wallet:</p>
+      <ul style={{color: '#FFECB3'}}>
+        <li>Save the wallet to localStorage (encrypted with your password). This allows easy access but is tied to this browser.</li>
+        <li>Download the wallet as an encrypted file (warthog_wallet.txt). You can store this file securely and upload it later to login.</li>
+      </ul>
+       {walletData.wordCount && (
+        <p  style={{padding: '1rem',fontFamily: 'Montserrat'}}>
+          <strong>Word Count:</strong> {walletData.wordCount}
+        </p>
+      )}
+      {walletData.mnemonic && (
+        <div>
+          <strong style={{color: '#e9e6dbff'}}>Seed Phrase:</strong>
+        <p style={{backgroundColor: '#ffecb33d', padding: '10px', borderRadius: '5px'}}>
+           <span style={{color: '#caa21eff', fontSize:"large", fontFamily: 'Montserrat', fontWeight: 'bold', textShadow: '1px 1px 1px rgba(0, 0, 0, 0.5)'}}>{walletData.mnemonic}</span>
+        </p>
         </div>
       )}
+     
+      {walletData.pathType && (
+        <p style={{padding: '.75rem'}}>
+          <strong>Path Type:</strong> {walletData.pathType}
+        </p>
+      )}
+      <p>
+        <strong>Private Key:</strong><br /><span className="wallet-info-value">{walletData.privateKey}</span>
+      </p>
+      <p>
+        <strong>Public Key:</strong><br /><span className="wallet-info-value">{walletData.publicKey}</span>
+      </p>
+      <p>
+        <strong>Address:</strong><br /> <span className="wallet-info-value">{walletData.address}</span>
+      </p>
+      <div className="form-group" style={{padding: '.75rem'}}>
+        <label>Password to Encrypt Wallet:</label>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Enter password to encrypt wallet"
+          className="input"
+        />
+      </div>
+      {error && (
+        <div className="error" style={{marginBottom: '10px'}}>
+          <strong>Error:</strong> {error}
+        </div>
+      )}
+      <div className="form-group">
+        <label>
+          <input
+            type="checkbox"
+            checked={saveWalletConsent}
+            onChange={(e) => setSaveWalletConsent(e.target.checked)}
+          />
+          Save wallet to localStorage (encrypted)
+        </label>
+      </div>
+      <div style={{marginBottom: '20px'}}>
+        <button
+          onClick={() => {
+            if (!password) {
+              setError('Please provide a password to encrypt and save the wallet.');
+              return;
+            }
+            if (!saveWalletConsent) {
+              setError('Please consent to save the wallet.');
+              return;
+            }
+            setError(null);
+            saveWallet(walletData);
+            setShowModal(false);
+            setWalletData(null);
+          }}
+        >
+          Save Wallet
+        </button>
+        <button
+          onClick={() => {
+            if (!password) {
+              setError('Please provide a password to encrypt and download the wallet file.');
+              return;
+            }
+            setError(null);
+            downloadWallet(walletData);
+            setShowModal(false);
+            setWalletData(null);
+          }}
+        >
+          Download Wallet File
+        </button>
+      </div>
+      <div style={{display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '10px'}}>
+        <label>
+          <input
+            type="checkbox"
+            checked={consentToClose}
+            onChange={(e) => setConsentToClose(e.target.checked)}
+          />
+          I consent to close without saving to local storage or downloading the wallet file
+        </label>
+        <button
+          disabled={!consentToClose}
+          onClick={() => {
+            setShowModal(false);
+            setWalletData(null);
+            setPassword('');
+            setSaveWalletConsent(false);
+            setConsentToClose(false);
+            setError(null);
+          }}
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };

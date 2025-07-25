@@ -31,7 +31,7 @@
 }
 
 .container section {
-  background-color: #6e6d6d;
+  background-color: #474747;
   padding: 20px;
   margin-bottom: 20px;
   border-radius: 8px;
@@ -169,7 +169,15 @@
   text-overflow: clip;
 }
 */
-
+.wallet-info-value {
+  color: #FFECB3;
+  word-break: break-all;
+  overflow-wrap: break-word;
+  white-space: normal;
+  font-family:'Montserrat';
+  max-width: 100%;
+  display: inline-block;
+}
 @media (max-width: 600px) {
   .container {
     padding: 10px;
@@ -389,6 +397,15 @@ pre {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+  }
+
+  /* Adjust button text to fit */
+  .container .download-wallet-btn::before {
+    content: 'Download';
+    display: block;
+    font-size: 10px;
+    line-height: 1.2;
+    text-align: center;
   }
 
   /* Adjust button text to fit */
