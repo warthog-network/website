@@ -60,7 +60,7 @@ const Wallet = () => {
 
   useEffect(() => {
     if (showModal) {
-      window.alert("Do not close this modal without saving or downloading if you haven't backed up the information elsewhere.");
+      window.alert("If you haven't backed up the information elsewhere, do not close the next window without saving or downloading your private key.");
     }
   }, [showModal]);
 
