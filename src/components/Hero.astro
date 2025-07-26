@@ -184,8 +184,8 @@ import DunesMobile from '../BalkyImages/dune-colorful-abstract-digital-art-4k-wa
       left: -1rem;
       width: calc(100% + 2rem);
       height: calc(100% + 3rem); /* Adjusted height to compensate for top difference */
-      border: 2px solid #b8870b3b; /* Dark yellow border */
-      border-radius: 12px; /* Adjusted radius for smaller extension */
+      border: 1px solid #b8870b3b; /* Dark yellow border */
+      border-radius: 10px; /* Adjusted radius for smaller extension */
     }
 
     .hero-img-btn {
@@ -199,7 +199,7 @@ import DunesMobile from '../BalkyImages/dune-colorful-abstract-digital-art-4k-wa
   }
 
   /* Updated media query for <900px: Switch to portrait/vertical stack with animation */
-  @media (max-width: 900px) {
+  @media (max-width: 765px) {
     .hero-grid {
       display: flex;
       flex-direction: column; /* Stack vertically for portrait */
@@ -236,20 +236,23 @@ import DunesMobile from '../BalkyImages/dune-colorful-abstract-digital-art-4k-wa
     }
 
     .hero-img-btn {
-    position: absolute;
-    bottom: 50%;
-    max-width: 12rem;
-    
-    background-color: gold;
-    color: rgb(0, 0, 0);
-    text-align: center;
-    font-size: 16px;
-    width: 13rem;
-    padding: 10px 40px;
-    border: none; 
-    cursor: pointer;
-    border-radius: 5px;
-  }
+      position: absolute;
+      top: 65%; /* Moved up slightly towards the center */
+      left: 50%;
+      transform: translate(-50%, -50%);
+      max-width: 12rem;
+      
+      background-color: gold;
+      color: rgb(0, 0, 0);
+      text-align: center;
+      font-size: 16px;
+      width: 13rem;
+      max-height: 3rem;
+      padding: 10px 40px;
+      border: none; 
+      cursor: pointer;
+      border-radius: 5px;
+    }
 
     /* Keyframes for slide-down animation on text */
     @keyframes slideDown {
