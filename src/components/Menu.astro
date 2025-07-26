@@ -5,7 +5,6 @@ const links = [
     { name: 'DOCS', href: 'https://docs.warthog.network/', target: '_blank'},
     { name: 'WHITEPAPER', href: '/whitepaper'},
     { name: 'FAQS', href: '/faqs'},
-    {name:'WALLET', href: '/webwallet'},
     { name: 'EXPLORER', href: 'https://wartscan.io/', target: '_blank'},
     { name: 'DEFI DEMO', href: '/defi-demo' },
 ];
@@ -18,6 +17,7 @@ const blu_CentralUS = {href: 'http://89.117.150.162:3001 ', id:'myInput5'}
 const blu_EU = {href: 'http://185.209.228.16:3001', id:'myInput6'}
 const Johnnyb = {href: 'http://dev.node-s.com:3001', id:'myInput7'}
 
+const wallet = [{name:'WALLET', href: '/webwallet'}]
 
 const publiNodes = [
     { name: 'Polaire', href: 'http://51.75.21.134:3001', id:'myInput'},
@@ -216,6 +216,9 @@ label{
 input{
   cursor: pointer;
 }
+.wallet{
+  padding-left: .5rem;
+  padding-bottom: .5rem;}
         .underlineText::after {
           content: '';
           position: absolute;
@@ -298,6 +301,13 @@ input {
     <div class='menu'>
     {links.map((link) => (
             <a class="menuItem"  target={link.target} href={link.href}>
+                <p class="underlineText">{link.name}</p>
+            </a>
+    ))}
+    </div>
+     <div class="wallet">
+    {wallet.map((link) => (
+            <a class="menuItem" href={link.href}>
                 <p class="underlineText">{link.name}</p>
             </a>
     ))}
