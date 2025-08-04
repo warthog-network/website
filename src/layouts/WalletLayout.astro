@@ -1,0 +1,48 @@
+---
+import '../blogstyles.css';
+import '../styles.css';
+import BaseHead from '../components/BaseHead.astro';
+const {title} = Astro.props;
+// import Footer from "../components/Footer.astro";
+ import Footer from "../components/FooterTailwind.astro";
+---
+
+<html lang="en">
+	<head>
+        <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wallet</title>
+    <!-- PWA-specific links -->
+    <link rel="manifest" href="/webwallet/manifest.json" />
+    <!-- Add theme color or other meta for PWA -->
+    <meta name="theme-color" content="#ffffff" />
+    <!-- Script to register the service worker -->
+
+<link rel="icon" type="image/svg+xml" href="/favicon.png" />
+    <!-- Add any additional styles or scripts needed for the wallet page -->
+    <link rel="stylesheet" href="/components/wallet.css" />
+  </head>
+		
+	<body>
+    {/* above, make it possible to place footer at botton even if 
+    content is not big enough, it is useful for embedding PDF such that the embed height is just as much that the page height is exactly fitting in view port*/}
+		
+        <main>
+            <slot />
+        </main>
+        
+        <footer>
+           <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/webwallet/sw.js', { scope: '/webwallet/' })
+        .then(reg => console.log('Service Worker registered!', reg))
+        .catch(err => console.error('Service Worker registration failed:', err));
+    });
+  }
+</script>
+            
+           
+        </footer>
+	</body>
+</html>
