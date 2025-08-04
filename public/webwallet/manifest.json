@@ -1,6 +1,6 @@
 {
   "name": "Warthog Wallet",
-  "short_name": "Wallet",
+  "short_name": "Warthog Bunker",
   "description": "Your Warthog Wallet PWA",
   "start_url": "/webwallet/",
   "scope": "/webwallet/",

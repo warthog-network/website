@@ -15,6 +15,7 @@ const defaultNodeList = [
 ];
 
 const Wallet = () => {
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [walletData, setWalletData] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [consentToClose, setConsentToClose] = useState(false);
@@ -46,13 +47,28 @@ const Wallet = () => {
 
 
 useEffect(() => {
-  let deferredPrompt;
-  window.addEventListener('beforeinstallprompt', (e) => {
+  const handleBeforeInstallPrompt = (e) => {
     e.preventDefault();
-    deferredPrompt = e;
-    // Optionally set state to show an install button
-  });
-  // Then, on a button click: if (deferredPrompt) deferredPrompt.prompt();
+    setDeferredPrompt(e);
+  };
+
+  window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+  return () => {
+    window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  };
+}, []);
+// Handle app installed event
+useEffect(() => {
+  const handleAppInstalled = () => {
+    setDeferredPrompt(null);
+  };
+
+  window.addEventListener('appinstalled', handleAppInstalled);
+
+  return () => {
+    window.removeEventListener('appinstalled', handleAppInstalled);
+  };
 }, []);
 
   useEffect(() => {
@@ -505,10 +521,27 @@ useEffect(() => {
     }
   };
 
+  const handleInstallClick = async () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      console.log('User accepted the install prompt');
+    } else {
+      console.log('User dismissed the install prompt');
+    }
+    setDeferredPrompt(null);
+  }
+};
+
   return (
     <div className="container">
       <h1>Warthog Wallet</h1>
-
+{deferredPrompt && (
+  <button onClick={handleInstallClick} style={{ marginBottom: '20px', padding: '8px 16px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+    Install Wallet App
+  </button>
+)}
       {!showModal && (
         <>
           <section>
