@@ -44,6 +44,17 @@ const Wallet = () => {
   const [selectedNode, setSelectedNode] = useState(defaultNodeList[4]);
   const [showDownloadPrompt, setShowDownloadPrompt] = useState(false);
 
+
+useEffect(() => {
+  let deferredPrompt;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // Optionally set state to show an install button
+  });
+  // Then, on a button click: if (deferredPrompt) deferredPrompt.prompt();
+}, []);
+
   useEffect(() => {
     const encryptedWallet = localStorage.getItem('warthogWallet');
     if (encryptedWallet) {

@@ -5,7 +5,25 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 // Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
 // Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
 ---
-
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wallet</title>
+    <!-- PWA-specific links -->
+    <link rel="manifest" href="/webwallet/manifest.json" />
+    <!-- Add theme color or other meta for PWA -->
+    <meta name="theme-color" content="#ffffff" />
+    <!-- Script to register the service worker -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/webwallet/sw.js', { scope: '/webwallet' })
+            .then(reg => console.log('Service Worker registered!', reg))
+            .catch(err => console.error('Service Worker registration failed:', err));
+        });
+      }
+    </script>
+  </head>
 <BaseLayout>
  <Wallet client:load />
 </BaseLayout>

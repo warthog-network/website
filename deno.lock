@@ -1,0 +1,51 @@
+{
+  "version": "5",
+  "remote": {
+    "https://edge.netlify.com/": "fd941d61d88673d5f28aab283fb86fcc50f08a3bc80ee5470498fcfa88c65cfb",
+    "https://edge.netlify.com/bootstrap/config.ts": "6a2ce0e544e15e8f8883a5c18da5948e37fd0f2619f68cb31f3af53c51817025",
+    "https://edge.netlify.com/bootstrap/context.ts": "c6e9de479234f3ac500d2fc1544dadf1925e335d0d5551b1a71b7ce14423a683",
+    "https://edge.netlify.com/bootstrap/cookie.ts": "8b0baae708989ca183c6f3b4ab3d029e6abcbc2e43f93edeb0ff447b3bbc3a05",
+    "https://edge.netlify.com/bootstrap/edge_function.ts": "b8253e86aa83c67341f5cfedeba5049d77fbf84dcab7eceff7566b7728ae9b39",
+    "https://edge.netlify.com/bootstrap/globals/types.ts": "eaa6148ded3121d8dee62dd91c86e7fe76601df0f3ca8d7962243a30f4c8935f"
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:@astrojs/mdx@^4.0.5",
+        "npm:@astrojs/netlify@^6.5.1",
+        "npm:@astrojs/react@^4.1.4",
+        "npm:@astrojs/tailwind@^5.1.4",
+        "npm:@noble/hashes@^1.8.0",
+        "npm:@noble/secp256k1@^2.1.0",
+        "npm:@types/react-dom@^18.3.0",
+        "npm:@types/react@^18.3.10",
+        "npm:arrow-line@~0.7.5",
+        "npm:astro@^5.12.0",
+        "npm:axios@^1.10.0",
+        "npm:bip39@^3.1.0",
+        "npm:buffer@^6.0.3",
+        "npm:crypto-browserify@^3.12.1",
+        "npm:crypto-js@^4.2.0",
+        "npm:elliptic@^6.6.1",
+        "npm:ethers@^6.15.0",
+        "npm:framer-motion@^11.9.0",
+        "npm:gsap@^3.12.5",
+        "npm:hdkey@^2.1.0",
+        "npm:intro.js@^7.2.0",
+        "npm:leader-line-new@^1.1.9",
+        "npm:leader-line@^1.0.7",
+        "npm:lightweight-charts@^4.2.1",
+        "npm:node-fetch@^2.7.0",
+        "npm:react-bootstrap@^2.10.5",
+        "npm:react-dom@^18.3.1",
+        "npm:react-joyride@^2.9.3",
+        "npm:react-router-dom@^6.26.2",
+        "npm:react-xarrows@^2.0.2",
+        "npm:react@^18.3.1",
+        "npm:secp256k1@^5.0.1",
+        "npm:stream-browserify@3",
+        "npm:tailwindcss@^3.4.13"
+      ]
+    }
+  }
+}
