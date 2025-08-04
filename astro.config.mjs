@@ -1,3 +1,4 @@
+// astro.config.mjs
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import tailwind from '@astrojs/tailwind';
@@ -11,6 +12,17 @@ export default defineConfig({
     functionPerRoute: false,
     cacheOnDemandPages: true,
   }),
+  experimental: {
+    csp: {
+      directives: [
+        "default-src 'self'",
+        "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com"
+      ],
+      styleDirective: {
+        resources: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"]
+      }
+    }
+  },
   vite: {
     resolve: {
       alias: {
