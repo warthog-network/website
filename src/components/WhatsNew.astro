@@ -88,7 +88,7 @@ const GetArticleImage = (category) => {
 <h1 class="articles flex"> Articles <a class="seeall flex" href="/news">see all<img class="small" src={Arrow.src}/></a></h1>
 <section class="NEWS">
     {last3Articles.map((news, index) => (
-        <a class={`p-10 article-card`} href={`/articles/${generateArticalIdentity(news.data.title, news.data.date, news.data.author )}`} style={`transition-delay: ${index * 0.2}s`}>
+        <a class={`p-10 article-card`} href={`/articles/${generateArticalIdentity(news.data.title, news.data.date, news.data.author )}`}>
             <img class='blogpostbox' src={GetArticleImage(news.data.category)} alt="logo" />
             <p>{news.data.category}</p>
             <p class="font-semibold">{news.data.title}</p>
@@ -98,6 +98,11 @@ const GetArticleImage = (category) => {
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        const cards = document.querySelectorAll<HTMLElement>('.article-card');
+        cards.forEach((card, index) => {
+            card.style.transitionDelay = `${index * 0.3}s`;
+        });
+
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
@@ -108,7 +113,7 @@ const GetArticleImage = (category) => {
             threshold: 0.1
         });
 
-        document.querySelectorAll('.article-card').forEach(card => {
+        cards.forEach(card => {
             observer.observe(card);
         });
     });
