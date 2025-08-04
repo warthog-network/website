@@ -14,15 +14,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     <!-- Add theme color or other meta for PWA -->
     <meta name="theme-color" content="#ffffff" />
     <!-- Script to register the service worker -->
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/webwallet/sw.js', { scope: '/webwallet' })
-            .then(reg => console.log('Service Worker registered!', reg))
-            .catch(err => console.error('Service Worker registration failed:', err));
-        });
-      }
-    </script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/webwallet/sw.js', { scope: '/webwallet/' })
+        .then(reg => console.log('Service Worker registered!', reg))
+        .catch(err => console.error('Service Worker registration failed:', err));
+    });
+  }
+</script>
+    <!-- Add any additional styles or scripts needed for the wallet page -->
+    <link rel="stylesheet" href="/components/wallet.css" />
   </head>
 <BaseLayout>
  <Wallet client:load />
