@@ -2,7 +2,7 @@
   "name": "Warthog Wallet",
   "short_name": "Wallet",
   "description": "Your Warthog Wallet PWA",
-  "start_url": "/wallet",
+  "start_url": "/webwallet",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000",
