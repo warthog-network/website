@@ -165,16 +165,24 @@ const button7 = document.getElementById('button7');
 
 button7.addEventListener('click', myFunction7);
 
-
+const closeMenu = document.querySelector('.close-menu');
+if (closeMenu) {
+  closeMenu.addEventListener('click', () => {
+    const mobileMenu = closeMenu.closest('.mobileMenu');
+    if (mobileMenu) {
+      mobileMenu.classList.remove('show');
+    }
+  });
+}
 
 
 
 </script>
     <style>
       .menu{
-          
-          height: 2.5rem;
+          display: flex;
           align-items: center;
+          height: 2.5rem;
       }
 
       .icon{
@@ -245,6 +253,11 @@ input{
           display: inline-block;
           padding: .5rem;
         }
+
+        .menu button {
+          display: inline-block;
+          padding: .5rem;
+        }
       }
 
       @media screen and (min-width: 1100px) {
@@ -255,15 +268,24 @@ input{
 
       /* Dropdown Button */
 .dropbtn {
-  background-color: #04AA6D;
-  color: white;
-  padding: 16px;
-  font-size: 16px;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  font: inherit;
   border: none;
+  cursor: pointer;
 }
 
 /* The container <div> - needed to position the dropdown content */
 .dropdown {
+  font-family: Montserrat;
+  font-size: clamp(0.727rem, 1.079vw, 0.875rem);
+  ont-weight: 400;
+  line-height: 1.067rem;
+  text-underline-position: from-font;
+  text-decoration-skip-ink: none;
+  padding-top: .8rem;
+  z-index: 1000;
   position: relative;
   display: inline-block;
 }
@@ -296,26 +318,25 @@ input {
 .dropdown:hover .dropdown-content {display: block;}
 
 /* Change the background color of the dropdown button when the dropdown content is shown */
-.dropdown:hover .dropbtn {background-color: #e9ca1b;}
+.dropdown:hover .dropbtn {background-color: transparent;}
+
+ 
     </style>
+
     <div class='menu'>
     {links.map((link) => (
             <a class="menuItem"  target={link.target} href={link.href}>
                 <p class="underlineText">{link.name}</p>
             </a>
     ))}
-    </div>
-     <div class="wallet">
+        
     {wallet.map((link) => (
             <a class="menuItem" href={link.href}>
                 <p class="underlineText">{link.name}</p>
             </a>
     ))}
-    </div>
-    <div> <p class="menuItem"></p> 
-      
-          <div class="dropdown">
-  <button class="menuItem Nodes underlineText">PUBLIC NODES</button>
+    <div class="dropdown">
+  <button class="menuItem Nodes underlineText dropbtn">PUBLIC NODES</button>
   <div class="dropdown-content menuItem">
 
     <a id='button' > <label>Polaire</label>
@@ -338,11 +359,13 @@ input {
      </a> 
      <a id='button7' > <label>Johnnyb Us East</label>
       <input id={Johnnyb.id} value={Johnnyb.href}> </input>
-     </a> 
-   
-   
-  
+     </a>
   </div>
+    </div>
+ 
+    <div>  
+      
+         
 </div>
   </div>
     <div class='lg:flex flex justify-center '>
