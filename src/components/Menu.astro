@@ -1,12 +1,12 @@
 ---
 const links = [
-    { name: 'GET STARTED', href: '/get-started'},
+    { name: 'GET\u00A0\STARTED', href: '/get-started'},
     { name: 'NEWS', href: '/news' },
     { name: 'DOCS', href: 'https://docs.warthog.network/', target: '_blank'},
     { name: 'WHITEPAPER', href: '/whitepaper'},
     { name: 'FAQS', href: '/faqs'},
     { name: 'EXPLORER', href: 'https://wartscan.io/', target: '_blank'},
-    { name: 'DEFI DEMO', href: '/defi-demo' },
+    { name: 'DEFI\u00A0\DEMO', href: '/defi-demo' },
 ];
 
 const Polaire = {href:'http://51.75.21.134:3001', id:'myInput'}
@@ -180,6 +180,7 @@ if (closeMenu) {
 </script>
     <style>
       .menu{
+      
           display: flex;
           align-items: center;
           height: 2.5rem;
@@ -325,13 +326,13 @@ input {
 
     <div class='menu'>
     {links.map((link) => (
-            <a class="menuItem"  target={link.target} href={link.href}>
+            <a class="menuItem flex-wrap"  target={link.target} href={link.href}>
                 <p class="underlineText">{link.name}</p>
             </a>
     ))}
         
     {wallet.map((link) => (
-            <a class="menuItem" href={link.href}>
+            <a class="menuItem " href={link.href}>
                 <p class="underlineText">{link.name}</p>
             </a>
     ))}

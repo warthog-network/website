@@ -9,17 +9,18 @@ import DropDownMenu from '../components/Menu.astro';
     .mobileMenu {
         position: fixed;
         top: 0;
-        right: -100%; /* Start off-screen to the right */
+        right: 0; /* Base position aligned to right */
+        transform: translateX(100%); /* Initially off-screen to the right */
         height: 100vh; /* Full height always */
         background-color: #fff; /* Adjust to your theme */
-        transition: right 0.3s ease-in-out; /* Smooth slide animation */
+        transition: transform 0.3s ease-in-out; /* Smooth slide animation on transform */
         z-index: 1000; /* Ensure it's on top */
         overflow-y: auto; /* Scroll if content is too long */
-       
+        box-sizing: border-box; /* Include padding in width */
     }
 
     .mobileMenu.show {
-        right: 0; /* Slide into view */
+        transform: translateX(0); /* Slide into view */
     }
   
     .mobileMenu .menu {
@@ -56,12 +57,17 @@ import DropDownMenu from '../components/Menu.astro';
             display: none !important; /* Force hide, even if .show is added */
         }
     }
+    .navbarstyles{
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000; /* Ensure it's above other content */
+}
 </style>
 
 <div class="w-full flex justify-between items-center">
     
     <Astrobar />
-    <Hamburger />
   
 </div>
 <div class="mobileMenu">
