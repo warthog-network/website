@@ -36,6 +36,7 @@ import DunesMobile from '../BalkyImages/dune-colorful-abstract-digital-art-4k-wa
     position: relative; /* For overlay positioning */
     transition: all 0.3s ease; /* Smooth layout changes */
     padding-top: 2rem; /* Increased top padding by 1rem (from original pt-4 ~1rem to 2rem total) */
+    box-sizing: border-box; /* Include padding in width */
   }
 
   .hero-grid-text {
@@ -43,6 +44,7 @@ import DunesMobile from '../BalkyImages/dune-colorful-abstract-digital-art-4k-wa
     max-width: 25rem;
     grid-area: hero-text;
     transition: all 0.3s ease;
+    box-sizing: border-box; /* Include padding in width */
   }
 
   .hero-text-title-bold {
@@ -78,6 +80,7 @@ import DunesMobile from '../BalkyImages/dune-colorful-abstract-digital-art-4k-wa
     position: relative; /* For button and text overlay */
     display: flex;
     flex-direction: column;
+    box-sizing: border-box; /* Include padding in width */
   }
 
   .hero-img-btn {
@@ -103,6 +106,7 @@ import DunesMobile from '../BalkyImages/dune-colorful-abstract-digital-art-4k-wa
     object-fit: cover;
     border-radius: 10px; /* Rectangular with soft edges */
     transition: border-radius 0.3s ease;
+    box-sizing: border-box; /* Ensure padding/margins are included in width */
   }
 
   .dunes2 {
@@ -145,7 +149,7 @@ import DunesMobile from '../BalkyImages/dune-colorful-abstract-digital-art-4k-wa
       text-shadow: 50px 10px 20px rgba(46, 46, 46, 0.8); /* Enhanced shadow for readability */
       padding: 2rem;
       color: white; /* High contrast on dark overlay */
-      box-sizing: border-box; /* Include padding in width */
+      box-sizing: border-box;
     }
 
     .hero-text-title-bold,
@@ -163,7 +167,7 @@ import DunesMobile from '../BalkyImages/dune-colorful-abstract-digital-art-4k-wa
     .hero-grid-img {
       max-width: 100%; /* Full width */
       justify-self: center;
-      padding: 1rem; /* Reduced to 1rem space around the image container */
+      padding: 0; /* Remove padding to prevent overflow */
       box-sizing: border-box;
     }
 
@@ -181,8 +185,8 @@ import DunesMobile from '../BalkyImages/dune-colorful-abstract-digital-art-4k-wa
     .hero-grid-img::before {
       display: block; /* Show scrim covering full image */
       top: -1rem; /* Adjusted top to -1.5rem to balance the small difference */
-      left: -1rem;
-      width: calc(100% + 2rem);
+      left: 0;
+      width: 100%; /* Full width, no extra */
       height: calc(100% + 3rem); /* Adjusted height to compensate for top difference */
      
       border-radius: 10px; /* Adjusted radius for smaller extension */
