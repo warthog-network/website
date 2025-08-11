@@ -2,7 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection } from "astro:content";
 import { generateArticalIdentity } from '../../scripts/ArticleIdentityGenerator.js';
-import BannerTop from "../../BalkyImages/WarthogTestBanner1.jpg";
+
 import Arrow from '../../BalkyImages/Arrow 1.png';
 import NEWS1 from '../../BalkyImages/NewsPost.png';
 import NEWS2 from '../../BalkyImages/DevPost.png';
@@ -78,6 +78,7 @@ if (!article) {
         justify-self: end;
     }
     .bannerBackgroundImage {
+        background-image: url('../../BalkyImages/WarthogTestBanner1.jpg');
         position: relative;
         background-size: 100% auto;
         background-position: center 30%;
@@ -240,7 +241,7 @@ if (!article) {
 <BaseLayout title = {articleData.title}>
         <article>
             <script type="module" src="/scripts/WebShare.js"></script>
-            <div class="bannerBackgroundImage" style={`background-image: url(${BannerTop.src})`}></div>
+            <div class="bannerBackgroundImage" ></div>
             <div class="article-grid mt-8">
                 <div class="article-content">
                         <div class="category uppercase">{articleData.category} /</div>
