@@ -1,185 +1,67 @@
 ---
 const links = [
-    { name: 'GET\u00A0\STARTED', href: '/get-started'},
-    { name: 'NEWS', href: '/news' },
-    { name: 'DOCS', href: 'https://docs.warthog.network/', target: '_blank'},
-    { name: 'WHITEPAPER', href: '/whitepaper'},
-    { name: 'FAQS', href: '/faqs'},
-    { name: 'EXPLORER', href: 'https://wartscan.io/', target: '_blank'},
-    { name: 'DEFI\u00A0\DEMO', href: '/defi-demo' },
+  { name: 'GET\u00A0\STARTED', href: '/get-started' },
+  { name: 'NEWS', href: '/news' },
+  { name: 'DOCS', href: 'https://docs.warthog.network/', target: '_blank' },
+  { name: 'WHITEPAPER', href: '/whitepaper' },
+  { name: 'FAQS', href: '/faqs' },
+  { name: 'EXPLORER', href: 'https://wartscan.io/', target: '_blank' },
+  { name: 'DEFI\u00A0\DEMO', href: '/defi-demo' },
 ];
 
-const Polaire = {href:'http://51.75.21.134:3001', id:'myInput'}
-const Andrew = {href:'https://node.wartscan.io', id:'myInput2'}
-const Pumbaa = {href: 'http://65.87.7.86:3001', id:'myInput3'}
-const blu_Asia = {href: 'http://62.72.44.89:3001', id:'myInput4'}
-const blu_CentralUS = {href: 'http://89.117.150.162:3001 ', id:'myInput5'}
-const blu_EU = {href: 'http://185.209.228.16:3001', id:'myInput6'}
-const Johnnyb = {href: 'http://dev.node-s.com:3001', id:'myInput7'}
-
-const wallet = [{name:'WALLET', href: '/webwallet'}]
+const wallet = [{ name: 'WALLET', href: '/webwallet' }];
 
 const publiNodes = [
-    { name: 'Polaire', href: 'http://51.75.21.134:3001', id:'myInput'},
-    { name: 'Andrew', href: 'https://node.wartscan.io', id:'myInput2'},
-    { name: 'Pumbaa', href: 'http://65.87.7.86:3001', id:'myInput3'},
-   
-     
+  { name: 'Polaire', href: 'http://51.75.21.134:3001', id: 'myInput' },
+  { name: 'Andrew', href: 'https://node.wartscan.io', id: 'myInput2' },
+  { name: 'Pumbaa', href: 'http://65.87.7.86:3001', id: 'myInput3' },
+  { name: 'Blu Asia', href: 'http://62.72.44.89:3001', id: 'myInput4' },
+  { name: 'Blu Central Us', href: 'http://89.117.150.162:3001', id: 'myInput5' },
+  { name: 'Blu E.U.', href: 'http://185.209.228.16:3001', id: 'myInput6' },
+  { name: 'Johnnyb Us East', href: 'http://dev.node-s.com:3001', id: 'myInput7' },
 ];
+
 const networks = [
-    { imgSrc: 'github_gray.svg', href: 'https://github.com/warthog-network'},    
-    { imgSrc: 'discord_gray.svg', href: 'https://discord.com/invite/QMDV8bGTdQ'},
-    { imgSrc: 'telegram_gray.svg', href: 'https://t.me/warthognetwork'},
-    { imgSrc: 'twitter_gray.svg', href: 'https://x.com/warthognetwork'},    
+  { imgSrc: 'github_gray.svg', href: 'https://github.com/warthog-network' },
+  { imgSrc: 'discord_gray.svg', href: 'https://discord.com/invite/QMDV8bGTdQ' },
+  { imgSrc: 'telegram_gray.svg', href: 'https://t.me/warthognetwork' },
+  { imgSrc: 'twitter_gray.svg', href: 'https://x.com/warthognetwork' },
 ];
-
-
 ---
 
 <script>
-function myFunction() {
-  // Get the text field
-  var copyText = document.getElementById("myInput") as HTMLInputElement;
+  // Single handler for all copy buttons
+  function copyToClipboard(event) {
+    const button = event.currentTarget;
+    const inputId = button.dataset.inputId;
+    const copyText = document.getElementById(inputId);
 
-  // Select the text field
-  copyText.select();
-  copyText.setSelectionRange(0, 99999); // For mobile devices
-
-  // Copy the text inside the text field
-  navigator.clipboard.writeText(copyText.value);
-  
-  // Alert the copied text
-  alert("Copied the text: " + copyText.value);
-}
-  
-const button = document.getElementById('button');
-
-button.addEventListener('click', myFunction);
-
-
-function myFunction2() {
-  // Get the text field
-  var copyText = document.getElementById("myInput2") as HTMLInputElement;
-
-  // Select the text field
-  copyText.select();
-  copyText.setSelectionRange(0, 99999); // For mobile devices
-
-  // Copy the text inside the text field
-  navigator.clipboard.writeText(copyText.value);
-  
-  // Alert the copied text
-  alert("Copied the text: " + copyText.value);
-}
-const button2 = document.getElementById('button2');
-
-button2.addEventListener('click', myFunction2);
-
-function myFunction3() {
-  // Get the text field
-  var copyText = document.getElementById("myInput3") as HTMLInputElement;
-
-  // Select the text field
-  copyText.select();
-  copyText.setSelectionRange(0, 99999); // For mobile devices
-
-  // Copy the text inside the text field
-  navigator.clipboard.writeText(copyText.value);
-  
-  // Alert the copied text
-  alert("Copied the text: " + copyText.value);
-}
-const button3 = document.getElementById('button3');
-
-button3.addEventListener('click', myFunction3);
-
-function myFunction4() {
-  // Get the text field
-  var copyText = document.getElementById("myInput4") as HTMLInputElement;
-
-  // Select the text field
-  copyText.select();
-  copyText.setSelectionRange(0, 99999); // For mobile devices
-
-  // Copy the text inside the text field
-  navigator.clipboard.writeText(copyText.value);
-  
-  // Alert the copied text
-  alert("Copied the text: " + copyText.value);
-}
-const button4 = document.getElementById('button4');
-
-button4.addEventListener('click', myFunction4);
-
-function myFunction5() {
-  // Get the text field
-  var copyText = document.getElementById("myInput5") as HTMLInputElement;
-
-  // Select the text field
-  copyText.select();
-  copyText.setSelectionRange(0, 99999); // For mobile devices
-
-  // Copy the text inside the text field
-  navigator.clipboard.writeText(copyText.value);
-  
-  // Alert the copied text
-  alert("Copied the text: " + copyText.value);
-}
-const button5 = document.getElementById('button5');
-
-button5.addEventListener('click', myFunction5);
-
-function myFunction6() {
-  // Get the text field
-  var copyText = document.getElementById("myInput6") as HTMLInputElement;
-
-  // Select the text field
-  copyText.select();
-  copyText.setSelectionRange(0, 99999); // For mobile devices
-
-  // Copy the text inside the text field
-  navigator.clipboard.writeText(copyText.value);
-  
-  // Alert the copied text
-  alert("Copied the text: " + copyText.value);
-}
-const button6 = document.getElementById('button6');
-
-button6.addEventListener('click', myFunction6);
-
-function myFunction7() {
-  // Get the text field
-  var copyText = document.getElementById("myInput7") as HTMLInputElement;
-
-  // Select the text field
-  copyText.select();
-  copyText.setSelectionRange(0, 99999); // For mobile devices
-
-  // Copy the text inside the text field
-  navigator.clipboard.writeText(copyText.value);
-  
-  // Alert the copied text
-  alert("Copied the text: " + copyText.value);
-}
-const button7 = document.getElementById('button7');
-
-button7.addEventListener('click', myFunction7);
-
-const closeMenu = document.querySelector('.close-menu');
-if (closeMenu) {
-  closeMenu.addEventListener('click', () => {
-    const mobileMenu = closeMenu.closest('.mobileMenu');
-    if (mobileMenu) {
-      mobileMenu.classList.remove('show');
+    if (copyText instanceof HTMLInputElement) {
+      copyText.select();
+      copyText.setSelectionRange(0, 99999);
+      navigator.clipboard.writeText(copyText.value);
+      alert("Copied the text: " + copyText.value);
     }
+  }
+
+  // Attach listeners to all copy buttons
+  document.querySelectorAll('.copy-button').forEach(button => {
+    button.addEventListener('click', copyToClipboard);
   });
-}
 
-
-
+  const closeMenu = document.querySelector('.close-menu');
+  if (closeMenu) {
+    closeMenu.addEventListener('click', () => {
+      const mobileMenu = closeMenu.closest('.mobileMenu');
+      if (mobileMenu) {
+        mobileMenu.classList.remove('show');
+      }
+    });
+  }
 </script>
-    <style>
-      .menu{
+
+<style>
+  .menu{
       
           display: flex;
           align-items: center;
@@ -281,7 +163,7 @@ input{
 .dropdown {
   font-family: Montserrat;
   font-size: clamp(0.727rem, 1.079vw, 0.875rem);
-  ont-weight: 400;
+  font-weight: 400;
   line-height: 1.067rem;
   text-underline-position: from-font;
   text-decoration-skip-ink: none;
@@ -320,59 +202,38 @@ input {
 
 /* Change the background color of the dropdown button when the dropdown content is shown */
 .dropdown:hover .dropbtn {background-color: transparent;}
+</style>
 
- 
-    </style>
+<div class='menu'>
+  {links.map((link) => (
+    <a class="menuItem flex-wrap" target={link.target} href={link.href}>
+      <p class="underlineText">{link.name}</p>
+    </a>
+  ))}
 
-    <div class='menu'>
-    {links.map((link) => (
-            <a class="menuItem flex-wrap"  target={link.target} href={link.href}>
-                <p class="underlineText">{link.name}</p>
-            </a>
-    ))}
-        
-    {wallet.map((link) => (
-            <a class="menuItem " href={link.href}>
-                <p class="underlineText">{link.name}</p>
-            </a>
-    ))}
-    <div class="dropdown">
-  <button class="menuItem Nodes underlineText dropbtn">PUBLIC NODES</button>
-  <div class="dropdown-content menuItem">
+  {wallet.map((link) => (
+    <a class="menuItem" href={link.href}>
+      <p class="underlineText">{link.name}</p>
+    </a>
+  ))}
 
-    <a id='button' > <label>Polaire</label>
-      <input id={Polaire.id} value={Polaire.href}> </input>
-     </a> 
-     <a id='button2' > <label>Andrew</label>
-      <input id={Andrew.id} value={Andrew.href}> </input>
-     </a> 
-     <a id='button3' > <label>Pumbaa</label>
-      <input id={Pumbaa.id} value={Pumbaa.href}> </input>
-     </a> 
-     <a id='button4' > <label>Blu Asia</label>
-      <input id={blu_Asia.id} value={blu_Asia.href}> </input>
-     </a> 
-     <a id='button5' > <label>Blu Central Us</label>
-      <input id={blu_CentralUS.id} value={blu_CentralUS.href}> </input>
-     </a> 
-     <a id='button6' > <label>Blu E.U.</label>
-      <input id={blu_EU.id} value={blu_EU.href}> </input>
-     </a> 
-     <a id='button7' > <label>Johnnyb Us East</label>
-      <input id={Johnnyb.id} value={Johnnyb.href}> </input>
-     </a>
-  </div>
-    </div>
- 
-    <div>  
-      
-         
-</div>
-  </div>
-    <div class='lg:flex flex justify-center '>
-      {networks.map((network) => (
-          <a href={network.href}>
-              <p><img class='icon'  src={'/Images/' + network.imgSrc} alt="logo" /></p>
-          </a>
+  <div class="dropdown">
+    <button class="menuItem Nodes underlineText dropbtn">PUBLIC NODES</button>
+    <div class="dropdown-content menuItem">
+      {publiNodes.map((node) => (
+        <a class="copy-button" data-input-id={node.id}>
+          <label>{node.name}</label>
+          <input id={node.id} value={node.href} readonly />
+        </a>
       ))}
+    </div>
   </div>
+</div>
+
+<div class='lg:flex flex justify-center'>
+  {networks.map((network) => (
+    <a href={network.href}>
+      <p><img class='icon' src={'/Images/' + network.imgSrc} alt="logo" /></p>
+    </a>
+  ))}
+</div>

@@ -3,12 +3,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-/* Debugging borders - comment out when not needed 
-* {
-  border-style: solid; 
-  border-color: red;
-  border-width: .5px;
-}*/
+
 * {
   box-sizing: border-box;
 }

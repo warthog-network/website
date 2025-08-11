@@ -1,6 +1,6 @@
 ---
 import Astrobar from '../components/AstroBar.astro';
-import Hamburger from './Hamburger.astro';
+
 import DropDownMenu from '../components/Menu.astro';
 
 ---
@@ -58,18 +58,29 @@ import DropDownMenu from '../components/Menu.astro';
         }
     }
     .navbarstyles{
-  position: fixed;
+  position: sticky;
   top: 0;
-  left: 0;
   z-index: 1000; /* Ensure it's above other content */
 }
+.close-button {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        z-index: 1100; /* Above menu content */
+    }
 </style>
 
-<div class="w-full flex justify-between items-center">
+
+<div class="w-full flex justify-between items-center navbarstyles">
     
     <Astrobar />
   
 </div>
 <div class="mobileMenu">
+    <button class="close-button">×</button>
     <DropDownMenu  />
 </div>
