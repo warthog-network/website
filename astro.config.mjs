@@ -15,7 +15,7 @@ export default defineConfig({
   experimental: {
     csp: {
       directives: [
-        "default-src 'self'",
+        "default-src 'self' https://api.coingecko.com",
         "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com"
       ],
       styleDirective: {
