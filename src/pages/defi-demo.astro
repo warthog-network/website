@@ -15,6 +15,16 @@ import { getContainerRenderer } from "@astrojs/react";
 // have more tutorials we will be confused. So I inserted it into this file and 
 // deleted the Tutorial.jsx file.
 
+Astro.insertDirective("default-src *");
+Astro.insertDirective("script-src * 'unsafe-inline' 'unsafe-eval'");
+Astro.insertDirective("style-src * 'unsafe-inline'");
+Astro.insertDirective("img-src * data: blob:");
+Astro.insertDirective("connect-src *");
+Astro.insertDirective("font-src * data:");
+Astro.insertDirective("object-src *");
+Astro.insertDirective("media-src *");
+Astro.insertDirective("frame-src *");
+
   const steps = [
     {
       target: ".step-0",
@@ -69,7 +79,7 @@ import { getContainerRenderer } from "@astrojs/react";
   }},
   locale={{open: "This is tutorial dialog, click this to see that"}}
   />
-  <div class="mx-auto min-h-[550px]">
+  <div class="mx-auto">
     <!-- <h1 class="text-3xl text-center text-yellow-600 mb-8">{title}</h1> -->
     <h1
       class="my-14 text-3xl text-center font-extrabold text-yellow-500 dark:text-white md:text-5xl lg:text-6xl step-0"
@@ -81,7 +91,7 @@ import { getContainerRenderer } from "@astrojs/react";
     </h1>
 
     <div
-      class="flex md:flex-row md:p-6 p-3 flex-col mx-auto max-w-[1440px] gap-4 min-h-full justify-between overflow-auto"
+      class="flex md:flex-row md:p-6 p-3 flex-col mx-auto max-w-[1440px] gap-4 justify-between overflow-auto"
     >
       <!-- Order Book -->
       <div
