@@ -58,11 +58,37 @@ const networks = [
       }
     });
   }
+
+  // Dropdown toggle functionality
+  function closeAllDropdowns() {
+    document.querySelectorAll('.dropdown').forEach(dd => {
+      dd.classList.remove('active');
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.dropdown')) {
+      closeAllDropdowns();
+    }
+  });
+
+  document.querySelectorAll('.dropbtn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const dropdown = btn.parentElement;
+      const isActive = dropdown.classList.contains('active');
+      closeAllDropdowns();
+      if (!isActive) {
+        dropdown.classList.add('active');
+      }
+    });
+  });
 </script>
 
 <style>
   .menu{
-      
+       
           display: flex;
           align-items: center;
           height: 2.5rem;
@@ -72,7 +98,14 @@ const networks = [
           height: 1.875rem;
           margin: 4px;
         }
-
+        .menuspace{
+         font-family: Montserrat;
+        font-size: clamp(0.727rem, 1.079vw, 0.875rem);        
+        font-weight: 400;
+        line-height: 2.5rem;
+        text-underline-position: from-font;
+        text-decoration-skip-ink: none;
+        }
       .menuItem {
         font-family: Montserrat;
         font-size: clamp(0.727rem, 1.079vw, 0.875rem);
@@ -99,6 +132,7 @@ const networks = [
         text-decoration: none;
       }
 a{
+
   cursor: pointer;
 }
 label{
@@ -127,12 +161,14 @@ input{
 
       @media screen and (min-width: 1024px) {
         .menu {
+          
           min-width: 493px;
           margin-left: auto;
           margin-right: auto;
         }
 
         .menu a {
+         
           display: inline-block;
           padding: .5rem;
         }
@@ -161,6 +197,7 @@ input{
 
 /* The container <div> - needed to position the dropdown content */
 .dropdown {
+  
   font-family: Montserrat;
   font-size: clamp(0.727rem, 1.079vw, 0.875rem);
   font-weight: 400;
@@ -174,19 +211,40 @@ input{
 }
 
 /* Dropdown Content (Hidden by Default) */
+
 .dropdown-content {
+  margin-bottom: 10rem;
   display: none;
   position: absolute;
-  background-color: #f1f1f1;
-  min-width: 160px;
-  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  background-color: #2a2a2a;
+  min-width: 300px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5);
   z-index: 1;
+  border-radius: 4px;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
 }
-
+.ghost{
+    display: none;
+}
+@media screen and (max-width: 1023px) {
+  .dropdown-content {
+    transform: translate(-50%, 0%);
+    box-shadow: 0px -8px 16px 0px rgba(0,0,0,0.5);
+    border-radius: 4px 4px 0 0;
+  }
+  .dropdown{
+    display: none;
+  }
+  .ghost{
+    display: block;
+  }
+}
 /* Links inside the dropdown */
 .dropdown-content a {
-  color: black;
-  padding: 12px 16px;
+  color: rgb(255, 255, 255);
+  padding: 12px 50px;
   text-decoration: none;
   display: block;
 }
@@ -197,22 +255,22 @@ input {
 /* Change color of dropdown links on hover */
 .dropdown-content a:hover {background-color: rgb(245, 208, 0);}
 
-/* Show the dropdown menu on hover */
-.dropdown:hover .dropdown-content {display: block;}
+/* Show the dropdown menu on active class */
+.dropdown.active .dropdown-content {display: block;}
 
 /* Change the background color of the dropdown button when the dropdown content is shown */
-.dropdown:hover .dropbtn {background-color: transparent;}
+.dropdown.active .dropbtn {background-color: transparent;}
 </style>
 
 <div class='menu'>
   {links.map((link) => (
-    <a class="menuItem flex-wrap" target={link.target} href={link.href}>
+    <a class=" flex-wrap menuspace" target={link.target} href={link.href}>
       <p class="underlineText">{link.name}</p>
     </a>
   ))}
 
   {wallet.map((link) => (
-    <a class="menuItem" href={link.href}>
+    <a class="menuspace" href={link.href}>
       <p class="underlineText">{link.name}</p>
     </a>
   ))}
@@ -236,4 +294,16 @@ input {
       <p><img class='icon' src={'/Images/' + network.imgSrc} alt="logo" /></p>
     </a>
   ))}
+  
 </div>
+<div class="dropdown ghost menu">
+    <button class="menuItem Nodes underlineText dropbtn">PUBLIC NODES</button>
+    <div class="dropdown-content menuItem">
+      {publiNodes.map((node) => (
+        <a class="copy-button" data-input-id={node.id}>
+          <label>{node.name}</label>
+          <input id={node.id} value={node.href} readonly />
+        </a>
+      ))}
+    </div>
+  </div>
