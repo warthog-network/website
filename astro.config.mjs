@@ -4,6 +4,7 @@ import react from '@astrojs/react';
 import tailwind from '@astrojs/tailwind';
 import mdx from '@astrojs/mdx';
 import netlify from '@astrojs/netlify';
+import { sha256 } from 'ethers';
 
 export default defineConfig({
   output: 'server',
@@ -16,10 +17,12 @@ export default defineConfig({
     csp: {
       directives: [
         "default-src 'self' https://api.coingecko.com",
-        "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com"
+        "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com",
+        "img-src 'self' data:"
       ],
       styleDirective: {
         resources: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"]
+       
       }
     }
   },
