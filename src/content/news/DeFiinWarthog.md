@@ -62,13 +62,13 @@ New Assets can be created by warthog users. During this process the initial dist
 <h1>Asset Names </h1>
 <br/>
 Asset names consist of alphanumeric characters ([A-Za-z0-9]) of maximal length 5.
-<br/>
+<br/><br/>
 <h1>Asset Creation Modes</h1>
 <br/>
 Later, Warthog will offer several different asset creation modes, however in the first phase we will only support traditional creation of an asset where the creator holds the entire supply.
-<br/>
+<br/><br/>
 <h1>Trading</h1>
 <br/>
 On Warthog every asset automatically has a single liquidity pool attached with WART as quote currency. Similarly to other DeFi platforms, traders will be able to provide liquidity to a pool in exchange for liquidity tokens, thus participating passively on trading activity, or actively create limit orders that will be automatically matched against other orders and against the liquidity pool.
-<br/>
+<br/><br/>
 This means that every asset can only be exchanged for WART while WART can be exchanged for any asset. Liquidity tokens cannot be traded but redeemed. Like in other DeFi implementations, depending on market conditions, holders of liquidity tokens can receive yield based on active pool trading of other users but can also suffer from impermanent loss when the price drifts away into one direction.
