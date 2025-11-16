@@ -1,4 +1,3 @@
-
 ---
 category: "News Update"
 title: "Bitcointry"
