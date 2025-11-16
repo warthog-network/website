@@ -16,3 +16,18 @@ width:10rem;
     justify-content: space-between;
     flex-wrap: wrap;
 }
+table {
+  border-collapse: collapse; /* Ensures borders touch */
+  width: 100%;
+    empty-cells: hide; /* Add this line */
+}
+
+th, td {
+  border: 1px solid #ddd; /* Adds a 1px solid light gray border */
+  padding: 8px; /* Adds spacing within cells */
+  text-align: left; /* Aligns text to the left */
+}
+
+th {
+  background-color: #f2f2f2; /* Optional: adds a light gray background to header cells */
+}
