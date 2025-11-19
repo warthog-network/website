@@ -17,45 +17,43 @@ width:10rem;
     flex-wrap: wrap;
 }
 /* Your existing table styles – keep them unchanged */
-table {
-  font-family: 'Montserrat';
+.article-content table {
   border-collapse: collapse;
   width: 100%;
   empty-cells: hide;
-  border: 1px solid black;  /* Adds the black outer outline */
+  border: 1px solid black;  /* Your black outer outline */
 }
 
-th {
+.article-content th {
   padding: 0.5rem;
 }
 
-td {
+.article-content td {
   padding: 0.5rem;
   outline: 0.5px solid rgb(126, 124, 124);
 }
 
-/* Scale down and make scrollable on small screens */
+/* Scope the scrollable/scale logic to articles only */
 @media (max-width: 768px) {
-  table {
-    overflow-x: auto;              /* Enables horizontal scrolling */
-    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-    min-width: 560px;              /* Adjust this to force scrolling (e.g., wider than most mobile viewports) */
-    font-size: 0.85rem;            /* Your existing shrink */
-    display: block;                /* Needed for overflow-x to work on tables */
+  .article-content table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    min-width: 560px;
+    font-size: 0.85rem;
+    display: block;
   }
 
-  th, td {
+  .article-content th, .article-content td {
     padding: 0.5rem;
     outline: 0.5px solid rgb(126, 124, 124);
-    white-space: nowrap;           /* Prevents wrapping, keeps columns tight for scrolling */
+    white-space: nowrap;
   }
 }
 
-/* On larger screens: Reset to normal table behavior (no scrolling needed) */
 @media (min-width: 769px) {
-  table {
-    display: table;  /* Restore standard table layout */
-    overflow-x: visible;  /* No scroll */
-    min-width: auto;  /* Fit naturally */
+  .article-content table {
+    display: table;
+    overflow-x: visible;
+    min-width: auto;
   }
 }
