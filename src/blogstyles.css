@@ -18,33 +18,44 @@ width:10rem;
 }
 /* Your existing table styles – keep them unchanged */
 table {
+  font-family: 'Montserrat';
   border-collapse: collapse;
   width: 100%;
   empty-cells: hide;
+  border: 1px solid black;  /* Adds the black outer outline */
 }
 
-    th {
-        padding: 0.5rem;
-    }
-    td {
-        padding: 0.5rem;
-        outline: 0.5px solid rgb(126, 124, 124);
-    }
+th {
+  padding: 0.5rem;
+}
 
-/* Scale down on small screens – adjust values as needed */
-@media (max-width: 768px) {  /* Matches your layout's mobile breakpoint */
+td {
+  padding: 0.5rem;
+  outline: 0.5px solid rgb(126, 124, 124);
+}
+
+/* Scale down and make scrollable on small screens */
+@media (max-width: 768px) {
   table {
-    min-width: auto;     /* Let it shrink to fit the screen */
-    font-size: 0.85rem;  /* Smaller text – tweak to 0.75rem if too big */
+    overflow-x: auto;              /* Enables horizontal scrolling */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    min-width: 560px;              /* Adjust this to force scrolling (e.g., wider than most mobile viewports) */
+    font-size: 0.85rem;            /* Your existing shrink */
+    display: block;                /* Needed for overflow-x to work on tables */
   }
-      th {
-        padding: 0.5rem;
-    }
-    td {
-        padding: 0.5rem;
-          outline: 0.5px solid rgb(126, 124, 124);
-        white-space: normal; /* Allow text to wrap naturally */
-        word-break: break-word; /* Break long words if needed */
-    }
 
+  th, td {
+    padding: 0.5rem;
+    outline: 0.5px solid rgb(126, 124, 124);
+    white-space: nowrap;           /* Prevents wrapping, keeps columns tight for scrolling */
+  }
+}
+
+/* On larger screens: Reset to normal table behavior (no scrolling needed) */
+@media (min-width: 769px) {
+  table {
+    display: table;  /* Restore standard table layout */
+    overflow-x: visible;  /* No scroll */
+    min-width: auto;  /* Fit naturally */
+  }
 }
