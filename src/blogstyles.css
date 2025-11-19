@@ -1,33 +1,61 @@
-.AncientDays{
-border-radius: 3rem;
-width:10rem;
+/* Your existing nice styles – keep them */
+.AncientDays {
+  border-radius: 3rem;
+  width: 10rem;
 }
-.AncientDays>img{
-    margin-top: .5rem;
-    margin-bottom: .5rem;
-    border-radius: 10rem;
-    object-fit: scale-down;
-    
-    max-height: 10rem;
-    }
-
-
-.authors{
-    justify-content: space-between;
-    flex-wrap: wrap;
+.AncientDays > img {
+  margin-top: .5rem;
+  margin-bottom: .5rem;
+  border-radius: 10rem;
+  object-fit: scale-down;
+  max-height: 10rem;
 }
+
+.authors {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+/* ─────── FIXED TABLE STYLES ─────── */
 table {
-  border-collapse: collapse; /* Ensures borders touch */
+  border-collapse: collapse;
   width: 100%;
-    empty-cells: hide; /* Add this line */
+  min-width: 600px;        /* ← THIS forces horizontal scroll when needed */
+  empty-cells: hide;
 }
 
 th, td {
-  border: 1px solid #ddd; /* Adds a 1px solid light gray border */
-  padding: 8px; /* Adds spacing within cells */
-  text-align: left; /* Aligns text to the left */
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+  white-space: nowrap;     /* ← prevents text wrap, keeps columns tight */
 }
 
 th {
-  background-color: #f2f2f2; /* Optional: adds a light gray background to header cells */
+  background-color: #f2f2f2;
+  position: sticky;
+  left: 0;
+  z-index: 10;
+}
+
+/* THE WINNING SCROLL WRAPPER – works 100% in Astro + MDX 2025 */
+.scrollable-table {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 2rem 0;
+  padding: 1px 0;                    /* tiny trick to avoid margin collapse */
+  
+  /* Full-bleed on mobile – kills page-level horizontal scroll forever */
+  margin-left: calc(-50vw + 50%);
+  margin-right: calc(-50vw + 50%);
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  right: 50%;
+  transform: translateX(-50%);
+  
+  /* Optional: nice look */
+  border-radius: 0.75rem;
+  background: #fff;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
 }
