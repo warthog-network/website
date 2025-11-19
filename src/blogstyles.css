@@ -1,26 +1,25 @@
-/* Your existing nice styles – keep them */
-.AncientDays {
-  border-radius: 3rem;
-  width: 10rem;
+.AncientDays{
+border-radius: 3rem;
+width:10rem;
 }
-.AncientDays > img {
-  margin-top: .5rem;
-  margin-bottom: .5rem;
-  border-radius: 10rem;
-  object-fit: scale-down;
-  max-height: 10rem;
-}
+.AncientDays>img{
+    margin-top: .5rem;
+    margin-bottom: .5rem;
+    border-radius: 10rem;
+    object-fit: scale-down;
+    
+    max-height: 10rem;
+    }
 
-.authors {
-  justify-content: space-between;
-  flex-wrap: wrap;
-}
 
-/* ─────── FIXED TABLE STYLES ─────── */
+.authors{
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
 table {
   border-collapse: collapse;
   width: 100%;
-  min-width: 600px;        /* ← THIS forces horizontal scroll when needed */
+  min-width: 560px;
   empty-cells: hide;
 }
 
@@ -28,34 +27,23 @@ th, td {
   border: 1px solid #ddd;
   padding: 8px;
   text-align: left;
-  white-space: nowrap;     /* ← prevents text wrap, keeps columns tight */
+  white-space: nowrap;
 }
 
 th {
   background-color: #f2f2f2;
-  position: sticky;
-  left: 0;
-  z-index: 10;
 }
 
-/* THE WINNING SCROLL WRAPPER – works 100% in Astro + MDX 2025 */
-.scrollable-table {
+/* Perfect responsive scroll — no wrapper div needed */
+table {
+  display: block;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  margin: 2rem 0;
-  padding: 1px 0;                    /* tiny trick to avoid margin collapse */
-  
-  /* Full-bleed on mobile – kills page-level horizontal scroll forever */
-  margin-left: calc(-50vw + 50%);
-  margin-right: calc(-50vw + 50%);
-  width: 100vw;
-  position: relative;
-  left: 50%;
-  right: 50%;
-  transform: translateX(-50%);
-  
-  /* Optional: nice look */
-  border-radius: 0.75rem;
-  background: #fff;
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+}
+
+@media (min-width: 769px) {
+  table {
+    display: table;
+    overflow-x: visible;
+  }
 }
