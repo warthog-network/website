@@ -48,11 +48,13 @@ By using a lazy copy-on-write database and careful design it is possible to allo
 Due to technical reasons we must distinguish between tokens and assets. Every asset is a token but there are also liquidity tokens and the WART token which are not considered assets. More precisely, tokens consist of three token types with the following properties:
 <br/><br/>
 
+<div className="overflow-x-auto my-4 md:mx-0 md:px-0 [max-width:768px]:-mx-[100vw] [max-width:768px]:left-1/2 [max-width:768px]:w-screen [max-width:768px]:-translate-x-1/2 [max-width:768px]:relative">
 | Token Type       | Transferable | Tradable for | Redeemable |
 |:-----------------|:------------:|:-------------|:----------:|
 | WART             | yes          | any asset    | no         |
 | Assets           | yes          | WART         | no         |
 | Liquidity Tokens | yes          | none         | yes        |
+</div>
 
 <br/><br/>
 <h1>Asset Creation</h1>

@@ -16,18 +16,44 @@ width:10rem;
     justify-content: space-between;
     flex-wrap: wrap;
 }
-table {
-  border-collapse: collapse; /* Ensures borders touch */
+/* Your existing table styles – keep them unchanged */
+.article-content table {
+  border-collapse: collapse;
   width: 100%;
-    empty-cells: hide; /* Add this line */
+  empty-cells: hide;
+  border: 1px solid black;  /* Your black outer outline */
 }
 
-th, td {
-  border: 1px solid #ddd; /* Adds a 1px solid light gray border */
-  padding: 8px; /* Adds spacing within cells */
-  text-align: left; /* Aligns text to the left */
+.article-content th {
+  padding: 0.5rem;
 }
 
-th {
-  background-color: #f2f2f2; /* Optional: adds a light gray background to header cells */
+.article-content td {
+  padding: 0.5rem;
+  outline: 0.5px solid rgb(126, 124, 124);
+}
+
+/* Scope the scrollable/scale logic to articles only */
+@media (max-width: 768px) {
+  .article-content table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    min-width: 560px;
+    font-size: 0.85rem;
+    display: block;
+  }
+
+  .article-content th, .article-content td {
+    padding: 0.5rem;
+    outline: 0.5px solid rgb(126, 124, 124);
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 769px) {
+  .article-content table {
+    display: table;
+    overflow-x: visible;
+    min-width: auto;
+  }
 }
