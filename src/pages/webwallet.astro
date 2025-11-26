@@ -1,5 +1,6 @@
 ---
 import Wallet from '../components/wallet.jsx';
+import BaseLayout from '../layouts/BaseLayout.astro';
 import WalletLayout from '../layouts/WalletLayout.astro';
 
 // Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
@@ -7,6 +8,6 @@ import WalletLayout from '../layouts/WalletLayout.astro';
 ---
 
 
-<WalletLayout>
+<BaseLayout>
  <Wallet client:load />
-</WalletLayout>
+</BaseLayout>

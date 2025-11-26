@@ -21,17 +21,22 @@ const {title} = Astro.props;
 <link rel="icon" type="image/svg+xml" href="/favicon.png" />
     <!-- Add any additional styles or scripts needed for the wallet page -->
     <link rel="stylesheet" href="/components/wallet.css" />
+    <style>
+      .navbarclass button:focus {
+        outline: none;
+      }
+    </style>
   </head>
 		
 	<body>
     {/* above, make it possible to place footer at botton even if 
     content is not big enough, it is useful for embedding PDF such that the embed height is just as much that the page height is exactly fitting in view port*/}
-		
+		 <BaseHead id="app-header" class="navbarclass" />
         <main>
             <slot />
         </main>
         
-        <footer>
+        <footer id="app-footer">
            <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -41,8 +46,24 @@ const {title} = Astro.props;
     });
   }
 </script>
-            
+             <Footer/>
            
         </footer>
+        <script>
+          import "../scripts/menu.js";
+        </script>
+        <script>
+          document.addEventListener('DOMContentLoaded', () => {
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator.standalone === true);
+            const isMobile = window.innerWidth < 768; // Adjust breakpoint as needed (e.g., 768px for tablets/mobile)
+            const header = document.getElementById('app-header');
+            const footer = document.getElementById('app-footer');
+
+            if (isMobile && isStandalone) {
+              if (header) header.style.display = 'none';
+              if (footer) footer.style.display = 'none';
+            }
+          });
+        </script>
 	</body>
 </html>
