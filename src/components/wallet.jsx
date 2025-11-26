@@ -8,7 +8,7 @@ const API_URL = '/api/proxy';
 
 const defaultNodeList = [
   'https://warthognode.duckdns.org',
-  'http://51.75.21.134:3001',
+  'http://217.182.64.43:3001',
   'http://62.72.44.89:3001',
   'http://dev.node-s.com:3001',
   'https://node.wartscan.io'
