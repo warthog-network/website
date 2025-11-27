@@ -37,7 +37,9 @@ const {title} = Astro.props;
         </main>
         
         <footer id="app-footer">
-           <script>
+ 
+             <Footer/>
+                     <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/webwallet/sw.js', { scope: '/webwallet/' })
@@ -45,15 +47,8 @@ const {title} = Astro.props;
         .catch(err => console.error('Service Worker registration failed:', err));
     });
   }
-</script>
-             <Footer/>
-           
-        </footer>
-        <script>
-          import "../scripts/menu.js";
-        </script>
-        <script>
-          document.addEventListener('DOMContentLoaded', () => {
+    import "../scripts/menu.js";
+              document.addEventListener('DOMContentLoaded', () => {
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator.standalone === true);
             const isMobile = window.innerWidth < 768; // Adjust breakpoint as needed (e.g., 768px for tablets/mobile)
             const header = document.getElementById('app-header');
@@ -64,6 +59,8 @@ const {title} = Astro.props;
               if (footer) footer.style.display = 'none';
             }
           });
-        </script>
+</script>
+        </footer>
+ 
 	</body>
 </html>
