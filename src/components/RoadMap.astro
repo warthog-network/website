@@ -1,140 +1,422 @@
 ---
 import ContentDiv from "../components/ContentDiv.jsx";
+
+const milestones = [
+  {
+    title: "Q1 2024",
+    status: "Shipped",
+    tone: "complete",
+    href: "https://docs.warthog.network/roadmap/#q1-2024",
+    items: [
+      { text: "Develop world's first PoBW algo", done: true },
+      { text: "Develop stratum pool", done: true },
+      { text: "Listing on Exbitron", done: true },
+      { text: "Listing on Xeggex", done: true },
+    ],
+  },
+  {
+    title: "Q2 2024",
+    status: "Shipped",
+    tone: "complete",
+    href: "https://docs.warthog.network/roadmap/#q2-2024",
+    items: [
+      {
+        text: "Refactor networking code to support multiple transports",
+        done: true,
+      },
+      { text: "Research Sandwich-Proof DeFi", done: true },
+    ],
+  },
+  {
+    title: "Q3 2024",
+    status: "Shipped",
+    tone: "complete",
+    href: "https://docs.warthog.network/roadmap/#q3-2024",
+    items: [
+      {
+        text: "Research in-browser node support (unique in the crypto world)",
+        done: true,
+      },
+      {
+        text: "Implement matching engine C++ code for Sandwich-Proof DeFi",
+        done: true,
+      },
+    ],
+  },
+  {
+    title: "Q4 2024",
+    status: "Shipped",
+    tone: "complete",
+    href: "https://docs.warthog.network/roadmap/#q4-2024",
+    items: [
+      { text: "Listing on CoinEx", done: true },
+      { text: "Listing on Bit.com", done: true },
+      { text: "New website based on Astro", done: true },
+      { text: "Support blogs on the website", done: true },
+      { text: "Publish Warthog browser wallet extension", done: true },
+    ],
+  },
+  {
+    title: "Q1 2025",
+    status: "Active sprint",
+    tone: "current",
+    href: "https://docs.warthog.network/roadmap/#q1-2025",
+    items: [
+      { text: "Create demo of custom matching engine", done: true },
+      { text: "Write scientific paper about Sandwich-Proof DeFi", done: true },
+      { text: "List Warthog on Coinmarketcap", done: false },
+      { text: "Add nice UI for Browser Nodes", done: false },
+    ],
+  },
+  {
+    title: "Q2 2025",
+    status: "Up next",
+    tone: "next",
+    href: "https://docs.warthog.network/roadmap/#q2-2025",
+    items: [
+      { text: "Add infrastructure for Browser Nodes", done: false },
+      { text: "Add documentation for Browser Nodes", done: false },
+      { text: "Implement light-weight DeFi", done: false },
+      { text: "Enable token support in testnet", done: false },
+      { text: "Enable Liquidity Farming in testnet", done: false },
+      { text: "Enable Sandwich-Proof DeFi in testnet", done: false },
+    ],
+  },
+  {
+    title: "Q3 2025",
+    status: "In planning",
+    tone: "planning",
+    href: "https://docs.warthog.network/roadmap/#q3-2025",
+    items: [
+      { text: "Enable P2P Browser Node communication using WebRTC", done: false },
+      { text: "Add token support in mainnet", done: false },
+      {
+        text: "Add \"Copy Balance\" feature for newly created tokens in testnet",
+        done: false,
+      },
+    ],
+  },
+  {
+    title: "Q4 2025",
+    status: "Future focus",
+    tone: "future",
+    href: "https://docs.warthog.network/roadmap/#q4-2025",
+    items: [{ text: "Add Dividend payout feature for tokens", done: false }],
+  },
+  {
+    title: "2026",
+    status: "Research",
+    tone: "research",
+    href: "https://docs.warthog.network/roadmap/#2026",
+    items: [
+      {
+        text: "Research atomic swaps and assess feasibility of implementation in Warthog",
+        done: false,
+      },
+    ],
+  },
+];
 ---
 
 <style>
-    .h12{ 
-        font-size:1.3rem;
-        font-weight: 800;
-        font-style: bold;
+  .roadmap-blanket {
+    padding-block: clamp(3rem, 6vw, 6rem);
+    padding-inline: clamp(1rem, 4vw, 5rem);
+    background: radial-gradient(circle at 20% 20%, #1f2937 0%, #050810 65%);
+    color: #f8fafc;
+  }
+
+  .roadmap__shell {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(1rem, 2vw, 1.75rem);
+  }
+
+  .roadmap__eyebrow {
+    font-size: 0.8rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #a5b4fc;
+  }
+
+  .roadmap__title-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .roadmap__title-row h2 {
+    font-size: clamp(2.25rem, 4vw, 3.25rem);
+    margin: 0;
+  }
+
+  .roadmap__cta {
+    color: #fcd34d;
+    font-size: 0.95rem;
+    text-decoration: none;
+    font-weight: 600;
+    display: inline-flex;
+    gap: 0.25rem;
+    align-items: center;
+    transition: color 0.2s ease;
+  }
+
+  .roadmap__cta:hover,
+  .roadmap__cta:focus-visible {
+    color: #fde047;
+  }
+
+  .roadmap__intro {
+    max-width: 48ch;
+    color: rgba(248, 250, 252, 0.75);
+    line-height: 1.5;
+  }
+
+  .roadmap-grid {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: clamp(1.25rem, 3vw, 2.5rem);
+    margin-top: 1rem;
+  }
+
+  @media (min-width: 960px) {
+    .roadmap-grid::before {
+      content: "";
+      position: absolute;
+      top: 1.5rem;
+      left: clamp(0.5rem, 2vw, 1.25rem);
+      right: clamp(0.5rem, 2vw, 1.25rem);
+      height: 1px;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(148, 163, 184, 0.4) 25%,
+        rgba(148, 163, 184, 0.4) 75%,
+        transparent 100%
+      );
+      pointer-events: none;
     }
-    li{
-        font-size: .8rem;
-    }
-    .road{
-        flex: 1 0 ;
-        flex-shrink: 0;
-        flex-grow: 1;
-        padding-top: 0;
-        max-height: 100%;
-        object-fit: scale-down;
-        margin-bottom: 1rem;
-        max-width: 100%;
-    }
-    .blanket{
-        padding-left: 12rem;
-        padding-right: 12rem;
-        align-items: center;
-        justify-content: center;
-        background: radial-gradient(
-            circle at 24.1% 68.8%,
-            rgb(50, 50, 50) 0%,
-            rgb(0, 0, 0) 99.4%
-        );
-           color: white;
-    }
-    @media (max-width:1224px){
-        .blanket{
-        padding-left: 2rem;
-        padding-right: 2rem;
-        align-items: center;
-        justify-content: center;
-        background: radial-gradient(
-            circle at 24.1% 68.8%,
-            rgb(50, 50, 50) 0%,
-            rgb(0, 0, 0) 99.4%
-        );
-           color: white;
-    }
-        
-    }
-    @media (max-width:824px){
-        .blanket{
-        padding-left: 0rem;
-        padding-right: 0rem;
-        align-items: center;
-        justify-content: center;
-        background: radial-gradient(
-            circle at 24.1% 68.8%,
-            rgb(50, 50, 50) 0%,
-            rgb(0, 0, 0) 99.4%
-        );
-           color: white;
-    }
-        
-    }
-    .RoadMap{
-      flex-wrap: wrap;
-      gap: 3rem;
-      padding: .1rem;
-      justify-content: space-around;
-      color: white;
-    }
-    .sectionline{
-        border-bottom: dotted;
-        margin-left: 5rem;
-        margin-right: 5rem;
-    }
-    section{
-        display: flex;
-        flex-wrap: wrap;
-        padding: 1rem;
-    }
-li{
-    padding: .35rem;
-    max-width: 20rem;
-    min-width: 15rem;
-}
-.title{
-    font-size: 3rem;
-    padding: 1rem;
-}
+  }
+
+  .milestone-card {
+    --accent: #818cf8;
+    position: relative;
+    border-radius: 1.25rem;
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.05),
+        rgba(15, 23, 42, 0.65)
+      ),
+      rgba(8, 12, 24, 0.85);
+    border: 1px solid rgba(226, 232, 240, 0.08);
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(16px);
+    color: inherit;
+    text-decoration: none;
+    transition: transform 0.25s ease, border-color 0.25s ease;
+  }
+
+  .milestone-card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(250, 204, 21, 0.6);
+  }
+
+  .milestone-card:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.8),
+      0 25px 45px rgba(0, 0, 0, 0.35);
+  }
+
+  .milestone-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 1.25rem;
+    padding: 1px;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.08),
+      rgba(255, 255, 255, 0)
+    );
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  .milestone-card[data-tone="complete"] {
+    --accent: #818cf8;
+  }
+
+  .milestone-card[data-tone="current"] {
+    --accent: #facc15;
+  }
+
+  .milestone-card[data-tone="next"] {
+    --accent: #38bdf8;
+  }
+
+  .milestone-card[data-tone="planning"] {
+    --accent: #34d399;
+  }
+
+  .milestone-card[data-tone="future"] {
+    --accent: #c084fc;
+  }
+
+  .milestone-card[data-tone="research"] {
+    --accent: #f472b6;
+  }
+
+  .milestone-card__meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(226, 232, 240, 0.75);
+  }
+
+  .milestone-card__phase {
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .milestone-card__phase::before {
+    content: "";
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 999px;
+    background: var(--accent);
+    box-shadow: 0 0 15px var(--accent);
+  }
+
+  .milestone-card__status {
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(248, 250, 252, 0.85);
+  }
+
+  .milestone-card h3 {
+    margin: 0.5rem 0 0;
+    font-size: 1.4rem;
+  }
+
+  .milestone-card ul {
+    margin: 0.75rem 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    font-size: 0.95rem;
+    color: rgba(226, 232, 240, 0.9);
+  }
+
+  .milestone-card li {
+    display: flex;
+    gap: 0.85rem;
+    line-height: 1.4;
+    position: relative;
+  }
+
+  .milestone-card li::before {
+    content: "";
+    width: 1.2rem;
+    height: 1.2rem;
+    margin-top: 0.1rem;
+    border-radius: 0.45rem;
+    flex-shrink: 0;
+    border: 1px solid rgba(226, 232, 240, 0.35);
+    background: rgba(15, 23, 42, 0.5);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .milestone-card li[data-done="true"] {
+    color: rgba(248, 250, 252, 0.95);
+  }
+
+  .milestone-card li[data-done="true"]::before {
+    content: "✔";
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+    border-color: transparent;
+    background: linear-gradient(135deg, var(--accent), #a855f7);
+    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.35),
+      0 0 14px rgba(129, 140, 248, 0.75);
+    text-shadow: 0 0 8px rgba(15, 23, 42, 0.65);
+  }
+
+  .milestone-card li[data-done="false"] {
+    color: rgba(226, 232, 240, 0.65);
+  }
 </style>
 
-<div class="blanket [text-shadow:_5px_1px_5px_rgb(0_0_0_)]">
-<ContentDiv>
-  <h2  class="pl-2 text-5xl py-3">Roadmap</h2>
-  <h2  class="pl-3 text-s underline"><a href="https://docs.warthog.network/roadmap/" target="_blank">See completed milestones »</a></h2>
-  <div class="RoadMap">
-    <section class="road">
-      <div>
-        <h3 class = "mt-3 text-lg font-semibold">Q1 2025</h3>
-        <li>
-          Research Sandwich-Proof DeFi
-        </li>
-        <li>
-          Write scientific paper about Sandwich-Proof DeFi 
-        </li>
-        <li>
-          List Warthog on Coinmarketcap aggregator
-        </li>
-        <li>Add nice UI for Browser Nodes</li>
-        <li>List Warthog in mobile wallets or well-know open-source wallets.</li>
+<div class="roadmap-blanket [text-shadow:_5px_1px_5px_rgb(0_0_0_)]">
+  <ContentDiv>
+    <div class="roadmap__shell">
+      <div class="roadmap__heading">
+        <p class="roadmap__eyebrow">Product Direction</p>
+        <div class="roadmap__title-row">
+          <h2>Roadmap</h2>
+          <a
+            class="roadmap__cta"
+            href="https://docs.warthog.network/roadmap/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            See completed milestones »
+          </a>
+        </div>
+        <p class="roadmap__intro">
+          Follow where Warthog is headed next—from the protocol work we are running
+          right now through longer-range research that pushes the limits of
+          Sandwich-Proof DeFi and browser-native nodes.
+        </p>
       </div>
-      <div>
-        <h3 class = "mt-3 text-lg font-semibold">Q2 2025</h3>
-        <li>Add infrastructure for Browser Nodes</li>
-        <li>Add documentation for Browser Nodes</li>
-        <li>Implement light-weight DeFi</li>
-        <li>Enable token support in testnet</li>
-        <li>Enable Liquidity Farming in testnet</li>
-        <li>Enable Sandwich-Proof DeFi in testnet</li>
-      </div>
-      <div>
-        <h3 class = "mt-3 text-lg font-semibold">Q3 2025</h3>
-        <li>Enable P2P Browser Node communication using WebRTC</li>
-        <li>Add token support in mainnet</li>
-        <li>Add "Copy Balance" feature for newly created tokens in Testnet</li>
-      </div>
-      <div>
-        <h3 class = "mt-3 text-lg font-semibold">Q4 2025</h3>
-        <li>Add Dividend payout feature for tokens</li>
-      </div>
-      <div>
-        <h3 class = "mt-3 text-lg font-semibold">2026</h3>
-        <li>Research on atomic swaps and assess feasibility of implementation in Warthog</li>
-      </div>
-    </section>
-  </div>
-</ContentDiv>
+
+      <section class="roadmap-grid" aria-label="Warthog roadmap 2024 through 2026">
+        {
+          milestones.map((milestone, index) => (
+            <a
+              class="milestone-card"
+              data-tone={milestone.tone}
+              href={milestone.href}
+              target="_blank"
+              rel="noreferrer noopener"
+              aria-label={`${milestone.title} milestone (${milestone.status})`}
+            >
+              <div class="milestone-card__meta">
+                <span class="milestone-card__phase">Phase {index + 1}</span>
+                <span class="milestone-card__status">{milestone.status}</span>
+              </div>
+              <h3>{milestone.title}</h3>
+              <ul>
+                {milestone.items.map((item) => (
+                  <li data-done={item.done}>{item.text}</li>
+                ))}
+              </ul>
+            </a>
+          ))
+        }
+      </section>
+    </div>
+  </ContentDiv>
 </div>
