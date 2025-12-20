@@ -1,127 +1,98 @@
 ---
-import Sync from '../BalkyImages/Rev.Featureimgs/SYNC.svg'
-import Balance from '../BalkyImages/Rev.Featureimgs/BALANCE.svg'
-import Browers from '../BalkyImages/Rev.Featureimgs/BROWERS.svg'
+import Sync from "../BalkyImages/Rev.Featureimgs/SYNC.svg";
+import Balance from "../BalkyImages/Rev.Featureimgs/BALANCE.svg";
+import Browsers from "../BalkyImages/Rev.Featureimgs/BROWERS.svg";
 
+const features = [
+  {
+    title: "Chain descriptor sync",
+    description:
+      "Light-weight sync that lets nodes understand each other’s forks, cutting bandwidth and CPU requirements for everyone.",
+    icon: Sync.src,
+  },
+  {
+    title: "Proof of Balanced Work",
+    description:
+      "The first PoBW algorithm where CPU matters again. It moves us closer to the “one machine, one vote” principle.",
+    icon: Balance.src,
+  },
+  {
+    title: "In-browser full nodes",
+    description:
+      "OPFS + SQLite enable persistent browser nodes. Close the tab and pick up where you left off—no chain wipe.",
+    icon: Browsers.src,
+  },
+];
 ---
 
-
 <style>
-   
-   p{
-    text-shadow: 5px 10px 7px rgb(10, 10, 10);
-    color: rgb(255, 255, 255);
-    font-size: .8rem;
-   }
-    h1 {
-        text-shadow: 5px 10px 7px rgb(10, 10, 10);
-        color: rgb(255, 255, 255);
-        font-size: 4rem;
-        margin-bottom: 3rem;
-        font-weight: 2rem;
-    }
-   
-h2{
-    color: white;
-}
+  .rev-section {
+    background: linear-gradient(180deg, rgba(5, 9, 20, 0.6), rgba(2, 4, 10, 0.95));
+    position: relative;
+  }
 
-section{
-    padding: 1rem;
-}
-img{
-    padding: 1rem;
-}
+  .rev-grid {
+    display: grid;
+    gap: clamp(1.5rem, 3vw, 2.75rem);
+  }
 
-.rev-grid {
-    gap: .1rem;
-  display: grid;
-  grid-template-columns: 1fn 2fn;
-  grid-template-areas: 
-  'rev-title rev-tech';
-}
-.rev-title {
-    margin-left: 2rem;
-  max-width: 25rem;
-  grid-area: rev-title;
-}
-.rev-tech {
-    text-shadow: 5px 10px 7px rgb(10, 10, 10);
-    margin-left: 10rem;
-    margin-top: 10rem;
-    max-width: 40rem;
-    justify-content: end;
- align-items: center;
-  grid-area: rev-tech;
-}
-.sweepin{
-    padding-left: 1.5rem;
-}
-@media screen and (max-width: 1040px){
-    .sweepin{
-        
-       
-    padding-left: 0rem;
-}
+  @media (min-width: 960px) {
     .rev-grid {
-        align-items: center;
-  display: inline-block;
-}
-.rev-title {
-   
-    color: aqua;
-    margin-left: 2rem;
-  max-width: 2rem;
-  grid-area: rev-title;
-}
-.rev-tech {
-    
-    text-shadow: 5px 10px 7px rgb(10, 10, 10);
-max-width: 40rem;
-margin-top: -1rem;
-margin-left: -1rem;
-}
-img{
-    
-    width: 5rem;
-    padding: 1rem;
-}
-h1 {
-    text-shadow: 5px 10px 7px rgb(10, 10, 10);
-        color: white;
-        font-size: 2.5rem;
-        margin-bottom: 3rem;
-        font-weight: 2rem;
+      grid-template-columns: 0.75fr 1.25fr;
+      align-items: center;
     }
-}
+  }
+
+  .rev-intro h2 {
+    margin: 0.35rem 0 1rem;
+  }
+
+  .rev-card {
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(8, 12, 24, 0.85);
+    padding: clamp(1.25rem, 3vw, 1.75rem);
+    display: grid;
+    gap: 0.6rem;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .rev-card__title {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+
+  .rev-card__desc {
+    margin: 0;
+    color: var(--color-text-muted);
+  }
+
+  .rev-card img {
+    width: 3rem;
+  }
 </style>
 
-<div class="rev-grid" >
-    <div class="rev-title">
-        <p>TECH</p>
-        <h1>Revolutionary features</h1>
+<section class="section rev-section">
+  <div class="site-shell rev-grid">
+    <div class="rev-intro">
+      <p class="section__eyebrow">Tech</p>
+      <h2 class="section__title">Revolutionary features</h2>
+      <p class="section__lede">
+        Browser-native nodes, smarter sync, and a consensus algorithm that values balanced work—
+        Warthog is engineering the tools a modern decentralized network actually needs.
+      </p>
     </div>
-    <div class="rev-tech ">
-        <section class="flex"><img src={Sync.src}/>
-            <div>
-            <h2>Chain descriptor based sync</h2>
-            <p>Experimental new light-weight sync mechanism which requires less network communication 
-                and computational resources. For the first time, nodes can understand each other's forks 
-                and use this information to sync more efficiently.</p>
-            </div>
-            </section>
-        <section class="flex"><img src={Balance.src}/><div>
-            <h2>Proof of Balanced Work</h2>
-            <p>The world's first algorithm using PoBW concept! Now power of CPU 
-                is also important! This brings us closer to Satoshi's original vision 
-                of decentralization than ever before since large farms cannot easily 
-                join:  "one machine one vote"</p></div>
-            </section>
-        <section class="flex"><img src={Browers.src}/><div>
-            <h2 class="sweepin">In-browser node</h2>
-            <p class="sweepin">Using bleeding edge technology like OPFS and SQLite's recent support for it, 
-                we are the first cryptocurrency project which successfully ported full 
-                nodes to the browser - including chain store! Chain is not deleted when 
-                you close the browser.</p></div>
-            </section>
+
+    <div class="content-grid">
+      {
+        features.map((feature) => (
+          <article class="rev-card">
+            <img src={feature.icon} alt="" loading="lazy" />
+            <h3 class="rev-card__title">{feature.title}</h3>
+            <p class="rev-card__desc">{feature.description}</p>
+          </article>
+        ))
+      }
     </div>
-</div>
+  </div>
+</section>

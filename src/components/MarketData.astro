@@ -293,18 +293,20 @@ import { createChart } from 'lightweight-charts';
       const nextHalvingPercentage = ((amountToMineForNextHalving / maxSupply) * 100);
       
       const progressBar = document.querySelector(".progress-bar");
-      const progressLine = document.querySelector(".progress-line");
       const totalSupply = document.querySelector(".totalSupply");
       const progressPercentage = document.querySelector(".progress-percentage");
       const progressCirculatingSupply = document.querySelector(".progress-circulatingSupply");
-      const nextHalvingLine = document.querySelector(".nextHalving-line");
+      const currentMarker = document.querySelector(".progress-marker--current");
+      const halvingMarker = document.querySelector(".progress-marker--halving");
+      const nextHalvingValue = document.querySelector(".next-halving-value");
 
-      progressBar.style.width = percentage + '%';
-      progressLine.style.right = (100 - percentage) + '%'
-      nextHalvingLine.style.right = (100 - nextHalvingPercentage) + '%';
+      progressBar.style.width = `${percentage}%`;
+      currentMarker.style.left = `${percentage}%`;
+      halvingMarker.style.left = `${nextHalvingPercentage}%`;
       totalSupply.textContent = maxSupply.toLocaleString();
-      progressPercentage.textContent = percentage.toFixed(2).toString() + '%';
-      progressCirculatingSupply.textContent = circulatingSupply.toLocaleString();
+      progressPercentage.textContent = `${percentage.toFixed(2)}% mined`;
+      progressCirculatingSupply.textContent = `${circulatingSupply.toLocaleString()} WART`;
+      nextHalvingValue.textContent = `${amountToMineForNextHalving.toLocaleString()} WART`;
     }
     async BuildHalvingPointEstimates(apiData) {
       const blockHeightPerHalving = 3153600;
@@ -353,98 +355,239 @@ import { createChart } from 'lightweight-charts';
 
 
 <style>
-  
-.wartChart {
-  
-  width: 100%;
-  height: 290px;
-}
-.wartSectionHeading {
-  font-family: 'Montserrat';
-  font-style: normal;
-  font-weight: 700;
-  font-size: 50px;
-  line-height: 61px;
-}
-.wartSectionHeading {
-  font-family: 'Montserrat';
-  font-style: normal;
-  font-weight: 700;
-  font-size: 50px;
-  line-height: 61px;
-}
-.wartWhereToBuyBlock {
-  width: 150px;
-  height: 205px;
-  @apply md:mx-[40px] mx-4;
-}
-.wartWhereToBuyBlockText {
-  font-family: 'Montserrat';
-  font-style: normal;
-  font-weight: 400;
-  font-size: 20px;
-  line-height: 20px;
-}
-.chartSelected {
-  background-color: darkslategray;
-}
-.percentage {
-  margin-left: auto;
-}
+  .market-section {
+    background: rgba(5, 9, 20, 0.5);
+  }
+
+  .market-grid {
+    display: grid;
+    gap: clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  @media (min-width: 1024px) {
+    .market-grid {
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+      align-items: stretch;
+    }
+  }
+
+  .chart-card,
+  .market-stack,
+  .progress-card {
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(8, 12, 24, 0.85);
+    padding: clamp(1.25rem, 3vw, 1.75rem);
+    box-shadow: var(--shadow-card);
+  }
+
+  .chart-panel__actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 0.75rem;
+  }
+
+  .chart-panel__canvas {
+    width: 100%;
+    height: 320px;
+    border-radius: var(--radius-md);
+    background: #020617;
+  }
+
+  .chart-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-top: 1rem;
+  }
+
+  .chart-btn {
+    border-radius: var(--radius-full);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 0.45rem 1.1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text);
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .chartSelected {
+    background: rgba(56, 189, 248, 0.2);
+    border-color: rgba(56, 189, 248, 0.6);
+  }
+
+  .market-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .market-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .market-stat {
+    margin: 0;
+    color: var(--color-text-muted);
+  }
+
+  .market-stat__value {
+    color: var(--color-text);
+    font-size: 1.1rem;
+  }
+
+  .countdown-pill {
+    display: inline-flex;
+    padding: 0.35rem 0.85rem;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.08);
+    font-size: 0.85rem;
+  }
+
+  .progress-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .progress-meta {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .progress-meta__block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .progress-percentage {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #fcd34d;
+  }
+
+  .progress-circulatingSupply,
+  .next-halving-value {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+  }
+
+  .progress-track {
+    width: 100%;
+    height: 20px;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.12);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    position: absolute;
+    inset: 0;
+    width: 0%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #facc15 0%, #f59e0b 60%, #f4bc38 100%);
+    transition: width 0.4s ease;
+  }
+
+  .progress-marker {
+    position: absolute;
+    top: -14px;
+    width: 2px;
+    height: 48px;
+    background: rgba(248, 250, 252, 0.65);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .progress-marker span {
+    position: absolute;
+    top: -18px;
+    background: rgba(0, 0, 0, 0.65);
+    padding: 0.1rem 0.35rem;
+    border-radius: 999px;
+    font-size: 0.65rem;
+  }
 </style>
 
-<market-data class="sm:w-full md:w-9/12 h-128">
-
-  <div class="">
-    <wart-chart class="relative ">
-      <button id="toggleChart" class="block ml-auto mb-4 mr-4 bg-black text-white text-xs border border-gray-300 rounded-lg px-4 py-2">Candle/Line</button> 
-      <div id = "realChart" class="wartChart flex justify-between items-center bg-black"/>
-      <div class="flex md:flex-row sm:flex-col justify-center mt-4">
-        <div>
-          <button id="1dayChart" class="GetChartFunction bg-black text-white mx-6 rounded-lg px-4 py-2 md:w-auto ">1 Day</button>
-          <button id="5dayChart" class="GetChartFunction bg-black text-white mx-6 rounded-lg px-4 py-2 md:w-auto ">5 Days</button>
-        </div>
-        <div>
-          <button id="1moChart" class="GetChartFunction bg-black text-white mx-6 rounded-lg px-4 py-2 md:w-auto ">1 Month</button>
-          <button id="6moChart" class="GetChartFunction bg-black text-white mx-6 rounded-lg px-4 py-2 md:w-auto ">6 Months</button>
-        </div>
-        
-        
-      </div>
-      
-    </wart-chart>
-    <section class="md:ml-6 md:mr-6 flex md:flex-row flex-col md:justify-between md:items-center p-4">
-  
-      <div class="mr-4 h-48 md:w-auto sm:w-full">
-          <div class="text-white text-xl font-bold mb-4" id="symbol">Loading...</div>
-          <p class="text-white">CoinGecko: <span id="price">Loading...</span></p>
-          <p class="text-white">MarketCap: <span id="marketCap">Not yet updated</span></p>
-          <p class="text-white">Last updated: <span id="updated">Not yet updated</span></p>
-          <span class="text-xs text-white pt-4">Next update in: </span><div class="inline-block text-xs text-black mt-4 ml-2 p-2 rounded-md bg-gray-200" id="countdown"></div>
+<market-data>
+  <section class="market-section section">
+    <ContentDiv>
+      <div class="section__header">
+        <p class="section__eyebrow">Live data</p>
+        <h2 class="section__title">Market pulse & supply progress</h2>
       </div>
 
-      <div class="relative md:w-2/3 sm:w-full h-48 bg-black md:p-2 flex md:items-center">
-        <div class="absolute top-0 left-0 text-xl font-bold text-white">MINED</div>
-        <div class="relative w-full top-28 md:top-8 h-6 bg-gray-300 rounded-l-sm">
-          <div class="relative progress-bar h-full bg-yellow-400 rounded-l-sm">
-            <img class="absolute right-1" src={warthogShape.src}/>
+      <div class="market-grid">
+        <article class="chart-card">
+          <div class="chart-panel__actions">
+            <button id="toggleChart" class="chart-btn">Candle / Line</button>
           </div>
-          <div class="progress-line absolute right-0 top-[-70px] w-[2px] h-[70px] bg-yellow-400">
-            <div class="progress-percentage absolute right-0 mr-2 text-yellow-400 font-bold text-xl">%</div>
-            <div class="progress-circulatingSupply absolute right-0 mr-2 top-6 text-white text-md">0</div>
-          </div>
-          <div class="nextHalving-line absolute right-0 top-[-70px] w-[2px] h-[70px] bg-green-400">
-            <div class="absolute left-0 ml-2 text-md font-bold text-green-400">Next Halving</div>
-          </div>
-          <div class="text-right">
-            <div class="inline-block text-md text-white">Total:</div>
-            <div class="inline-block totalSupply font-bold text-md text-white"></div>
-          </div>
-        </div>
-        
+          <wart-chart>
+            <div id="realChart" class="chart-panel__canvas"></div>
+            <div class="chart-controls">
+              <button id="1dayChart" class="chart-btn GetChartFunction">1 Day</button>
+              <button id="5dayChart" class="chart-btn GetChartFunction">5 Days</button>
+              <button id="1moChart" class="chart-btn GetChartFunction">1 Month</button>
+              <button id="6moChart" class="chart-btn GetChartFunction">6 Months</button>
+            </div>
+          </wart-chart>
+        </article>
+
+        <section class="market-stack">
+          <article class="market-card">
+            <div class="text-xl font-semibold" id="symbol">Loading...</div>
+            <p class="market-stat">
+              CoinGecko price:
+              <span class="market-stat__value" id="price">Loading...</span>
+            </p>
+            <p class="market-stat">
+              Market cap:
+              <span class="market-stat__value" id="marketCap">Not yet updated</span>
+            </p>
+            <p class="market-stat">
+              Last updated:
+              <span class="market-stat__value" id="updated">Not yet updated</span>
+            </p>
+            <div class="countdown-pill">
+              Next update in:&nbsp;<span id="countdown">...</span>
+            </div>
+          </article>
+
+          <article class="progress-card">
+            <div class="progress-meta">
+              <div class="progress-meta__block">
+                <p class="market-meta__stat">Mined supply</p>
+                <span class="progress-percentage">0% mined</span>
+                <span class="progress-circulatingSupply">0 WART</span>
+              </div>
+              <div class="progress-meta__block text-right text-green-400">
+                <p class="market-meta__stat">Next halving</p>
+                <span class="next-halving-value">--</span>
+                <small class="muted">Total <span class="totalSupply font-semibold text-white"></span></small>
+              </div>
+            </div>
+            <div class="progress-track">
+              <div class="progress-bar"><img class="absolute right-1" src={warthogShape.src}/></div>
+              <div class="progress-marker progress-marker--current">
+                <span>Now</span>
+              </div>
+              <div class="progress-marker progress-marker--halving">
+                <span>Halving</span>
+              </div>
+            </div>
+          </article>
+        </section>
       </div>
-    </section>
-  </div>
- 
-  
+    </ContentDiv>
+  </section>
 </market-data>

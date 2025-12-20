@@ -56,7 +56,6 @@ Astro.insertDirective("frame-src *");
     },
   ];
 
-  export const deleteSvgPath = deleteSvg.src;
 ---
 
 <style>
@@ -653,7 +652,7 @@ Astro.insertDirective("frame-src *");
     </div>
     <script>
       import LeaderLine from "leader-line-new";
-import { deleteSvgPath } from "./defi-demo.astro";
+      const deleteSvgPath = {JSON.stringify(deleteSvg.src)};
       const arrowTokenFromSeller = new LeaderLine(
         document.getElementById("sellTokenArrowPoint"),
         document.getElementById("buyTokenArrowPoint")
