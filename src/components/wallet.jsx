@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import CryptoJS from 'crypto-js';
 import axios from 'axios';
 import { ethers } from 'ethers';
+import TransactionHistory from './TransactionHistory';
 import './Wallet.css';
 
 const API_URL = '/api/proxy';
@@ -616,6 +617,7 @@ useEffect(() => {
     <p className="warning">
       Warning: Private key is encrypted in localStorage. Keep your password secure.
     </p>
+    <TransactionHistory address={wallet.address} node={selectedNode} />
   </section>
 )}
 
