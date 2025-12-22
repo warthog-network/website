@@ -8,10 +8,9 @@ import './Wallet.css';
 const API_URL = '/api/proxy';
 
 const defaultNodeList = [
-  'https://warthognode.duckdns.org',
   'http://217.182.64.43:3001',
   'http://65.87.7.86:3001',
-
+  'https://warthognode.duckdns.org',
 ];
 
 const Wallet = () => {
@@ -42,7 +41,7 @@ const Wallet = () => {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [isWalletProcessed, setIsWalletProcessed] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [selectedNode, setSelectedNode] = useState(defaultNodeList[4]);
+  const [selectedNode, setSelectedNode] = useState(defaultNodeList[0]);
   const [showDownloadPrompt, setShowDownloadPrompt] = useState(false);
 
 
@@ -272,7 +271,7 @@ useEffect(() => {
     const mnemonic = mnemonicObj.phrase;
     const path = pathType === 'hardened' ? "m/44'/2070'/0'/0/0" : "m/44'/2070'/0/0/0";
     const hdWallet = ethers.HDNodeWallet.fromPhrase(mnemonic, '', path);
-    const publicKey = hdWallet.publicKey.slice(2);
+    const publicKey = hdWallet.compressedPublicKey.slice(2);
     const sha = ethers.sha256('0x' + publicKey).slice(2);
     const ripemd = ethers.ripemd160('0x' + sha).slice(2);
     const checksum = ethers.sha256('0x' + ripemd).slice(2, 10);
@@ -296,7 +295,7 @@ useEffect(() => {
       }
       const path = pathType === 'hardened' ? "m/44'/2070'/0'/0/0" : "m/44'/2070'/0/0/0";
       const hdWallet = ethers.HDNodeWallet.fromPhrase(mnemonic, '', path);
-      const publicKey = hdWallet.publicKey.slice(2);
+      const publicKey = hdWallet.compressedPublicKey.slice(2);
       const sha = ethers.sha256('0x' + publicKey).slice(2);
       const ripemd = ethers.ripemd160('0x' + sha).slice(2);
       const checksum = ethers.sha256('0x' + ripemd).slice(2, 10);
@@ -315,20 +314,30 @@ useEffect(() => {
   };
 
   const importFromPrivateKey = (privKey) => {
+    console.log('Input length:', privKey.length);  // Should be 64
+    console.log('Is hex:', /^[0-9a-fA-F]+$/.test(privKey));  // Should be true
     try {
+      if (privKey.length !== 64) {
+        throw new Error('Private key must be exactly 64 characters long');
+      }
+      if (!/^[0-9a-fA-F]+$/.test(privKey)) {
+        throw new Error('Private key must consist of hexadecimal characters only (0-9, a-f, A-F)');
+      }
       const signer = new ethers.Wallet('0x' + privKey);
-      const publicKey = signer.publicKey.slice(2);
+      const publicKey = signer.signingKey.compressedPublicKey.slice(2);
       const sha = ethers.sha256('0x' + publicKey).slice(2);
       const ripemd = ethers.ripemd160('0x' + sha).slice(2);
       const checksum = ethers.sha256('0x' + ripemd).slice(2, 10);
       const address = ripemd + checksum;
+      console.log('Derived address:', address);  // For extra verification
       return {
         privateKey: privKey,
         publicKey,
         address,
       };
     } catch (err) {
-      throw new Error('Invalid private key');
+      console.error('Validation error:', err.message);
+      throw new Error(err.message || 'Invalid private key');
     }
   };
 
@@ -687,7 +696,7 @@ useEffect(() => {
                   <input
                     type="text"
                     value={privateKeyInput}
-                    onChange={(e) => setPrivateKeyInput(e.target.value.trim())}
+                    onChange={(e) => setPrivateKeyInput(e.target.value.replace(/\s/g, ''))}
                     placeholder="Enter 64-character hex private key"
                     className="input"
                   />
