@@ -271,7 +271,7 @@ useEffect(() => {
     const mnemonic = mnemonicObj.phrase;
     const path = pathType === 'hardened' ? "m/44'/2070'/0'/0/0" : "m/44'/2070'/0/0/0";
     const hdWallet = ethers.HDNodeWallet.fromPhrase(mnemonic, '', path);
-    const publicKey = hdWallet.compressedPublicKey.slice(2);
+    const publicKey = hdWallet.publicKey.slice(2);
     const sha = ethers.sha256('0x' + publicKey).slice(2);
     const ripemd = ethers.ripemd160('0x' + sha).slice(2);
     const checksum = ethers.sha256('0x' + ripemd).slice(2, 10);
@@ -295,7 +295,7 @@ useEffect(() => {
       }
       const path = pathType === 'hardened' ? "m/44'/2070'/0'/0/0" : "m/44'/2070'/0/0/0";
       const hdWallet = ethers.HDNodeWallet.fromPhrase(mnemonic, '', path);
-      const publicKey = hdWallet.compressedPublicKey.slice(2);
+      const publicKey = hdWallet.publicKey.slice(2);
       const sha = ethers.sha256('0x' + publicKey).slice(2);
       const ripemd = ethers.ripemd160('0x' + sha).slice(2);
       const checksum = ethers.sha256('0x' + ripemd).slice(2, 10);
@@ -312,8 +312,7 @@ useEffect(() => {
       throw new Error('Invalid mnemonic');
     }
   };
-
-  const importFromPrivateKey = (privKey) => {
+const importFromPrivateKey = (privKey) => {
     console.log('Input length:', privKey.length);  // Should be 64
     console.log('Is hex:', /^[0-9a-fA-F]+$/.test(privKey));  // Should be true
     try {
@@ -340,7 +339,7 @@ useEffect(() => {
       throw new Error(err.message || 'Invalid private key');
     }
   };
-
+  
   const handleWalletAction = async () => {
     setError(null);
     setIsWalletProcessed(false);
@@ -696,7 +695,7 @@ useEffect(() => {
                   <input
                     type="text"
                     value={privateKeyInput}
-                    onChange={(e) => setPrivateKeyInput(e.target.value.replace(/\s/g, ''))}
+                   onChange={(e) => setPrivateKeyInput(e.target.value.replace(/\s/g, ''))}
                     placeholder="Enter 64-character hex private key"
                     className="input"
                   />
