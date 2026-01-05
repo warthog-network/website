@@ -323,9 +323,14 @@ const updateTxStatuses = async () => {
     setIsWalletProcessed(false);
     setIsLoggedIn(false);
     setFailedTransactions([]); // Clear failed logs on wallet clear
+    setSentTransactions([]); // Clear sent logs on wallet clear
     setNonceInput('');
     setMnemonic('');
     setPrivateKeyInput('');
+    setAddress('');
+    setToAddr('');
+    setAmount('');
+    setFee('');
   };
 
   const generateWallet = async (wordCount, pathType) => {
