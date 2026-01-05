@@ -15,13 +15,7 @@ const publiNodes = [
   { name: 'Rafiki', href: 'http://65.87.7.86:3001', id: 'myInput' },
   { name: 'Polaire', href: 'http://217.182.64.43:3001', id: 'myInput2' },
   { name: 'Losthymns', href: 'https://warthognode.duckdns.org', id: 'myInput3' },
-  {/*
-  { name: 'Andrew', href: 'https://node.wartscan.io', id: 'myInput2' },
   
-  { name: 'Blu Asia', href: 'http://62.72.44.89:3001', id: 'myInput4' },
-  { name: 'Blu Central Us', href: 'http://89.117.150.162:3001', id: 'myInput5' },
-  { name: 'Blu E.U.', href: 'http://185.209.228.16:3001', id: 'myInput6' },
-  { name: 'Johnnyb Us East', href: 'http://dev.node-s.com:3001', id: 'myInput7' }, */}
 ];
 
 const networks = [
@@ -87,6 +81,41 @@ const networks = [
       }
     });
   });
+
+  // Cycling social icon functionality
+  function initCyclingSocialIcon() {
+    const cyclingLink = document.getElementById('cycling-social-link');
+    const cyclingImg = document.getElementById('cycling-social-img');
+    
+    if (!cyclingLink || !cyclingImg) return;
+
+    const networks = [
+      { imgSrc: 'github_gray.svg', href: 'https://github.com/warthog-network' },
+      { imgSrc: 'discord_gray.svg', href: 'https://discord.com/invite/QMDV8bGTdQ' },
+      { imgSrc: 'telegram_gray.svg', href: 'https://t.me/warthognetwork' },
+      { imgSrc: 'twitter_gray.svg', href: 'https://x.com/warthognetwork' },
+    ];
+
+    let currentIndex = 0;
+
+    function cycleSocialIcon() {
+      currentIndex = (currentIndex + 1) % networks.length;
+      const network = networks[currentIndex];
+      cyclingLink.href = network.href;
+      cyclingImg.src = '/Images/' + network.imgSrc;
+      cyclingImg.alt = network.imgSrc.replace('_gray.svg', '').replace('.svg', '');
+    }
+
+    // Cycle every 3 seconds
+    setInterval(cycleSocialIcon, 3000);
+  }
+
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCyclingSocialIcon);
+  } else {
+    initCyclingSocialIcon();
+  }
 </script>
 
 <style>
@@ -101,6 +130,77 @@ const networks = [
           height: 1.875rem;
           margin: 4px;
         }
+      .social-links {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+
+      @media screen and (min-width: 1101px) {
+        .desktop-social-links,
+        .desktop-cycling-social {
+          display: inline-flex;
+          align-items: center;
+          margin-left: 0.5rem;
+          vertical-align: middle;
+        }
+      }
+
+      .cycling-social-icon {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .cycling-social-icon img {
+        transition: opacity 0.3s ease;
+      }
+
+      /* Desktop: Show all 4 social links when there's space */
+      @media screen and (min-width: 1400px) {
+        .desktop-social-links {
+          display: inline-flex;
+        }
+        .desktop-cycling-social {
+          display: none !important;
+        }
+        .mobile-social-links {
+          display: none !important;
+        }
+      }
+
+      /* Desktop: Show cycling icon when space gets tight (before hamburger) */
+      @media screen and (min-width: 1101px) and (max-width: 1399px) {
+        .desktop-social-links {
+          display: none !important;
+        }
+        .desktop-cycling-social {
+          display: inline-flex;
+        }
+        .mobile-social-links {
+          display: none !important;
+        }
+      }
+
+      /* Mobile menu: Show all 4 social links only in mobile menu */
+      @media screen and (max-width: 1100px) {
+        .desktop-social-links {
+          display: none !important;
+        }
+        .desktop-cycling-social {
+          display: none !important;
+        }
+        /* Hide mobile-social-links by default on mobile (will be shown by BaseHead in mobileMenu) */
+        .mobile-social-links {
+          display: none !important;
+        }
+        /* Also hide any social-links that might be showing */
+        .social-links:not(.desktop-social-links) {
+          display: none !important;
+        }
+      }
         .menuspace{
          font-family: Montserrat;
         font-size: clamp(0.727rem, 1.079vw, 0.875rem);        
@@ -230,16 +330,36 @@ input{
 .ghost{
     display: none;
 }
-@media screen and (max-width: 1023px) {
+@media screen and (max-width: 1100px) {
   .dropdown-content {
-    transform: translate(-50%, 0%);
-    box-shadow: 0px -8px 16px 0px rgba(0,0,0,0.5);
-    border-radius: 4px 4px 0 0;
+    position: relative;
+    transform: none;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5);
+    border-radius: 4px;
+    margin-top: 0.5rem;
+    width: 100%;
+    max-width: 100%;
+    left: auto;
+    top: auto;
+    min-width: auto;
+    box-sizing: border-box;
   }
   .dropdown{
     display: none;
   }
   .ghost{
+    display: block;
+    width: 100%;
+  }
+  .ghost.dropdown {
+    width: 100%;
+    display: block;
+  }
+  .mobileMenu .dropdown-content {
+    position: relative;
+    display: none;
+  }
+  .mobileMenu .dropdown.active .dropdown-content {
     display: block;
   }
 }
@@ -249,6 +369,11 @@ input{
   padding: 12px 50px;
   text-decoration: none;
   display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 input {
   background: none;
@@ -288,17 +413,8 @@ input {
       ))}
     </div>
   </div>
-</div>
-
-<div class='lg:flex flex justify-center'>
-  {networks.map((network) => (
-    <a href={network.href}>
-      <p><img class='icon' src={'/Images/' + network.imgSrc} alt="logo" /></p>
-    </a>
-  ))}
   
-</div>
-<div class="dropdown ghost menu">
+  <div class="dropdown ghost menu">
     <button class="menuItem Nodes underlineText dropbtn">PUBLIC NODES</button>
     <div class="dropdown-content menuItem">
       {publiNodes.map((node) => (
@@ -309,3 +425,26 @@ input {
       ))}
     </div>
   </div>
+
+  <div class='mobile-social-links'>
+    {networks.map((network) => (
+      <a href={network.href} target="_blank">
+        <img class='icon' src={'/Images/' + network.imgSrc} alt="logo" />
+      </a>
+    ))}
+  </div>
+</div>
+
+<span class='social-links desktop-social-links'>
+  {networks.map((network) => (
+    <a href={network.href} target="_blank">
+      <img class='icon' src={'/Images/' + network.imgSrc} alt="logo" />
+    </a>
+  ))}
+</span>
+
+<span class="cycling-social-icon desktop-cycling-social">
+  <a id="cycling-social-link" href={networks[0].href} target="_blank">
+    <img id="cycling-social-img" class='icon' src={'/Images/' + networks[0].imgSrc} alt="social" />
+  </a>
+</span>
