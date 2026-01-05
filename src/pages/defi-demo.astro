@@ -1,7 +1,6 @@
 ---
 import priceTagSvg from "../BalkyImages/deFiDemo/price-tag.svg";
 import coinStackSvg from "../BalkyImages/deFiDemo/coin-stack-svgrepo-com.svg";
-import deleteSvg from "../BalkyImages/deFiDemo/delete-svgrepo-com.svg";
 import QA from "../components/QA.jsx"
 import swapVirticalCircleSvg from "../BalkyImages/deFiDemo/swap-vertical-circle.svg";
 import rightArrowSvg from "../BalkyImages/deFiDemo/rightarrow.jpg";
@@ -15,46 +14,40 @@ import { getContainerRenderer } from "@astrojs/react";
 // have more tutorials we will be confused. So I inserted it into this file and 
 // deleted the Tutorial.jsx file.
 
-Astro.insertDirective("default-src *");
-Astro.insertDirective("script-src * 'unsafe-inline' 'unsafe-eval'");
-Astro.insertDirective("style-src * 'unsafe-inline'");
-Astro.insertDirective("img-src * data: blob:");
-Astro.insertDirective("connect-src *");
-Astro.insertDirective("font-src * data:");
-Astro.insertDirective("object-src *");
-Astro.insertDirective("media-src *");
-Astro.insertDirective("frame-src *");
+// Set the full CSP as a single header string
+const csp = "default-src *; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; img-src * data: blob:; connect-src *; font-src * data:; object-src *; media-src *; frame-src *;";
+Astro.response.headers.set('Content-Security-Policy', csp);
 
-  const steps = [
-    {
-      target: ".step-0",
-      content: "This a demonstration of Warthog's sandwich-proof DeFi matching engine between a generic TOKEN and WART.",
-    },
-    {
-      target: ".step-1",
-      content: "In the order book you can insert multiple swap orders between TOKEN and WART. The limit price is the cost of a single TOKEN in WART.",
-    },
-    {
-      target: ".step-2",
-      content: "The sellers order book can be filled with custom limit swaps from TOKEN to WART.",
-    },
-    {
-      target: ".step-3",
-      content: "The buyers order book can be filled with custom limit swaps from WART to TOKEN. Note that in contrast to traditional order books, you specify the input WART quantity (quote currency) for the swap and not in TOKEN quantity (base currency) you want to buy.",
-    },
-    {
-      target: ".step-4",
-      content: "The token fill flow between between buyers, sellers and the pool is visualized here.",
-    },
-    {
-      target: ".step-5",
-      content: "You can control the pool TOKEN liquidity here.",
-    },
-    {
-      target: ".step-6",
-      content: "You can control the pool WART liquidity here.",
-    },
-  ];
+const steps = [
+  {
+    target: ".step-0",
+    content: "This a demonstration of Warthog's sandwich-proof DeFi matching engine between a generic TOKEN and WART.",
+  },
+  {
+    target: ".step-1",
+    content: "In the order book you can insert multiple swap orders between TOKEN and WART. The limit price is the cost of a single TOKEN in WART.",
+  },
+  {
+    target: ".step-2",
+    content: "The sellers order book can be filled with custom limit swaps from TOKEN to WART.",
+  },
+  {
+    target: ".step-3",
+    content: "The buyers order book can be filled with custom limit swaps from WART to TOKEN. Note that in contrast to traditional order books, you specify the input WART quantity (quote currency) for the swap and not in TOKEN quantity (base currency) you want to buy.",
+  },
+  {
+    target: ".step-4",
+    content: "The token fill flow between between buyers, sellers and the pool is visualized here.",
+  },
+  {
+    target: ".step-5",
+    content: "You can control the pool TOKEN liquidity here.",
+  },
+  {
+    target: ".step-6",
+    content: "You can control the pool WART liquidity here.",
+  },
+];
 
 ---
 
@@ -63,6 +56,31 @@ Astro.insertDirective("frame-src *");
   font-family: 'Montserrat';
 }
 
+/* Mobile-specific adjustments */
+@media (max-width: 767px) {
+  .fontfamily {
+    font-size: 0.875rem; /* Smaller text on mobile */
+  }
+  input {
+    font-size: 0.875rem; /* Scale down input text */
+  }
+  .step-4 {
+    padding: 1rem; /* Reduce padding */
+  }
+  /* Make fixed boxes smaller on mobile */
+  [id$="ArrowPoint"] {
+    width: 60px !important; /* Override w-[80px] */
+    height: 40px !important; /* Override h-[50px] */
+    min-width: 60px !important;
+  }
+  table th, table td {
+    padding: 0.5rem !important; /* Reduce cell padding */
+    font-size: 0.75rem; /* Smaller table text */
+  }
+  .max-w-[48px] {
+    max-width: 40px !important; /* Shrink scrollable spans */
+  }
+}
 </style>
 <BaseLayout title={title}>
   <Joyride
@@ -74,6 +92,8 @@ Astro.insertDirective("frame-src *");
     options: {
       zIndex: 10000,
       beaconSize: 70,
+      width: '90%', /* Limit tooltip width on mobile */
+      maxWidth: '300px',
     },
   }},
   locale={{open: "This is tutorial dialog, click this to see that"}}
@@ -90,15 +110,15 @@ Astro.insertDirective("frame-src *");
     </h1>
 
     <div
-      class="flex md:flex-row md:p-6 p-3 flex-col mx-auto max-w-[1440px] gap-4 justify-between overflow-auto"
+      class="flex md:flex-row md:p-6 p-3 flex-col mx-auto max-w-[1440px] gap-4 justify-between overflow-hidden" <!-- Changed to overflow-hidden to prevent side-scroll -->
     >
       <!-- Order Book -->
       <div
-        class="flex flex-col gap-4 md:w-[40%] md:max-w-[450px] my-first-step step-1"
+        class="flex flex-col gap-4 md:w-[40%] md:max-w-[450px] w-full min-w-0 flex-shrink my-first-step step-1" <!-- Added w-full min-w-0 flex-shrink for mobile shrink -->
       >
         <!-- Sell Order Book -->
         <div
-          class="relative flex flex-col w-[100%] h-auto text-gray-700 bg-white rounded-xl border border-[#F9B13C]"
+          class="relative flex flex-col w-full h-auto text-gray-700 bg-white rounded-xl border border-[#F9B13C]" <!-- w-full instead of w-[100%] -->
         >
           <div
             class="relative mx-4 mt-4 overflow-hidden text-gray-700 bg-white rounded-none bg-clip-border"
@@ -110,8 +130,8 @@ Astro.insertDirective("frame-src *");
                 Sell Order Book
               </h5>
               <div class="flex flex-col gap-2 step-2">
-                <div class="flex justify-between gap-2">
-                  <div class="relative h-10 w-full min-w-[70px] my-second-step">
+                <div class="flex justify-between gap-2 flex-wrap"> <!-- Added flex-wrap for mobile -->
+                  <div class="relative h-10 w-full min-w-[70px] my-second-step flex-shrink"> <!-- flex-shrink -->
                     <div
                       class="absolute grid w-8 h-8 top-2/4 right-3 -translate-y-2/4 place-items-center text-blue-gray-500"
                     >
@@ -128,7 +148,7 @@ Astro.insertDirective("frame-src *");
                       Limited Price
                     </label>
                   </div>
-                  <div class="relative h-10 w-full min-w-[70px]">
+                  <div class="relative h-10 w-full min-w-[70px] flex-shrink"> <!-- flex-shrink -->
                     <div
                       class="absolute grid w-6 h-6 top-2/4 right-3 -translate-y-2/4 place-items-center text-blue-gray-500"
                     >
@@ -157,8 +177,8 @@ Astro.insertDirective("frame-src *");
               </div>
             </div>
           </div>
-          <div class="p-4">
-            <table class="w-full text-left bg-red-300">
+          <div class="p-4 overflow-x-auto"> <!-- Added overflow-x-auto for table horizontal scroll on mobile -->
+            <table class="w-full min-w-max text-left bg-red-300"> <!-- min-w-max to allow scroll if needed -->
               <thead>
                 <tr>
                   <td
@@ -206,7 +226,7 @@ Astro.insertDirective("frame-src *");
 
         <!-- Buy Order Book -->
         <div
-          class="relative flex flex-col w-[100%] h-auto text-gray-700 bg-white rounded-xl border border-[#F9B13C]"
+          class="relative flex flex-col w-full h-auto text-gray-700 bg-white rounded-xl border border-[#F9B13C]" <!-- w-full -->
         >
           <div
             class="relative mx-4 mt-4 overflow-hidden text-gray-700 bg-white rounded-none bg-clip-border"
@@ -218,8 +238,8 @@ Astro.insertDirective("frame-src *");
                 Buy Order Book
               </h5>
               <div class="flex flex-col gap-2 step-3">
-                <div class="flex justify-between gap-2">
-                  <div class="relative h-10 w-full min-w-[70px]">
+                <div class="flex justify-between gap-2 flex-wrap"> <!-- Added flex-wrap -->
+                  <div class="relative h-10 w-full min-w-[70px] flex-shrink"> <!-- flex-shrink -->
                     <div
                       class="absolute grid w-8 h-8 top-2/4 right-3 -translate-y-2/4 place-items-center text-blue-gray-500"
                     >
@@ -236,7 +256,7 @@ Astro.insertDirective("frame-src *");
                       Limited Price
                     </label>
                   </div>
-                  <div class="relative h-10 w-full min-w-[70px]">
+                  <div class="relative h-10 w-full min-w-[70px] flex-shrink"> <!-- flex-shrink -->
                     <div
                       class="absolute grid w-6 h-6 top-2/4 right-3 -translate-y-2/4 place-items-center text-blue-gray-500"
                     >
@@ -265,8 +285,8 @@ Astro.insertDirective("frame-src *");
               </div>
             </div>
           </div>
-          <div class="p-4">
-            <table class="w-full text-left bg-green-300 text-green-700">
+          <div class="p-4 overflow-x-auto"> <!-- Added overflow-x-auto -->
+            <table class="w-full min-w-max text-left bg-green-300 text-green-700"> <!-- min-w-max -->
               <thead>
                 <tr>
                   <td
@@ -315,21 +335,21 @@ Astro.insertDirective("frame-src *");
 
       <!-- Swap -->
       <div
-        class="flex md:flex-col gap-4 border-2 md:w-[20%] border-black border-dashed justify-between rounded-xl p-4 md:min-w-max bg-white step-4"
+        class="flex md:flex-col gap-4 border-2 md:w-[20%] border-black border-dashed justify-between rounded-xl p-4 md:min-w-max bg-white step-4 min-w-0 flex-shrink" <!-- Added min-w-0 flex-shrink -->
       >
         <div
           class="flex md:flex-row flex-col justify-between items-center gap-2 text-sm overflow-auto"
         >
           <div
             id="sellTokenArrowPoint"
-            class="bg-[gray] text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden"
+            class="bg-[gray] text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden flex-shrink" <!-- flex-shrink -->
           >
             <span id="sellToken" class="block w-full overflow-auto">0</span> TOKEN
           </div>
           <img src={rightArrowSvg.src} class="w-8 h-8 md:rotate-0 rotate-90" />
           <div
             id="buyWartArrowPoint"
-            class="bg-gray-900 text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden"
+            class="bg-gray-900 text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden flex-shrink" <!-- flex-shrink -->
           >
             <span id="buyWart" class="block w-full overflow-auto">0</span> WART
           </div>
@@ -339,14 +359,14 @@ Astro.insertDirective("frame-src *");
         >
           <div
             id="sellWartArrowPoint"
-            class="bg-gray-900 text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden"
+            class="bg-gray-900 text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden flex-shrink" <!-- flex-shrink -->
           >
             <span id="sellWart" class="block w-full overflow-auto">0</span> WART
           </div>
           <img src={rightArrowSvg.src} class="w-8 h-8 md:rotate-0 rotate-90" />
           <div
             id="buyTokenArrowPoint"
-            class="bg-[gray] text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden"
+            class="bg-[gray] text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden flex-shrink" <!-- flex-shrink -->
           >
             <span id="buyToken" class="block w-full overflow-auto">0</span> TOKEN
           </div>
@@ -355,7 +375,7 @@ Astro.insertDirective("frame-src *");
 
       <!-- Pool & Summary -->
       <div
-        class="flex flex-col gap-2 overflow-hidden text-gray-700 bg-white md:w-[40%] md:min-w-max"
+        class="flex flex-col gap-2 overflow-hidden text-gray-700 bg-white md:w-[40%] md:min-w-max w-full min-w-0 flex-shrink" <!-- Added w-full min-w-0 flex-shrink -->
       >
         <!-- pool table -->
         <div>
@@ -365,10 +385,10 @@ Astro.insertDirective("frame-src *");
             Pool
           </h5>
           <div
-            class="flex md:flex-col w-full mt-1 border border-gray-600 rounded-md overflow-hidden "
+            class="flex md:flex-col w-full mt-1 border border-gray-600 rounded-md overflow-hidden overflow-x-auto" <!-- Added overflow-x-auto -->
           >
             <div
-              class="flex md:flex-row flex-col gap-0 text-center overflow-auto w-full  bg-gray-900"
+              class="flex md:flex-row flex-col gap-0 text-center overflow-auto w-full min-w-max bg-gray-900" <!-- min-w-max for scroll -->
             >
               <div
                 class="flex justify-center py-2 w-full transition-colors min-w-6 cursor-pointer  text-white"
@@ -415,7 +435,7 @@ Astro.insertDirective("frame-src *");
               >
                 <div
                   id="poolInteractedTokenArrowPoint"
-                  class="bg-[gray] m-w-[200px] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden"
+                  class="bg-[gray] m-w-[200px] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden flex-shrink" <!-- flex-shrink -->
                 >
                   <span
                     id="poolInteractedToken"
@@ -439,7 +459,7 @@ Astro.insertDirective("frame-src *");
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-[gray] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden"
+                  class="bg-[gray] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden flex-shrink" <!-- flex-shrink -->
                 >
                   <span id="afterToken" class="block w-full overflow-auto"
                     >100</span
@@ -450,7 +470,7 @@ Astro.insertDirective("frame-src *");
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-[gray] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] place-content-center text-center overflow-hidden"
+                  class="bg-[gray] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] place-content-center text-center overflow-hidden flex-shrink" <!-- flex-shrink -->
                 >
                   <span id="afterToken" class="block w-full overflow-auto"
                     >TOKEN</span
@@ -466,7 +486,7 @@ Astro.insertDirective("frame-src *");
               >
                 <div
                   id="poolInteractedWartArrowPoint"
-                  class="bg-gray-900 text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden"
+                  class="bg-gray-900 text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden flex-shrink" <!-- flex-shrink -->
                 >
                   <span
                     id="poolInteractedWart"
@@ -490,7 +510,7 @@ Astro.insertDirective("frame-src *");
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-gray-900 text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden"
+                  class="bg-gray-900 text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden flex-shrink" <!-- flex-shrink -->
                 >
                   <span id="afterWart" class="block w-full overflow-auto"
                     >200</span
@@ -501,7 +521,7 @@ Astro.insertDirective("frame-src *");
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-gray-900 text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center place-content-center overflow-hidden"
+                  class="bg-gray-900 text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center place-content-center overflow-hidden flex-shrink" <!-- flex-shrink -->
                 >
                   <span id="afterWart" class="block w-full overflow-auto"
                     >WART</span
@@ -516,7 +536,7 @@ Astro.insertDirective("frame-src *");
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-[orange] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center"
+                  class="bg-[orange] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center flex-shrink" <!-- flex-shrink -->
                 >
                   <span
                     id="poolInteractedPrice"
@@ -528,7 +548,7 @@ Astro.insertDirective("frame-src *");
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-[orange] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center"
+                  class="bg-[orange] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center flex-shrink" <!-- flex-shrink -->
                 >
                   <span id="beforePrice" class="block w-full overflow-auto"
                     >N/A</span
@@ -539,7 +559,7 @@ Astro.insertDirective("frame-src *");
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-[orange] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center"
+                  class="bg-[orange] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center flex-shrink" <!-- flex-shrink -->
                 >
                   <span id="afterPrice" class="block w-full overflow-auto"
                     >N/A</span
@@ -550,7 +570,7 @@ Astro.insertDirective("frame-src *");
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-[orange] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center"
+                  class="bg-[orange] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center flex-shrink" <!-- flex-shrink -->
                 >
                   <span id="afterPrice" class="block w-full overflow-auto"
                     >PRICE</span
@@ -562,14 +582,14 @@ Astro.insertDirective("frame-src *");
         </div>
 
         <!-- new table -->
-        <div class="flex flex-col gap-2">
+        <div class="flex flex-col gap-2 overflow-x-auto"> <!-- Added overflow-x-auto for summaries -->
           <div>
             <h5
             class="block font-sans text-lg antialiased font-semibold leading-snug tracking-normal text-blue-gray-900"
             >
               Seller Swaps
             </h5>
-            <table class="w-full text-start">
+            <table class="w-full min-w-max text-start"> <!-- min-w-max -->
               <thead>
                 <tr>
                   <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[gray]">*</th>
@@ -587,7 +607,7 @@ Astro.insertDirective("frame-src *");
             >
               Buyer Swaps
             </h5>
-            <table class="w-full">
+            <table class="w-full min-w-max"> <!-- min-w-max -->
               <thead>
                 <tr >
                   <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[orange]">*</th>
@@ -652,7 +672,7 @@ Astro.insertDirective("frame-src *");
     </div>
     <script>
       import LeaderLine from "leader-line-new";
-      const deleteSvgPath = {JSON.stringify(deleteSvg.src)};
+import deleteSvgUrl from "../BalkyImages/deFiDemo/delete-svgrepo-com.svg?url";
       const arrowTokenFromSeller = new LeaderLine(
         document.getElementById("sellTokenArrowPoint"),
         document.getElementById("buyTokenArrowPoint")
@@ -821,7 +841,7 @@ Astro.insertDirective("frame-src *");
           var lastCell = row.insertCell(rowarr.length);
           lastCell.className =
               "border-b border-blue-gray-50 font-sans text-sm antialiased font-normal leading-normal";
-
+          const deleteSvgPath = deleteSvgUrl;
           var img = document.createElement('img');
           img.className = "w-6 h-6 cursor-pointer"
           img.src = deleteSvgPath;
@@ -996,6 +1016,16 @@ Astro.insertDirective("frame-src *");
         document
           .getElementById("beforeWart")
           .addEventListener("input", editPool);
+
+        // Added: Recalculate LeaderLines on window resize (for mobile reflow)
+        window.addEventListener('resize', () => {
+          arrowTokenFromSeller.position();
+          arrowTokenFromPool.position();
+          arrowWartFromBuyer.position();
+          arrowWartFromPool.position();
+          arrowWartToPool.position();
+          arrowTokenToPool.position();
+        });
       });
     </script>
   </div>

@@ -2,15 +2,15 @@ import React, { useState, useEffect } from 'react';
 import CryptoJS from 'crypto-js';
 import axios from 'axios';
 import { ethers } from 'ethers';
+import TransactionHistory from './TransactionHistory';
 import './Wallet.css';
 
 const API_URL = '/api/proxy';
 
 const defaultNodeList = [
-  'https://warthognode.duckdns.org',
   'http://217.182.64.43:3001',
   'http://65.87.7.86:3001',
-
+  'https://warthognode.duckdns.org',
 ];
 
 const Wallet = () => {
@@ -22,7 +22,7 @@ const Wallet = () => {
   const [sendResult, setSendResult] = useState(null);
   const [wallet, setWallet] = useState(null);
   const [balance, setBalance] = useState(null);
-  const [nonceId, setNonceId] = useState(null);
+  const [nextNonce, setNextNonce] = useState(null); // Renamed from nonceId for clarity
   const [pinHeight, setPinHeight] = useState(null);
   const [pinHash, setPinHash] = useState(null);
   const [mnemonic, setMnemonic] = useState('');
@@ -31,6 +31,7 @@ const Wallet = () => {
   const [toAddr, setToAddr] = useState('');
   const [amount, setAmount] = useState('');
   const [fee, setFee] = useState('');
+  const [nonceInput, setNonceInput] = useState(''); // New: for manual nonce input
   const [wordCount, setWordCount] = useState('12');
   const [pathType, setPathType] = useState('hardened');
   const [walletAction, setWalletAction] = useState('create');
@@ -41,9 +42,12 @@ const Wallet = () => {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [isWalletProcessed, setIsWalletProcessed] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [selectedNode, setSelectedNode] = useState(defaultNodeList[4]);
+  const [selectedNode, setSelectedNode] = useState(defaultNodeList[0]);
   const [showDownloadPrompt, setShowDownloadPrompt] = useState(false);
+  const [sending, setSending] = useState(false); // New: to disable button during send
+  const [failedTransactions, setFailedTransactions] = useState([]); // New: to log failed transactions
 
+  const [sentTransactions, setSentTransactions] = useState([]);
 
 useEffect(() => {
   const handleBeforeInstallPrompt = (e) => {
@@ -90,6 +94,16 @@ useEffect(() => {
     }
   }, [showModal]);
 
+// Poll for pending tx status every 30 seconds if there are pending txs
+useEffect(() => {
+  if (sentTransactions.length > 0 && wallet?.address) {
+    const interval = setInterval(() => {
+      updateTxStatuses();
+    }, 30000); // 30 seconds
+    return () => clearInterval(interval);
+  }
+}, [sentTransactions, wallet, selectedNode]);
+
   const wartToE8 = (wart) => {
     try {
       const num = parseFloat(wart);
@@ -102,11 +116,6 @@ useEffect(() => {
 
   const fetchBalanceAndNonce = async (address) => {
     setError(null);
-    setBalance(null);
-    setNonceId(null);
-    setPinHeight(null);
-    setPinHash(null);
-
     try {
       const nodeBaseParam = `nodeBase=${encodeURIComponent(selectedNode)}`;
       console.log('Sending chain head request to:', `${API_URL}?nodePath=chain/head&${nodeBaseParam}`);
@@ -117,9 +126,6 @@ useEffect(() => {
       const chainHeadData = chainHeadResponse.data.data || chainHeadResponse.data;
       console.log('Chain head response data:', chainHeadData);
 
-      setPinHeight(chainHeadData.pinHeight);
-      setPinHash(chainHeadData.pinHash);
-
       console.log('Sending balance request to:', `${API_URL}?nodePath=account/${address}/balance&${nodeBaseParam}`);
       const balanceResponse = await axios.get(`${API_URL}?nodePath=account/${address}/balance&${nodeBaseParam}`, {
         headers: { 'Content-Type': 'application/json' },
@@ -128,20 +134,22 @@ useEffect(() => {
       const balanceData = balanceResponse.data.data || balanceResponse.data;
       console.log('Balance response data:', balanceData);
 
+      const fetchedNonce = Number(balanceData.nonceId) || 0;
+      const newNextNonce = Math.max(nextNonce || 0, fetchedNonce + 1);
+
       const balanceInWart = balanceData.balance !== undefined ? (balanceData.balance / 1).toFixed(8) : '0';
       setBalance(balanceInWart);
+      setNextNonce(newNextNonce);
+      setPinHeight(chainHeadData.pinHeight);
+      setPinHash(chainHeadData.pinHash);
 
-      if (balanceData.nonceId !== undefined) {
-        const nonce = Number(balanceData.nonceId);
-        if (isNaN(nonce) || nonce < 0 || nonce > 4294967295) {
-          throw new Error('Invalid nonceId: must be a 32-bit unsigned integer');
-        }
-        setNonceId(Number(balanceData.nonceId) + 1 || 0);
-      } else {
-        setNonceId(0);
+      if (wallet?.address) {
+        localStorage.setItem(`warthogNextNonce_${wallet.address}`, newNextNonce);
       }
 
       console.log('Chain head data:', chainHeadData);
+
+      return { balanceInWart, nextNonce: newNextNonce, pinHeight: chainHeadData.pinHeight, pinHash: chainHeadData.pinHash };
     } catch (err) {
       const errorMessage =
         err.response?.data?.message ||
@@ -151,6 +159,26 @@ useEffect(() => {
       console.error('Fetch error:', err);
     }
   };
+
+const updateTxStatuses = async () => {
+  const nodeBaseParam = `nodeBase=${encodeURIComponent(selectedNode)}`;
+  const updatedTxs = await Promise.all(
+    sentTransactions.map(async (tx) => {
+      if (tx.status === 'confirmed') return tx;
+      try {
+        const response = await axios.get(`${API_URL}?nodePath=transaction/lookup/${tx.txHash}&${nodeBaseParam}`);
+        const data = response.data.data?.transaction || response.data.data || response.data;
+        if (data.blockHeight !== undefined && data.confirmations > 0) {
+          return { ...tx, status: 'confirmed', confirmations: data.confirmations };
+        }
+        return tx;
+      } catch {
+        return tx;
+      }
+    })
+  );
+  setSentTransactions(updatedTxs);
+};
 
   const encryptWallet = (walletData, password) => {
     const { privateKey, publicKey, address } = walletData;
@@ -239,6 +267,10 @@ useEffect(() => {
       }
       const decryptedWallet = decryptWallet(encrypted, password);
       setWallet(decryptedWallet);
+      const storedNonce = localStorage.getItem(`warthogNextNonce_${decryptedWallet.address}`);
+      if (storedNonce) {
+        setNextNonce(Number(storedNonce));
+      }
       setShowPasswordPrompt(false);
       setUploadedFile(null);
       setError(null);
@@ -251,9 +283,12 @@ useEffect(() => {
 
   const clearWallet = () => {
     localStorage.removeItem('warthogWallet');
+    if (wallet?.address) {
+      localStorage.removeItem(`warthogNextNonce_${wallet.address}`);
+    }
     setWallet(null);
     setBalance(null);
-    setNonceId(null);
+    setNextNonce(null);
     setPinHeight(null);
     setPinHash(null);
     setError(null);
@@ -262,6 +297,8 @@ useEffect(() => {
     setUploadedFile(null);
     setIsWalletProcessed(false);
     setIsLoggedIn(false);
+    setFailedTransactions([]); // Clear failed logs on wallet clear
+    setNonceInput('');
   };
 
   const generateWallet = async (wordCount, pathType) => {
@@ -312,25 +349,34 @@ useEffect(() => {
       throw new Error('Invalid mnemonic');
     }
   };
-
-  const importFromPrivateKey = (privKey) => {
+const importFromPrivateKey = (privKey) => {
+    console.log('Input length:', privKey.length);  // Should be 64
+    console.log('Is hex:', /^[0-9a-fA-F]+$/.test(privKey));  // Should be true
     try {
+      if (privKey.length !== 64) {
+        throw new Error('Private key must be exactly 64 characters long');
+      }
+      if (!/^[0-9a-fA-F]+$/.test(privKey)) {
+        throw new Error('Private key must consist of hexadecimal characters only (0-9, a-f, A-F)');
+      }
       const signer = new ethers.Wallet('0x' + privKey);
-      const publicKey = signer.publicKey.slice(2);
+      const publicKey = signer.signingKey.compressedPublicKey.slice(2);
       const sha = ethers.sha256('0x' + publicKey).slice(2);
       const ripemd = ethers.ripemd160('0x' + sha).slice(2);
       const checksum = ethers.sha256('0x' + ripemd).slice(2, 10);
       const address = ripemd + checksum;
+      console.log('Derived address:', address);  // For extra verification
       return {
         privateKey: privKey,
         publicKey,
         address,
       };
     } catch (err) {
-      throw new Error('Invalid private key');
+      console.error('Validation error:', err.message);
+      throw new Error(err.message || 'Invalid private key');
     }
   };
-
+  
   const handleWalletAction = async () => {
     setError(null);
     setIsWalletProcessed(false);
@@ -421,12 +467,21 @@ useEffect(() => {
       throw new Error('Failed to round fee');
     }
   };
-
   const handleSendTransaction = async () => {
+    if (sending) return; // Prevent multiple sends
+    setSending(true);
     setError(null);
     setSendResult(null);
     if (!toAddr || !amount || !fee) {
       setError('Please fill in all transaction fields');
+      setSending(false);
+      return;
+    }
+    const amountNum = parseFloat(amount);
+    const feeNum = parseFloat(fee);
+    if (isNaN(amountNum) || amountNum <= 0 || isNaN(feeNum) || feeNum <= 0) {
+      setError('Invalid amount or fee: must be positive numbers');
+      setSending(false);
       return;
     }
     const amountE8 = wartToE8(amount);
@@ -435,27 +490,52 @@ useEffect(() => {
       feeE8 = await getRoundedFeeE8(fee);
     } catch {
       setError('Invalid fee or failed to round');
-      return;
-    }
-    if (!amountE8 || !feeE8) {
-      setError('Invalid amount or fee: must be positive numbers');
+      setSending(false);
       return;
     }
     const txPrivateKey = wallet?.privateKey;
     if (!txPrivateKey) {
       setError('No wallet saved. Please create, derive, or log in with a wallet first.');
+      setSending(false);
       return;
     }
-    if (nonceId === null || pinHeight === null || pinHash === null) {
-      setError('Nonce or chain head not available. Please refresh balance and try again.');
+    if (nextNonce === null || pinHeight === null || pinHash === null) {
+      setError('Nonce or chain head not available. Fetching latest...');
+      await fetchBalanceAndNonce(wallet.address); // Fetch fresh if missing
+    }
+    if (nextNonce === null || pinHeight === null || pinHash === null) {
+      setError('Failed to fetch nonce or chain head. Please try again.');
+      setSending(false);
       return;
     }
+
+    let txNonce = nextNonce;
+    if (nonceInput !== '') {
+      const parsedNonce = Number(nonceInput);
+      if (isNaN(parsedNonce) || parsedNonce < 0 || !Number.isInteger(parsedNonce)) {
+        setError('Invalid nonce: must be a non-negative integer');
+        setSending(false);
+        return;
+      }
+      txNonce = parsedNonce;
+    }
+
+    // Capture transaction details for logging if failed
+    const txDetails = {
+      toAddr,
+      amount,
+      fee,
+      nonce: txNonce,
+      timestamp: new Date().toISOString(),
+    };
+
     try {
+      // Use current state values
       const pinHashBytes = ethers.getBytes('0x' + pinHash);
       const heightBytes = new Uint8Array(4);
       new DataView(heightBytes.buffer).setUint32(0, pinHeight, false);
       const nonceBytes = new Uint8Array(4);
-      new DataView(nonceBytes.buffer).setUint32(0, nonceId, false);
+      new DataView(nonceBytes.buffer).setUint32(0, txNonce, false); // Use txNonce
       const reserved = new Uint8Array(3);
       const feeBytes = new Uint8Array(8);
       new DataView(feeBytes.buffer).setBigUint64(0, BigInt(feeE8), false);
@@ -491,7 +571,7 @@ useEffect(() => {
         `${API_URL}?nodePath=transaction/add&${nodeBaseParam}`,
         {
           pinHeight,
-          nonceId,
+          nonceId: txNonce, // Use txNonce
           toAddr,
           amountE8,
           feeE8,
@@ -502,14 +582,34 @@ useEffect(() => {
       console.log('Send transaction response status:', response.status);
       const data = response.data;
       console.log('Send transaction response data:', data);
+
+      // Check for error in response data
+      if (data.error || (data.code && data.code !== 0)) {
+        throw new Error(data.error || `Transaction error code: ${data.code}`);
+      }
+
       setSendResult(data);
-      // Clear input fields on success
+
+      // Optimistic updates on success
+      const newNextNonce = Math.max(nextNonce || 0, txNonce + 1);
+      setNextNonce(newNextNonce);
+      if (wallet?.address) {
+        localStorage.setItem(`warthogNextNonce_${wallet.address}`, newNextNonce);
+      }
+      setBalance((parseFloat(balance) - amountNum - feeNum).toFixed(8));
+
+      // Step 2 insertion: Log successful sent transaction as pending
+      setSentTransactions((prev) => [
+        ...prev,
+        { ...txDetails, txHash: data.data.txHash, status: 'pending' }, // Adjust data.data if hash is elsewhere
+      ]);
+
+      // Clear input fields
       setToAddr('');
       setAmount('');
       setFee('');
-      if (wallet?.address) {
-        fetchBalanceAndNonce(wallet.address);
-      }
+      setNonceInput('');
+
     } catch (err) {
       const errorMessage =
         err.response?.data?.message ||
@@ -517,6 +617,14 @@ useEffect(() => {
         'Failed to send transaction';
       setError(errorMessage);
       console.error('Fetch send transaction error:', err);
+
+      // Log the failed transaction
+      setFailedTransactions((prev) => [
+        ...prev,
+        { ...txDetails, error: errorMessage },
+      ]);
+    } finally {
+      setSending(false);
     }
   };
 
@@ -616,6 +724,7 @@ useEffect(() => {
     <p className="warning">
       Warning: Private key is encrypted in localStorage. Keep your password secure.
     </p>
+    <TransactionHistory address={wallet.address} node={selectedNode} />
   </section>
 )}
 
@@ -685,7 +794,7 @@ useEffect(() => {
                   <input
                     type="text"
                     value={privateKeyInput}
-                    onChange={(e) => setPrivateKeyInput(e.target.value.trim())}
+                   onChange={(e) => setPrivateKeyInput(e.target.value.replace(/\s/g, ''))}
                     placeholder="Enter 64-character hex private key"
                     className="input"
                   />
@@ -805,12 +914,60 @@ useEffect(() => {
                   className="input"
                 />
               </div>
-              <button onClick={handleSendTransaction}>Send Transaction</button>
+              <div className="form-group">
+                <label>Nonce:</label>
+                <input
+                  type="text"
+                  value={nonceInput}
+                  onChange={(e) => setNonceInput(e.target.value.trim())}
+                  placeholder={`Auto: ${nextNonce || 'Loading'}`}
+                  className="input"
+                />
+              </div>
+              <button onClick={handleSendTransaction} disabled={sending}>
+                {sending ? 'Sending...' : 'Send Transaction'}
+              </button>
               {sendResult && (
                 <div className="result">
                   <pre>{JSON.stringify(sendResult, null, 2)}</pre>
                 </div>
               )}
+            </section>
+          )}
+{isLoggedIn && sentTransactions.length > 0 && (
+  <section>
+    <h2>Sent Transactions Log</h2>
+    <button onClick={updateTxStatuses}>Refresh Tx Status</button>
+    <ul>
+      {sentTransactions.map((tx, index) => (
+        <li key={index} className="tx-log-item">
+          <p><strong>Timestamp:</strong> {tx.timestamp}</p>
+          <p><strong>To:</strong> {tx.toAddr}</p>
+          <p><strong>Amount:</strong> {tx.amount} WART</p>
+          <p><strong>Fee:</strong> {tx.fee} WART</p>
+          <p><strong>Nonce (Session Index):</strong> {tx.nonce}</p>
+          <p><strong>Tx Hash:</strong> {tx.txHash}</p>
+          <p><strong>Status:</strong> {tx.status} {tx.confirmations ? `(${tx.confirmations} confirmations)` : ''}</p>
+        </li>
+      ))}
+    </ul>
+  </section>
+)}
+          {isLoggedIn && failedTransactions.length > 0 && (
+            <section>
+              <h2>Failed Transactions Log</h2>
+              <ul>
+                {failedTransactions.map((tx, index) => (
+                  <li key={index} className="tx-log-item">
+                    <p><strong>Timestamp:</strong> {tx.timestamp}</p>
+                    <p><strong>To:</strong> {tx.toAddr}</p>
+                    <p><strong>Amount:</strong> {tx.amount} WART</p>
+                    <p><strong>Fee:</strong> {tx.fee} WART</p>
+                    <p><strong>Nonce:</strong> {tx.nonce}</p>
+                    <p><strong>Error:</strong> {tx.error}</p>
+                  </li>
+                ))}
+              </ul>
             </section>
           )}
 

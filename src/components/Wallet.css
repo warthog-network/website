@@ -1,4 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Press+Start+2P&family=Orbitron:wght@400;700&family=Roboto:wght@400;500&display=swap');
+.tx-log-item {
+  border: 1px solid #ccc;
+  margin-bottom: 10px;
+  padding: 10px;
+  border-radius: 5px;
+}
+
 .container {
   background-color: #070707;
   color: #FFFFFF;
@@ -426,4 +433,17 @@ pre {
     text-overflow: clip;
   }
   */
+}
+.transaction-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+.transaction-table th, .transaction-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+.transaction-table th {
+  background-color: #f2f2f2;
 }

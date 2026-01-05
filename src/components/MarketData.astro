@@ -71,7 +71,8 @@ import { createChart } from 'lightweight-charts';
         document.getElementById("1dayChart").addEventListener('click', (event) => this.GetOneDayChartData(event.target));
 
         window.addEventListener('resize', () => {
-            this.chart.resize(container.clientWidth, container.clientHeight);
+            const rect = container.getBoundingClientRect();
+            this.chart.resize(Math.max(0, rect.width), Math.max(0, rect.height));
         })
       }
 
@@ -362,6 +363,9 @@ import { createChart } from 'lightweight-charts';
   .market-grid {
     display: grid;
     gap: clamp(1.5rem, 3vw, 2.5rem);
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   @media (min-width: 1024px) {
@@ -379,19 +383,27 @@ import { createChart } from 'lightweight-charts';
     background: rgba(8, 12, 24, 0.85);
     padding: clamp(1.25rem, 3vw, 1.75rem);
     box-shadow: var(--shadow-card);
+    overflow: hidden;
+    max-width: 100%;
   }
 
   .chart-panel__actions {
     display: flex;
     justify-content: flex-end;
     margin-bottom: 0.75rem;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   .chart-panel__canvas {
     width: 100%;
+    max-width: 100%;
     height: 320px;
     border-radius: var(--radius-md);
     background: #020617;
+    overflow: hidden;
+    position: relative;
   }
 
   .chart-controls {
@@ -400,6 +412,9 @@ import { createChart } from 'lightweight-charts';
     gap: 0.5rem;
     justify-content: center;
     margin-top: 1rem;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   .chart-btn {
