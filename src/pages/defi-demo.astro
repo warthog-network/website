@@ -14,47 +14,40 @@ import { getContainerRenderer } from "@astrojs/react";
 // have more tutorials we will be confused. So I inserted it into this file and 
 // deleted the Tutorial.jsx file.
 
-Astro.insertDirective("default-src *");
-Astro.insertDirective("script-src * 'unsafe-inline' 'unsafe-eval'");
-Astro.insertDirective("style-src * 'unsafe-inline'");
-Astro.insertDirective("img-src * data: blob:");
-Astro.insertDirective("connect-src *");
-Astro.insertDirective("font-src * data:");
-Astro.insertDirective("object-src *");
-Astro.insertDirective("media-src *");
-Astro.insertDirective("frame-src *");
+// Set the full CSP as a single header string
+const csp = "default-src *; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; img-src * data: blob:; connect-src *; font-src * data:; object-src *; media-src *; frame-src *;";
+Astro.response.headers.set('Content-Security-Policy', csp);
 
-  const steps = [
-    {
-      target: ".step-0",
-      content: "This a demonstration of Warthog's sandwich-proof DeFi matching engine between a generic TOKEN and WART.",
-    },
-    {
-      target: ".step-1",
-      content: "In the order book you can insert multiple swap orders between TOKEN and WART. The limit price is the cost of a single TOKEN in WART.",
-    },
-    {
-      target: ".step-2",
-      content: "The sellers order book can be filled with custom limit swaps from TOKEN to WART.",
-    },
-    {
-      target: ".step-3",
-      content: "The buyers order book can be filled with custom limit swaps from WART to TOKEN. Note that in contrast to traditional order books, you specify the input WART quantity (quote currency) for the swap and not in TOKEN quantity (base currency) you want to buy.",
-    },
-    {
-      target: ".step-4",
-      content: "The token fill flow between between buyers, sellers and the pool is visualized here.",
-    },
-    {
-      target: ".step-5",
-      content: "You can control the pool TOKEN liquidity here.",
-    },
-    {
-      target: ".step-6",
-      content: "You can control the pool WART liquidity here.",
-    },
-  ];
-
+const steps = [
+  {
+    target: ".step-0",
+    content: "This a demonstration of Warthog's sandwich-proof DeFi matching engine between a generic TOKEN and WART.",
+  },
+  {
+    target: ".step-1",
+    content: "In the order book you can insert multiple swap orders between TOKEN and WART. The limit price is the cost of a single TOKEN in WART.",
+  },
+  {
+    target: ".step-2",
+    content: "The sellers order book can be filled with custom limit swaps from TOKEN to WART.",
+  },
+  {
+    target: ".step-3",
+    content: "The buyers order book can be filled with custom limit swaps from WART to TOKEN. Note that in contrast to traditional order books, you specify the input WART quantity (quote currency) for the swap and not in TOKEN quantity (base currency) you want to buy.",
+  },
+  {
+    target: ".step-4",
+    content: "The token fill flow between between buyers, sellers and the pool is visualized here.",
+  },
+  {
+    target: ".step-5",
+    content: "You can control the pool TOKEN liquidity here.",
+  },
+  {
+    target: ".step-6",
+    content: "You can control the pool WART liquidity here.",
+  },
+];
 
 ---
 
