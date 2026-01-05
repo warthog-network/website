@@ -47,6 +47,24 @@ const Wallet = () => {
   const [sending, setSending] = useState(false); // New: to disable button during send
   const [failedTransactions, setFailedTransactions] = useState([]); // New: to log failed transactions
 
+  const [sentTransactions, setSentTransactions] = useState([]);
+  const [copiedTxId, setCopiedTxId] = useState(null); // New: to track copied Tx ID for feedback
+  const [copiedToAddr, setCopiedToAddr] = useState(null); // New: to track copied To Address for feedback
+  const [copiedFromAddr, setCopiedFromAddr] = useState(null); // New: to track copied From Address for feedback
+const [isSmallScreen767, setIsSmallScreen767] = useState(false);
+
+
+useEffect(() => {
+  const handleResize = () => {
+    setIsSmallScreen767(window.innerWidth < 767);
+  };
+
+  handleResize(); // Set initial value on mount
+
+  window.addEventListener('resize', handleResize);
+  return () => window.removeEventListener('resize', handleResize);
+}, []);
+  
 useEffect(() => {
   const handleBeforeInstallPrompt = (e) => {
     e.preventDefault();
@@ -91,6 +109,25 @@ useEffect(() => {
       window.alert("If you haven't backed up the information elsewhere, do not close the next window without saving or downloading your private key.");
     }
   }, [showModal]);
+
+// Poll for pending tx status every 30 seconds if there are pending txs
+useEffect(() => {
+  if (sentTransactions.length > 0 && wallet?.address) {
+    const interval = setInterval(() => {
+      updateTxStatuses();
+    }, 30000); // 30 seconds
+    return () => clearInterval(interval);
+  }
+}, [sentTransactions, wallet, selectedNode]);
+
+useEffect(() => {
+  const handleResize = () => {
+    setIsSmallScreen767(window.innerWidth < 767);
+  };
+
+  window.addEventListener('resize', handleResize);
+  return () => window.removeEventListener('resize', handleResize);
+}, []);
 
   const wartToE8 = (wart) => {
     try {
@@ -147,6 +184,26 @@ useEffect(() => {
       console.error('Fetch error:', err);
     }
   };
+
+const updateTxStatuses = async () => {
+  const nodeBaseParam = `nodeBase=${encodeURIComponent(selectedNode)}`;
+  const updatedTxs = await Promise.all(
+    sentTransactions.map(async (tx) => {
+      if (tx.status === 'confirmed') return tx;
+      try {
+        const response = await axios.get(`${API_URL}?nodePath=transaction/lookup/${tx.txHash}&${nodeBaseParam}`);
+        const data = response.data.data?.transaction || response.data.data || response.data;
+        if (data.blockHeight !== undefined && data.confirmations > 0) {
+          return { ...tx, status: 'confirmed', confirmations: data.confirmations };
+        }
+        return tx;
+      } catch {
+        return tx;
+      }
+    })
+  );
+  setSentTransactions(updatedTxs);
+};
 
   const encryptWallet = (walletData, password) => {
     const { privateKey, publicKey, address } = walletData;
@@ -266,7 +323,14 @@ useEffect(() => {
     setIsWalletProcessed(false);
     setIsLoggedIn(false);
     setFailedTransactions([]); // Clear failed logs on wallet clear
+    setSentTransactions([]); // Clear sent logs on wallet clear
     setNonceInput('');
+    setMnemonic('');
+    setPrivateKeyInput('');
+    setAddress('');
+    setToAddr('');
+    setAmount('');
+    setFee('');
   };
 
   const generateWallet = async (wordCount, pathType) => {
@@ -435,7 +499,6 @@ const importFromPrivateKey = (privKey) => {
       throw new Error('Failed to round fee');
     }
   };
-
   const handleSendTransaction = async () => {
     if (sending) return; // Prevent multiple sends
     setSending(true);
@@ -567,13 +630,18 @@ const importFromPrivateKey = (privKey) => {
       }
       setBalance((parseFloat(balance) - amountNum - feeNum).toFixed(8));
 
+      // Step 2 insertion: Log successful sent transaction as pending
+      setSentTransactions((prev) => [
+        ...prev,
+        { ...txDetails, txHash: data.data.txHash, status: 'pending' }, // Adjust data.data if hash is elsewhere
+      ]);
+
       // Clear input fields
       setToAddr('');
       setAmount('');
       setFee('');
       setNonceInput('');
 
-      
     } catch (err) {
       const errorMessage =
         err.response?.data?.message ||
@@ -604,6 +672,15 @@ const importFromPrivateKey = (privKey) => {
     setDeferredPrompt(null);
   }
 };
+
+  const copyToClipboard = (text, setter) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setter(text); // Set to show "Copied!" feedback
+      setTimeout(() => setter(null), 2000); // Reset after 2s
+    }).catch(err => {
+      console.error('Failed to copy: ', err);
+    });
+  };
 
   return (
     <div className="container">
@@ -898,15 +975,85 @@ const importFromPrivateKey = (privKey) => {
               )}
             </section>
           )}
-
+{isLoggedIn && sentTransactions.length > 0 && (
+  <section>
+    <h2>Sent Transactions Log</h2>
+    <button onClick={updateTxStatuses}>Refresh Tx Status</button>
+    <ul>
+      {sentTransactions.map((tx, index) => (
+        <li key={index} className="tx-log-item">
+          <p><strong>Timestamp:</strong> {tx.timestamp}</p>
+          <p>
+            <strong>From:</strong>{' '}
+            <span
+              className="truncate-text cursor-pointer"
+              title={wallet.address}
+              onClick={() => copyToClipboard(wallet.address, setCopiedFromAddr)}
+            >
+              {isSmallScreen767 ? `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}` : wallet.address}
+              {copiedFromAddr === wallet.address ? ' (Copied!)' : ''}
+            </span>
+          </p>
+          <p>
+            <strong>To:</strong>{' '}
+            <span
+              className="truncate-text cursor-pointer"
+              title={tx.toAddr}
+              onClick={() => copyToClipboard(tx.toAddr, setCopiedToAddr)}
+            >
+              {isSmallScreen767 ? `${tx.toAddr.slice(0, 6)}...${tx.toAddr.slice(-4)}` : tx.toAddr}
+              {copiedToAddr === tx.toAddr ? ' (Copied!)' : ''}
+            </span>
+          </p>
+          <p><strong>Amount:</strong> {tx.amount} WART</p>
+          <p><strong>Fee:</strong> {tx.fee} WART</p>
+          <p><strong>Nonce (Session Index):</strong> {tx.nonce}</p>
+          <p>
+            <strong>Tx Hash:</strong>{' '}
+            <span
+              className="truncate-text cursor-pointer"
+              title={tx.txHash}
+              onClick={() => copyToClipboard(tx.txHash, setCopiedTxId)}
+            >
+              {isSmallScreen767 ? `${tx.txHash.slice(0, 6)}...${tx.txHash.slice(-4)}` : tx.txHash}
+              {copiedTxId === tx.txHash ? ' (Copied!)' : ''}
+            </span>
+          </p>
+          <p><strong>Status:</strong> {tx.status} {tx.confirmations ? `(${tx.confirmations} confirmations)` : ''}</p>
+        </li>
+      ))}
+    </ul>
+  </section>
+)}
           {isLoggedIn && failedTransactions.length > 0 && (
             <section>
               <h2>Failed Transactions Log</h2>
               <ul>
                 {failedTransactions.map((tx, index) => (
-                  <li key={index}>
+                  <li key={index} className="tx-log-item">
                     <p><strong>Timestamp:</strong> {tx.timestamp}</p>
-                    <p><strong>To:</strong> {tx.toAddr}</p>
+                    <p>
+                      <strong>From:</strong>{' '}
+                      <span
+                        className="truncate-text cursor-pointer"
+                        title={wallet.address}
+                        onClick={() => copyToClipboard(wallet.address, setCopiedFromAddr)}
+                      >
+                        {isSmallScreen767 ? `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}` : wallet.address}
+                        {copiedFromAddr === wallet.address ? ' (Copied!)' : ''}
+                      </span>
+                    </p>
+                    <p>
+                      <strong>To:</strong>{' '}
+                      <span
+                        className="truncate-text cursor-pointer"
+                        title={tx.toAddr}
+                        onClick={() => copyToClipboard(tx.toAddr, setCopiedToAddr)}
+                      >
+                        {isSmallScreen767 ? `${tx.toAddr.slice(0, 6)}...${tx.toAddr.slice(-4)}` : tx.toAddr}
+                        {copiedToAddr === tx.toAddr ? ' (Copied!)' : ''}
+                      </span>
+                    </p>
                     <p><strong>Amount:</strong> {tx.amount} WART</p>
                     <p><strong>Fee:</strong> {tx.fee} WART</p>
                     <p><strong>Nonce:</strong> {tx.nonce}</p>
