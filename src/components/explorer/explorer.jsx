@@ -5,7 +5,14 @@ import APIClient from './assets/api_ws.js';
 import { Block } from './assets/api_ws.js';
 
 function Explorer() {
-    const [host, setHost] = useState('http://localhost:3000'); // Default to local
+    const [host, setHost] = useState('https://warthognode.duckdns.org'); // Default to local
+
+    useEffect(() => {
+        // If not running locally, default to a public node
+        if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+            setHost('http://65.87.7.86:3001'); // Rafiki
+        }
+    }, []);
     const [client, setClient] = useState(null);
     const [subscribed, setSubscribed] = useState(false);
     const [chain, setChain] = useState({ blocks: [] });
@@ -20,8 +27,9 @@ function Explorer() {
 
     // Node options - add real public nodes (e.g., from your project's docs)
     const nodeOptions = [
+        { value: 'https://warthognode.duckdns.org', label: 'Losthymns' },
         { value: 'http://localhost:3000', label: 'Local Node' },
-        { value: 'http://65.87.7.86:3001', label: 'Rafiki' },
+        
         {value: 'http://217.182.64.43:3001', label:'Polaire'} // Example; replace with actual
         // Add more: { value: 'https://another-public-node.com', label: 'Public Node 2' },
     ];
