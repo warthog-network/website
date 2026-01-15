@@ -1,9 +1,8 @@
 ---
-import TransactionDetailsComponent from '../../../components/explorer/TransactionDetails.jsx';
+import TransactionDetails from '../../../components/explorer/TransactionDetails.jsx';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
-
 const { txid } = Astro.params;
 ---
-<BaseLayout>
-<TransactionDetailsComponent txid={txid} client:load />
+<BaseLayout title={`Transaction Details: ${txid}`}>
+  <TransactionDetails txid={txid} client:load />
 </BaseLayout>
