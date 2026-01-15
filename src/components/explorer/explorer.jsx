@@ -12,7 +12,19 @@ function Explorer() {
         if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
             setHost('http://65.87.7.86:3001'); // Rafiki
         }
+        // Load saved host from localStorage
+        const savedHost = localStorage.getItem('selectedNode');
+        if (savedHost) {
+            setHost(savedHost);
+        }
     }, []);
+
+    useEffect(() => {
+        // Save selected host to localStorage
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('selectedNode', host);
+        }
+    }, [host]);
     const [client, setClient] = useState(null);
     const [subscribed, setSubscribed] = useState(false);
     const [chain, setChain] = useState({ blocks: [] });

@@ -64,7 +64,8 @@ function BlockDetails({ height }) {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    const client = new APIClient(); // Create client here
+    const selectedHost = typeof window !== 'undefined' ? localStorage.getItem('selectedNode') || 'http://localhost:3000' : 'http://localhost:3000';
+    const client = new APIClient(selectedHost);
     setLoading(true);
     client.getBlock(height)
       .then(fetchedBlock => {

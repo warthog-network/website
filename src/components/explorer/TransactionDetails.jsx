@@ -8,7 +8,8 @@ function TransactionDetails({ txid }) {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    const client = new APIClient();
+    const selectedHost = typeof window !== 'undefined' ? localStorage.getItem('selectedNode') || 'http://localhost:3000' : 'http://localhost:3000';
+    const client = new APIClient(selectedHost);
     if (txid) {
       setLoading(true);
       client.get(`/transaction/lookup/${txid}`)
