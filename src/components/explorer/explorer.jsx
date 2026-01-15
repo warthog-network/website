@@ -12,7 +12,7 @@ function Explorer() {
     const [mode, setMode] = useState('latest');
     const [page, setPage] = useState(1);
     const [currentBlocks, setCurrentBlocks] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [searchInput, setSearchInput] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [connectionError, setConnectionError] = useState(null); // New: For UI feedback on connection issues
@@ -27,6 +27,15 @@ function Explorer() {
     ];
 
     useEffect(() => {
+        setSubscribed(false);
+        setChain({ blocks: [] });
+        setCurrentBlocks([]);
+        setPage(1);
+        setIsSearching(false);
+        setSearchInput('');
+        setLoading(true);
+        setConnectionError(null); // Reset error on host change
+
         const cl = new APIClient(host, false); // Always use /stream for consistency
         cl.setters = {
             setConnections: () => {},
@@ -35,50 +44,37 @@ function Explorer() {
             setSubscribed
         };
         setClient(cl);
-        setConnectionError(null); // Reset error on host change
 
-        if (!host.includes('localhost')) {
-            // Fetch initial blocks for public nodes since WS is disabled
-            (async () => {
-                try {
-                    const headResponse = await cl.get('/chain/head');
-                    const headHeight = headResponse.data.height;
-                    const blocks = [];
-                    for (let h = headHeight; h > Math.max(1, headHeight - 10); h--) {
-                        try {
-                            const block = await cl.getBlock(h);
-                            blocks.push(block);
-                        } catch (e) {
-                            console.error(`Failed to fetch block ${h}`, e);
-                        }
+        // Fetch initial blocks for all nodes
+        (async () => {
+            try {
+                const headResponse = await cl.get('/chain/head');
+                const headHeight = headResponse.data.height;
+                const blocks = [];
+                for (let h = headHeight; h > Math.max(1, headHeight - 10); h--) {
+                    try {
+                        const block = await cl.getBlock(h);
+                        blocks.push(block);
+                    } catch (e) {
+                        console.error(`Failed to fetch block ${h}`, e);
                     }
-                    setChain({ blocks });
-                    setSubscribed(true);
-                } catch (e) {
-                    console.error('Failed to fetch head', e);
-                    setConnectionError('Failed to fetch data from public node.');
                 }
-            })();
-        }
-
-        // Monitor subscription status with timeout for error
-        const timeout = setTimeout(() => {
-            if (!subscribed) {
-                setConnectionError('Failed to connect to node. Try another or check network.');
+                setChain({ blocks });
+                setSubscribed(true);
+            } catch (e) {
+                console.error('Failed to fetch head', e);
+                setConnectionError('Failed to fetch data from node.');
+            } finally {
+                setLoading(false);
             }
-        }, 10000); // 10s timeout
+        })();
 
         return () => {
             cl.closeConnection();
-            clearTimeout(timeout);
         };
     }, [host]);
 
-    useEffect(() => {
-        if (!host.includes('localhost') && mode === 'all') {
-            setMode('latest');
-        }
-    }, [host, mode]);
+
 
     useEffect(() => {
         if (!client) return;
@@ -86,6 +82,7 @@ function Explorer() {
         if (mode === 'latest') {
             setCurrentBlocks(chain.blocks || []);
             setIsSearching(false);
+            setLoading(false);
             return;
         }
 
@@ -97,6 +94,7 @@ function Explorer() {
             const startHeight = tipHeight - (page - 1) * perPage;
             if (startHeight < 1) {
                 setPage(1);
+                setLoading(false);
                 return;
             }
             const endHeight = Math.max(startHeight - perPage + 1, 1);
@@ -118,6 +116,7 @@ function Explorer() {
             } catch (error) {
                 console.error('Error fetching blocks:', error);
                 setCurrentBlocks([]);
+                setConnectionError('Error fetching blocks. Connection may be unstable.');
             } finally {
                 setLoading(false);
             }
@@ -126,14 +125,7 @@ function Explorer() {
     }, [mode, page, chain, client, isSearching]);
 
     const toggleMode = () => {
-        if (mode === 'latest') {
-            if (!host.includes('localhost')) {
-                return; // Prevent switching to 'all' for public nodes
-            }
-            setMode('all');
-        } else {
-            setMode('latest');
-        }
+        setMode(mode === 'latest' ? 'all' : 'latest');
         setPage(1);
         setIsSearching(false);
         setSearchInput('');
@@ -144,10 +136,12 @@ function Explorer() {
         if (!searchInput.trim()) return;
         setLoading(true);
         setIsSearching(true);
-        const heights = parseSearchInput(searchInput);
-        const promises = heights.map(h => {
-            const existing = chain.blocks.find(b => b.height === h);
-            return existing ? Promise.resolve(existing) : client.getBlock(h);
+        const items = parseSearchInput(searchInput);
+        const promises = items.map(async (item) => {
+            if (item.type === 'height') {
+                const existing = chain.blocks.find(b => b.height === item.value);
+                return existing || await client.getBlock(item.value);
+            }
         });
         try {
             const results = await Promise.allSettled(promises);
@@ -156,15 +150,16 @@ function Explorer() {
                 .map(result => result.value);
             setCurrentBlocks(blocks.map(b => b instanceof Block ? b : new Block(b)).sort((a, b) => b.height - a.height));
         } catch (error) {
-            console.error('Error searching blocks:', error);
+            console.error('Error searching:', error);
             setCurrentBlocks([]);
+            setConnectionError('Error searching. Connection may be unstable.');
         } finally {
             setLoading(false);
         }
     };
 
     const parseSearchInput = (input) => {
-        const heights = new Set();
+        const items = [];
         const parts = input.split(/\s+/).map(p => p.trim()).filter(p => p);
         parts.forEach(part => {
             if (part.includes('-')) {
@@ -173,17 +168,17 @@ function Explorer() {
                 const end = Number(endStr.replace(/,/g, ''));
                 if (!isNaN(start) && !isNaN(end) && start <= end) {
                     for (let h = start; h <= end; h++) {
-                        heights.add(h);
+                        items.push({ type: 'height', value: h });
                     }
                 }
             } else {
                 const h = Number(part.replace(/,/g, ''));
                 if (!isNaN(h)) {
-                    heights.add(h);
+                    items.push({ type: 'height', value: h });
                 }
             }
         });
-        return Array.from(heights);
+        return items;
     };
 
     const resetSearch = () => {
@@ -230,9 +225,7 @@ function Explorer() {
                 </h2>
                 <button
                     onClick={toggleMode}
-                    disabled={!isLocal && mode === 'latest'}
-                    title={!isLocal && mode === 'latest' ? 'Deep search available only for local node' : undefined}
-                    className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
                 >
                     {mode === 'latest' ? 'Switch to Deep Search (All Blocks)' : 'Switch to Latest Blocks'}
                 </button>
@@ -244,7 +237,7 @@ function Explorer() {
                             type="text"
                             value={searchInput}
                             onChange={(e) => setSearchInput(e.target.value)}
-                            placeholder="Search blocks: 123 100-200 or 1 3 5"
+                            placeholder="Search blocks: 123 100-200"
                             className="flex-grow px-4 py-2 text-sm text-gray-900 border border-gray-300 rounded-l-lg focus:ring-zinc-500 focus:border-zinc-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:border-zinc-500"
                         />
                         <button

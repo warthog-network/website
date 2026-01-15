@@ -104,8 +104,7 @@ class Block {
 
   reward() {
     const tx = this.reward_tx();
-    const amount = tx?.amount;
-    return amount?.str || '0';
+    return tx?.amount || '0';
   }
 
   get transactions() {
@@ -369,6 +368,10 @@ class APIClient {
             }
             return new Block({ ...response.data, height: Number(height) });
         });
+    }
+
+    getTx(txid) {
+        return this.get(`/chain/transaction/${txid}`);
     }
 }
 
