@@ -240,7 +240,11 @@ class APIClient {
         
         // Use /ws/chain_delta if flag set (for prod/remote), else /stream
         const wsPath = useChainDelta ? '/ws/chain_delta' : '/stream';
-        this.wsUrl = `${wsProtocol}://${this.hostport}${wsPath}`;
+        let wsHost = this.hostport;
+if (host.includes('localhost') && host.includes('3000')) {
+    wsHost = 'localhost:10001';
+}
+this.wsUrl = `${wsProtocol}://${wsHost}${wsPath}`;
         
         // Set proxy for non-localhost hosts to bypass CORS in dev
         this.proxyUrl = host.includes('localhost') ? null : '/api/proxy';
@@ -271,9 +275,7 @@ class APIClient {
                 console.error('WS error:', err); // Minimal logging
             }
         });
-        if (!this.proxyUrl) {
-            this.wsClient.connect();
-        }
+      // WS disabled for all to avoid connection issues.
     }
 
     notifyChange(key) {
