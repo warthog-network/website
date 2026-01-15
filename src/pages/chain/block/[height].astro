@@ -1,0 +1,9 @@
+---
+import BlockDetailsComponent from '../../../components/explorer/blockdetails.jsx';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+
+const { height } = Astro.params;
+---
+<BaseLayout>
+<BlockDetailsComponent height={height} client:load />
+</BaseLayout>

@@ -33,7 +33,9 @@ export default defineConfig({
       alias: {
         crypto: 'crypto-browserify',
         stream: 'stream-browserify',
+         '@': '/src' // Points @/ to your src/ folder
       },
+  
     },
     ssr: {
       noExternal: ['crypto-browserify', 'stream-browserify'],
