@@ -33,6 +33,7 @@ function Explorer() {
     const [currentBlocks, setCurrentBlocks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchInput, setSearchInput] = useState('');
+const [txSearchInput, setTxSearchInput] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [connectionError, setConnectionError] = useState(null); // New: For UI feedback on connection issues
     const perPage = 10;
@@ -178,6 +179,13 @@ function Explorer() {
         }
     };
 
+    const handleTxSearch = (e) => {
+        e.preventDefault();
+        if (!txSearchInput.trim()) return;
+        window.location.href = `/transaction/lookup/${encodeURIComponent(txSearchInput)}`;
+        setTxSearchInput('');
+    };
+
     const parseSearchInput = (input) => {
         const items = [];
         const parts = input.split(/\s+/).map(p => p.trim()).filter(p => p);
@@ -251,32 +259,51 @@ function Explorer() {
                 </button>
             </div>
             {mode === 'all' && (
-                <form onSubmit={handleSearch} className="mb-6">
-                    <div className="flex items-center">
-                        <input
-                            type="text"
-                            value={searchInput}
-                            onChange={(e) => setSearchInput(e.target.value)}
-                            placeholder="Search blocks: 123 100-200"
-                            className="flex-grow px-4 py-2 text-sm text-gray-900 border border-gray-300 rounded-l-lg focus:ring-zinc-500 focus:border-zinc-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:border-zinc-500"
-                        />
-                        <button
-                            type="submit"
-                            className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-r-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
-                        >
-                            Search
-                        </button>
-                        {isSearching && (
+                <>
+                    <form onSubmit={handleSearch} className="mb-6">
+                        <div className="flex items-center">
+                            <input
+                                type="text"
+                                value={searchInput}
+                                onChange={(e) => setSearchInput(e.target.value)}
+                                placeholder="Search blocks: 123 100-200"
+                                className="flex-grow px-4 py-2 text-sm text-gray-900 border border-gray-300 rounded-l-lg focus:ring-zinc-500 focus:border-zinc-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:border-zinc-500"
+                            />
                             <button
-                                type="button"
-                                onClick={resetSearch}
-                                className="ml-2 px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                                type="submit"
+                                className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-r-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
                             >
-                                Clear Search
+                                Search Blocks
                             </button>
-                        )}
-                    </div>
-                </form>
+                            {isSearching && (
+                                <button
+                                    type="button"
+                                    onClick={resetSearch}
+                                    className="ml-2 px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                                >
+                                    Clear Search
+                                </button>
+                            )}
+                        </div>
+                    </form>
+                    <form onSubmit={handleTxSearch} className="mb-6">
+                        <div className="flex items-center">
+                            <input
+                                type="text"
+                                value={txSearchInput}
+                                onChange={(e) => setTxSearchInput(e.target.value)}
+                                placeholder="Enter TX Hash: e.g., 0x123..."
+                                className="flex-grow px-4 py-2 text-sm text-gray-900 border border-gray-300 rounded-l-lg focus:ring-zinc-500 focus:border-zinc-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:border-zinc-500"
+                            />
+                            <button
+                                type="submit"
+                                className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-r-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
+                            >
+                                Lookup TX
+                            </button>
+                        </div>
+                    </form>
+                </>
             )}
             {loading ? (
                 <p className="text-gray-600">Loading blocks...</p>
