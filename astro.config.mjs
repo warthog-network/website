@@ -17,6 +17,7 @@ export default defineConfig({
     csp: {
       directives: [
         "default-src 'self' https://api.coingecko.com",
+      "connect-src 'self' ws: wss: https://api.coingecko.com",
         "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com",
         "img-src 'self' data:",
         "object-src 'self'",  // Explicitly allow same-origin PDFs in <object>
