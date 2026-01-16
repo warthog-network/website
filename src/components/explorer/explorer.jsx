@@ -1,30 +1,89 @@
 import { useState, useEffect } from 'react';
-import ChartComponent from './ChartComponent.jsx'; // Assume you have this; if not, remove the import and the <ChartComponent /> line
 import { format_height, abbreviate } from './assets/util.js';
 import APIClient from './assets/api_ws.js';
 import { Block } from './assets/api_ws.js';
 
 function Explorer() {
-    const [host, setHost] = useState('https://warthognode.duckdns.org'); // Default to local
+    const [selectedNode, setSelectedNode] = useState('local');
+    const [host, setHost] = useState('http://localhost:3000');
+    const [customIP, setCustomIP] = useState('localhost');
+    const [customPort, setCustomPort] = useState('3000');
+    const [customConnected, setCustomConnected] = useState(false);
+
+    const nodeOptions = [
+         { value: 'Rafiki', label: 'Rafiki'},
+         { value: 'polaire', label: 'Polaire' },
+        { value: 'losthymns', label: 'Losthymns' },
+           { value: 'local', label: 'Local Node' },
+        { value: 'custom', label: 'Custom Node' },
+    ];
+
+    const getHost = (node) => {
+         if (node === 'Rafiki') return 'http://65.87.7.86:3001';
+        if (node === 'losthymns') return 'https://warthognode.duckdns.org';
+         if (node === 'polaire') return 'http://217.182.64.43:3001';
+        if (node === 'local') return 'http://localhost:3000';
+       
+        
+        return 'http://localhost:3000';
+    };
 
     useEffect(() => {
-        // If not running locally, default to a public node
-        if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-            setHost('http://65.87.7.86:3001'); // Rafiki
+        // Load saved settings
+        const savedNode = localStorage.getItem('selectedNode');
+        if (savedNode) {
+            if (nodeOptions.some(opt => opt.value === savedNode)) {
+                setSelectedNode(savedNode);
+            } else if (savedNode === 'http://localhost:3000') {
+                setSelectedNode('local');
+            } else if (savedNode === 'https://warthognode.duckdns.org') {
+                setSelectedNode('losthymns');
+            } else if (savedNode === 'http://217.182.64.43:3001') {
+                setSelectedNode('polaire');
+            } else {
+                // If it's a custom URL, set to custom and parse
+                setSelectedNode('custom');
+                // Parse the URL to set customIP and customPort
+                try {
+                    const url = new URL(savedNode);
+                    setCustomIP(url.hostname);
+                    setCustomPort(url.port || '3000');
+                } catch (e) {
+                    // If invalid, keep defaults
+                }
+            }
         }
-        // Load saved host from localStorage
-        const savedHost = localStorage.getItem('selectedNode');
-        if (savedHost) {
-            setHost(savedHost);
-        }
+        const savedIP = localStorage.getItem('customIP');
+        if (savedIP) setCustomIP(savedIP);
+        const savedPort = localStorage.getItem('customPort');
+        if (savedPort) setCustomPort(savedPort);
     }, []);
 
     useEffect(() => {
-        // Save selected host to localStorage
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('selectedNode', host);
+        localStorage.setItem('selectedNode', selectedNode);
+    }, [selectedNode]);
+
+    useEffect(() => {
+        localStorage.setItem('customIP', customIP);
+        localStorage.setItem('customPort', customPort);
+    }, [customIP, customPort]);
+
+    useEffect(() => {
+        if (selectedNode === 'custom') {
+            if (customConnected) {
+                let fullIP = customIP;
+                if (!fullIP.includes('://')) {
+                    fullIP = `http://${fullIP}`;
+                }
+                setHost(`${fullIP}:${customPort}`);
+            }
+            // else stay on previous host
+        } else {
+            setHost(getHost(selectedNode));
+            setCustomConnected(false);
         }
-    }, [host]);
+    }, [selectedNode, customIP, customPort, customConnected]);
+
     const [client, setClient] = useState(null);
     const [subscribed, setSubscribed] = useState(false);
     const [chain, setChain] = useState({ blocks: [] });
@@ -37,15 +96,6 @@ function Explorer() {
     const [isSearching, setIsSearching] = useState(false);
     const [connectionError, setConnectionError] = useState(null); // New: For UI feedback on connection issues
     const perPage = 10;
-
-    // Node options - add real public nodes (e.g., from your project's docs)
-    const nodeOptions = [
-        { value: 'https://warthognode.duckdns.org', label: 'Losthymns' },
-        { value: 'http://localhost:3000', label: 'Local Node' },
-        
-        {value: 'http://217.182.64.43:3001', label:'Polaire'} // Example; replace with actual
-        // Add more: { value: 'https://another-public-node.com', label: 'Public Node 2' },
-    ];
 
     useEffect(() => {
         setSubscribed(false);
@@ -229,14 +279,51 @@ function Explorer() {
                 <label htmlFor="node-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Select Node:</label>
                 <select
                     id="node-select"
-                    value={host}
-                    onChange={(e) => setHost(e.target.value)}
+                    value={selectedNode}
+                    onChange={(e) => setSelectedNode(e.target.value)}
                     className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 >
                     {nodeOptions.map(option => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
                 </select>
+                {selectedNode === 'custom' && (
+                    <>
+                        <div className="mt-2 flex space-x-2">
+                            <div className="flex-1">
+                                <label htmlFor="custom-ip" className="block text-sm font-medium text-gray-700 dark:text-gray-300">IP Address:</label>
+                                <input
+                                    id="custom-ip"
+                                    type="text"
+                                    value={customIP}
+                                    onChange={(e) => setCustomIP(e.target.value)}
+                                    placeholder="e.g., localhost, 192.168.1.1, or http://example.com"
+                                    className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                />
+                            </div>
+                            <div className="flex-1">
+                                <label htmlFor="custom-port" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Port:</label>
+                                <input
+                                    id="custom-port"
+                                    type="text"
+                                    value={customPort}
+                                    onChange={(e) => setCustomPort(e.target.value)}
+                                    placeholder="e.g., 3000"
+                                    className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                />
+                            </div>
+                        </div>
+                        <div className="mt-2">
+                            <button
+                                onClick={() => setCustomConnected(true)}
+                                disabled={!customIP.trim() || !customPort.trim()}
+                                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Connect to Custom Node
+                            </button>
+                        </div>
+                    </>
+                )}
             </div>
 
             {connectionError ? (
@@ -386,12 +473,6 @@ function Explorer() {
                                 Next
                             </button>
                         </div>
-                    )}
-                    <h2 className="mt-8 mb-4 text-2xl font-bold tracking-tight text-gray-900 md:text-3xl lg:text-4xl">Hashrate Chart</h2>
-                    {host.includes('localhost') ? (
-                        <ChartComponent client={client} />
-                    ) : (
-                        <p className="text-gray-600">Hashrate chart is not available for public nodes.</p>
                     )}
                 </>
             )}

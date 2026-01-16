@@ -6,9 +6,37 @@ function TransactionDetails({ txid }) {
   const [transaction, setTransaction] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [copiedField, setCopiedField] = useState(null);
 
   useEffect(() => {
-    const selectedHost = typeof window !== 'undefined' ? localStorage.getItem('selectedNode') || 'http://localhost:3000' : 'http://localhost:3000';
+    const checkMobile = () => setIsMobile(window.innerWidth < 800);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
+    const getHost = (node) => {
+      if (node === 'losthymns') return 'https://warthognode.duckdns.org';
+      if (node === 'local') return 'http://localhost:3000';
+      if (node === 'polaire') return 'http://217.182.64.43:3001';
+      return 'http://localhost:3000';
+    };
+
+    const selectedNode = typeof window !== 'undefined' ? localStorage.getItem('selectedNode') || 'local' : 'local';
+    let selectedHost;
+    if (selectedNode === 'custom') {
+      const customIP = localStorage.getItem('customIP') || 'localhost';
+      const customPort = localStorage.getItem('customPort') || '3000';
+      let fullIP = customIP;
+      if (!fullIP.includes('://')) {
+        fullIP = `http://${fullIP}`;
+      }
+      selectedHost = `${fullIP}:${customPort}`;
+    } else {
+      selectedHost = getHost(selectedNode);
+    }
     const client = new APIClient(selectedHost);
     if (txid) {
       setLoading(true);
@@ -52,6 +80,16 @@ function TransactionDetails({ txid }) {
 
   const isRewardTx = !transaction.fromAddress || transaction.type === 'Reward';
 
+  const handleCopy = async (text, field) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy', err);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold mb-6 text-gray-900 dark:text-white">Transaction Details</h1>
@@ -63,7 +101,10 @@ function TransactionDetails({ txid }) {
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <dt className="font-medium text-gray-500 uppercase">Hash</dt>
-              <dd className="mt-1 text-gray-800 dark:text-neutral-200 lowercase break-all">{transaction.txHash ?? 'N/A'}</dd>
+              <dd className="mt-1 text-gray-800 dark:text-neutral-200 lowercase break-all cursor-pointer hover:text-blue-600" onClick={() => handleCopy(transaction.txHash, 'txhash')}>
+                {transaction.txHash ?? 'N/A'}
+                {copiedField === 'txhash' && <span className="ml-2 text-green-600">Copied!</span>}
+              </dd>
             </div>
             <div>
               <dt className="font-medium text-gray-500 uppercase">Type</dt>
@@ -72,13 +113,19 @@ function TransactionDetails({ txid }) {
             {transaction.fromAddress && (
               <div>
                 <dt className="font-medium text-gray-500 uppercase">From</dt>
-                <dd className="mt-1 text-gray-800 dark:text-neutral-200 break-all">{abbreviate(transaction.fromAddress)}</dd>
+                <dd className="mt-1 text-gray-800 dark:text-neutral-200 break-all cursor-pointer hover:text-blue-600" onClick={() => handleCopy(transaction.fromAddress, 'from')}>
+                  {isMobile ? abbreviate(transaction.fromAddress) : transaction.fromAddress}
+                  {copiedField === 'from' && <span className="ml-2 text-green-600">Copied!</span>}
+                </dd>
               </div>
             )}
             {transaction.toAddress && (
               <div>
                 <dt className="font-medium text-gray-500 uppercase">To</dt>
-                <dd className="mt-1 text-gray-800 dark:text-neutral-200 break-all">{abbreviate(transaction.toAddress)}</dd>
+                <dd className="mt-1 text-gray-800 dark:text-neutral-200 break-all cursor-pointer hover:text-blue-600" onClick={() => handleCopy(transaction.toAddress, 'to')}>
+                  {isMobile ? abbreviate(transaction.toAddress) : transaction.toAddress}
+                  {copiedField === 'to' && <span className="ml-2 text-green-600">Copied!</span>}
+                </dd>
               </div>
             )}
             <div>

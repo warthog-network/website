@@ -1,17 +1,14 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { createChart, LineStyle } from 'lightweight-charts';
 
 const ChartComponent = ({ client }) => {
     const chartContainerRef = useRef();
     const seriesRef = useRef();
-
+    const [error, setError] = useState(null); // State for error handling
+    const [supportedVersion, setSupportedVersion] = useState(null); // State for version check
 
     useEffect(() => {
-        if (!client.host.includes('localhost')) {
-            return; // Skip chart loading for public nodes
-        }
-
         const handleResize = () => {
             chart.applyOptions({ width: chartContainerRef.current.clientWidth });
         };
@@ -39,12 +36,41 @@ const ChartComponent = ({ client }) => {
                 // Update the chart with new data
                 if (seriesRef.current && formattedData.length > 0) {
                     seriesRef.current.setData(formattedData);
+                    setError(null); // Clear any previous error
+                } else {
+                    setError('No hashrate data available.');
                 }
 
             } catch (error) {
                 console.error('Error fetching data:', error);
+                setError('Failed to load hashrate chart. The node may not support this feature.');
             }
         };
+
+        // Fetch node version
+        const checkVersion = async () => {
+            try {
+                const response = await client.get('/info'); // Adjust endpoint if needed
+                const version = response.data.version || 'unknown';
+                if (version.startsWith('9.')) {
+                    setSupportedVersion(true);
+                } else if (version.startsWith('8.')) {
+                    setSupportedVersion(false);
+                    setError('Hashrate chart is not supported on this node version (8.x).');
+                } else {
+                    setSupportedVersion(null);
+                    setError('Unknown node version.');
+                }
+            } catch (err) {
+                console.error('Error fetching node version:', err);
+                setSupportedVersion(null);
+                setError('Unable to determine node version.');
+            }
+        };
+
+        checkVersion();
+
+        if (!chartContainerRef.current) return;
 
         const chart = createChart(chartContainerRef.current, {
             width: 600,
@@ -62,12 +88,12 @@ const ChartComponent = ({ client }) => {
         });
         seriesRef.current = series;
 
-
-        // Initial data load
-        const now = Math.floor(Date.now() / 1000);
-        const start2024 = 1704067200;
-        loadData(start2024, now, 12 * 3600);
-        // chart.timeScale().fitContent();
+        if (supportedVersion === true) {
+            // Initial data load only if supported
+            const now = Math.floor(Date.now() / 1000);
+            const start2024 = 1704067200;
+            loadData(start2024, now, 12 * 3600);
+        }
 
         window.addEventListener('resize', handleResize);
 
@@ -75,7 +101,11 @@ const ChartComponent = ({ client }) => {
             window.removeEventListener('resize', handleResize);
             chart.remove();
         };
-    }, []);
+    }, [client]); // Re-run on client change
+
+    if (error || supportedVersion !== true) {
+        return <p className="text-gray-600">{error || 'Hashrate chart unavailable.'}</p>;
+    }
 
     return <div ref={chartContainerRef} />;
 };
