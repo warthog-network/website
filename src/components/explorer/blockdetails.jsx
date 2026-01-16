@@ -62,9 +62,39 @@ function BlockDetails({ height }) {
   const [block, setBlock] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const [copiedField, setCopiedField] = useState(null);
+
+  const handleCopy = async (text, field) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy', err);
+    }
+  };
 
   useEffect(() => {
-    const selectedHost = typeof window !== 'undefined' ? localStorage.getItem('selectedNode') || 'http://localhost:3000' : 'http://localhost:3000';
+    const getHost = (node) => {
+      if (node === 'losthymns') return 'https://warthognode.duckdns.org';
+      if (node === 'local') return 'http://localhost:3000';
+      if (node === 'polaire') return 'http://217.182.64.43:3001';
+      return 'http://localhost:3000';
+    };
+
+    const selectedNode = typeof window !== 'undefined' ? localStorage.getItem('selectedNode') || 'local' : 'local';
+    let selectedHost;
+    if (selectedNode === 'custom') {
+      const customIP = localStorage.getItem('customIP') || 'localhost';
+      const customPort = localStorage.getItem('customPort') || '3000';
+      let fullIP = customIP;
+      if (!fullIP.includes('://')) {
+        fullIP = `http://${fullIP}`;
+      }
+      selectedHost = `${fullIP}:${customPort}`;
+    } else {
+      selectedHost = getHost(selectedNode);
+    }
     const client = new APIClient(selectedHost);
     setLoading(true);
     client.getBlock(height)
@@ -112,7 +142,10 @@ function BlockDetails({ height }) {
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <dt className="font-medium text-gray-500 uppercase">Hash</dt>
-              <dd className="mt-1 text-gray-800 dark:text-neutral-200 lowercase break-all">{block.header?.hash ?? 'N/A'}</dd>
+              <dd className="mt-1 text-gray-800 dark:text-neutral-200 lowercase break-all cursor-pointer hover:text-blue-600" onClick={() => handleCopy(block.header?.hash, 'hash')}>
+                {block.header?.hash ?? 'N/A'}
+                {copiedField === 'hash' && <span className="ml-2 text-green-600">Copied!</span>}
+              </dd>
             </div>
             <div>
               <dt className="font-medium text-gray-500 uppercase">Height</dt>
@@ -120,7 +153,10 @@ function BlockDetails({ height }) {
             </div>
             <div>
               <dt className="font-medium text-gray-500 uppercase">Miner</dt>
-              <dd className="mt-1 text-gray-800 dark:text-neutral-200 break-all">{block.miner()}</dd>
+              <dd className="mt-1 text-gray-800 dark:text-neutral-200 break-all cursor-pointer hover:text-blue-600" onClick={() => handleCopy(block.miner(), 'miner')}>
+                {block.miner()}
+                {copiedField === 'miner' && <span className="ml-2 text-green-600">Copied!</span>}
+              </dd>
             </div>
             <div>
               <dt className="font-medium text-gray-500 uppercase">Reward</dt>

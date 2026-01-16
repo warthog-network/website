@@ -6,11 +6,23 @@ export async function GET({ request }) {
     return new Response('Missing params', { status: 400 });
   }
   const targetUrl = nodeBase.replace(/\/$/, '') + '/' + nodePath.replace(/^\//, '');
-  const response = await fetch(targetUrl);
-  return new Response(response.body, {
-    status: response.status,
-    headers: response.headers
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
+  try {
+    const response = await fetch(targetUrl, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    return new Response(response.body, {
+      status: response.status,
+      headers: response.headers
+    });
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      return new Response('Request timeout', { status: 408 });
+    }
+    // For other fetch errors (network, invalid URL, etc.)
+    return new Response('Upstream fetch failed', { status: 502 });
+  }
 }
 
 export async function POST({ request }) {
@@ -22,15 +34,28 @@ export async function POST({ request }) {
   }
   const targetUrl = nodeBase.replace(/\/$/, '') + '/' + nodePath.replace(/^\//, '');
   const body = await request.text();
-  const response = await fetch(targetUrl, {
-    method: 'POST',
-    body,
-    headers: {
-      'Content-Type': 'application/json'
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
+  try {
+    const response = await fetch(targetUrl, {
+      method: 'POST',
+      body,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    return new Response(response.body, {
+      status: response.status,
+      headers: response.headers
+    });
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      return new Response('Request timeout', { status: 408 });
     }
-  });
-  return new Response(response.body, {
-    status: response.status,
-    headers: response.headers
-  });
+    // For other fetch errors (network, invalid URL, etc.)
+    return new Response('Upstream fetch failed', { status: 502 });
+  }
 }
