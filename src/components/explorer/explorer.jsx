@@ -33,7 +33,7 @@ function Explorer() {
     const [currentBlocks, setCurrentBlocks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchInput, setSearchInput] = useState('');
-const [txSearchInput, setTxSearchInput] = useState('');
+    const [txSearchInput, setTxSearchInput] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [connectionError, setConnectionError] = useState(null); // New: For UI feedback on connection issues
     const perPage = 10;
@@ -218,14 +218,6 @@ const [txSearchInput, setTxSearchInput] = useState('');
     const maxPage = Math.ceil(tipHeight / perPage);
     const hasNext = page < maxPage;
 
-    if (connectionError) {
-        return <div className="text-red-600">{connectionError}</div>;
-    }
-
-    if (!subscribed || !chain) {
-        return <div className="text-gray-600">Connecting to node...</div>;
-    }
-
     const isLocal = host.includes('localhost');
 
     return (
@@ -247,153 +239,161 @@ const [txSearchInput, setTxSearchInput] = useState('');
                 </select>
             </div>
 
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold tracking-tight text-gray-900 md:text-3xl lg:text-4xl">
-                    {mode === 'latest' ? 'Latest Blocks' : `Blocks (Page ${page})`}
-                </h2>
-                <button
-                    onClick={toggleMode}
-                    className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
-                >
-                    {mode === 'latest' ? 'Switch to Deep Search (All Blocks)' : 'Switch to Latest Blocks'}
-                </button>
-            </div>
-            {mode === 'all' && (
-                <>
-                    <form onSubmit={handleSearch} className="mb-6">
-                        <div className="flex items-center">
-                            <input
-                                type="text"
-                                value={searchInput}
-                                onChange={(e) => setSearchInput(e.target.value)}
-                                placeholder="Search blocks: 123 100-200"
-                                className="flex-grow px-4 py-2 text-sm text-gray-900 border border-gray-300 rounded-l-lg focus:ring-zinc-500 focus:border-zinc-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:border-zinc-500"
-                            />
-                            <button
-                                type="submit"
-                                className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-r-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
-                            >
-                                Search Blocks
-                            </button>
-                            {isSearching && (
-                                <button
-                                    type="button"
-                                    onClick={resetSearch}
-                                    className="ml-2 px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-                                >
-                                    Clear Search
-                                </button>
-                            )}
-                        </div>
-                    </form>
-                    <form onSubmit={handleTxSearch} className="mb-6">
-                        <div className="flex items-center">
-                            <input
-                                type="text"
-                                value={txSearchInput}
-                                onChange={(e) => setTxSearchInput(e.target.value)}
-                                placeholder="Enter TX Hash: e.g., 0x123..."
-                                className="flex-grow px-4 py-2 text-sm text-gray-900 border border-gray-300 rounded-l-lg focus:ring-zinc-500 focus:border-zinc-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:border-zinc-500"
-                            />
-                            <button
-                                type="submit"
-                                className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-r-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
-                            >
-                                Lookup TX
-                            </button>
-                        </div>
-                    </form>
-                </>
-            )}
-            {loading ? (
-                <p className="text-gray-600">Loading blocks...</p>
+            {connectionError ? (
+                <div className="text-red-600">{connectionError}</div>
+            ) : !subscribed || !chain ? (
+                <div className="text-gray-600">Connecting to node...</div>
             ) : (
                 <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                        {currentBlocks.map((block) => (
-                            <div
-                                key={block.header.hash}
-                                className="bg-white border border-gray-200 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 dark:bg-gray-800 dark:border-gray-700"
-                            >
-                                <div className="flex justify-between items-center px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                                    <span className="px-3 py-1 text-sm font-medium text-yellow-700 bg-yellow-100 rounded-full">Block {format_height(block.height)}</span>
-                                    <span className="text-sm text-gray-500">5s ago</span>
-                                </div>
-                                <div className="px-4 py-3">
-                                    <dl className="space-y-2">
-                                        <div className="flex justify-between text-sm">
-                                            <dt className="font-medium text-gray-500 uppercase">Hash</dt>
-                                            <dd className="text-gray-800 dark:text-neutral-200 lowercase">{abbreviate(block.header.hash)}</dd>
-                                        </div>
-                                        <div className="flex justify-between text-sm">
-                                            <dt className="font-medium text-gray-500 uppercase">Miner</dt>
-                                            <dd className="text-gray-800 dark:text-neutral-200">{abbreviate(block.miner())}</dd>
-                                        </div>
-                                        <div className="flex justify-between text-sm">
-                                            <dt className="font-medium text-gray-500 uppercase">Reward</dt>
-                                            <dd className="text-gray-800 dark:text-neutral-200">{block.reward()}</dd>
-                                        </div>
-                                        <div className="flex justify-between text-sm">
-                                            <dt className="font-medium text-gray-500 uppercase">#TXS</dt>
-                                            <dd className="text-gray-800 dark:text-neutral-200">{block.transactionCount()}</dd>
-                                        </div>
-                                    </dl>
-                                </div>
-                                <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
-                                    <a
-                                        href={`/chain/block/${block.height}`}
-                                        className="inline-flex items-center w-full justify-center px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
-                                    >
-                                        Details
-                                        <svg
-                                            className="rtl:rotate-180 w-3.5 h-3.5 ml-2"
-                                            aria-hidden="true"
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            fill="none"
-                                            viewBox="0 0 14 10"
-                                        >
-                                            <path
-                                                stroke="currentColor"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth="2"
-                                                d="M1 5h12m0 0L9 1m4 4L9 9"
-                                            />
-                                        </svg>
-                                    </a>
-                                </div>
-                            </div>
-                        ))}
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-2xl font-bold tracking-tight text-gray-900 md:text-3xl lg:text-4xl">
+                            {mode === 'latest' ? 'Latest Blocks' : `Blocks (Page ${page})`}
+                        </h2>
+                        <button
+                            onClick={toggleMode}
+                            className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
+                        >
+                            {mode === 'latest' ? 'Switch to Deep Search (All Blocks)' : 'Switch to Latest Blocks'}
+                        </button>
                     </div>
-                    {!loading && currentBlocks.length === 0 && (
-                        <p className="text-gray-600 col-span-full text-center py-4">No blocks found for this page. The chain may be short or historical data unavailable.</p>
+                    {mode === 'all' && (
+                        <>
+                            <form onSubmit={handleSearch} className="mb-6">
+                                <div className="flex items-center">
+                                    <input
+                                        type="text"
+                                        value={searchInput}
+                                        onChange={(e) => setSearchInput(e.target.value)}
+                                        placeholder="Search blocks: 123 100-200"
+                                        className="flex-grow px-4 py-2 text-sm text-gray-900 border border-gray-300 rounded-l-lg focus:ring-zinc-500 focus:border-zinc-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:border-zinc-500"
+                                    />
+                                    <button
+                                        type="submit"
+                                        className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-r-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
+                                    >
+                                        Search Blocks
+                                    </button>
+                                    {isSearching && (
+                                        <button
+                                            type="button"
+                                            onClick={resetSearch}
+                                            className="ml-2 px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                                        >
+                                            Clear Search
+                                        </button>
+                                    )}
+                                </div>
+                            </form>
+                            <form onSubmit={handleTxSearch} className="mb-6">
+                                <div className="flex items-center">
+                                    <input
+                                        type="text"
+                                        value={txSearchInput}
+                                        onChange={(e) => setTxSearchInput(e.target.value)}
+                                        placeholder="Enter TX Hash: e.g., 0x123..."
+                                        className="flex-grow px-4 py-2 text-sm text-gray-900 border border-gray-300 rounded-l-lg focus:ring-zinc-500 focus:border-zinc-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:border-zinc-500"
+                                    />
+                                    <button
+                                        type="submit"
+                                        className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-r-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
+                                    >
+                                        Lookup TX
+                                    </button>
+                                </div>
+                            </form>
+                        </>
+                    )}
+                    {loading ? (
+                        <p className="text-gray-600">Loading blocks...</p>
+                    ) : (
+                        <>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                                {currentBlocks.map((block) => (
+                                    <div
+                                        key={block.header.hash}
+                                        className="bg-white border border-gray-200 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 dark:bg-gray-800 dark:border-gray-700"
+                                    >
+                                        <div className="flex justify-between items-center px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                                            <span className="px-3 py-1 text-sm font-medium text-yellow-700 bg-yellow-100 rounded-full">Block {format_height(block.height)}</span>
+                                            <span className="text-sm text-gray-500">5s ago</span>
+                                        </div>
+                                        <div className="px-4 py-3">
+                                            <dl className="space-y-2">
+                                                <div className="flex justify-between text-sm">
+                                                    <dt className="font-medium text-gray-500 uppercase">Hash</dt>
+                                                    <dd className="text-gray-800 dark:text-neutral-200 lowercase">{abbreviate(block.header.hash)}</dd>
+                                                </div>
+                                                <div className="flex justify-between text-sm">
+                                                    <dt className="font-medium text-gray-500 uppercase">Miner</dt>
+                                                    <dd className="text-gray-800 dark:text-neutral-200">{abbreviate(block.miner())}</dd>
+                                                </div>
+                                                <div className="flex justify-between text-sm">
+                                                    <dt className="font-medium text-gray-500 uppercase">Reward</dt>
+                                                    <dd className="text-gray-800 dark:text-neutral-200">{block.reward()}</dd>
+                                                </div>
+                                                <div className="flex justify-between text-sm">
+                                                    <dt className="font-medium text-gray-500 uppercase">#TXS</dt>
+                                                    <dd className="text-gray-800 dark:text-neutral-200">{block.transactionCount()}</dd>
+                                                </div>
+                                            </dl>
+                                        </div>
+                                        <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+                                            <a
+                                                href={`/chain/block/${block.height}`}
+                                                className="inline-flex items-center w-full justify-center px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
+                                            >
+                                                Details
+                                                <svg
+                                                    className="rtl:rotate-180 w-3.5 h-3.5 ml-2"
+                                                    aria-hidden="true"
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    fill="none"
+                                                    viewBox="0 0 14 10"
+                                                >
+                                                    <path
+                                                        stroke="currentColor"
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth="2"
+                                                        d="M1 5h12m0 0L9 1m4 4L9 9"
+                                                    />
+                                                </svg>
+                                            </a>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            {!loading && currentBlocks.length === 0 && (
+                                <p className="text-gray-600 col-span-full text-center py-4">No blocks found for this page. The chain may be short or historical data unavailable.</p>
+                            )}
+                        </>
+                    )}
+                    {mode === 'all' && !loading && !isSearching && (
+                        <div className="flex justify-between items-center mt-6">
+                            <button
+                                disabled={page === 1}
+                                onClick={() => setPage(page - 1)}
+                                className="px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                            >
+                                Previous
+                            </button>
+                            <span className="text-sm text-gray-600">Page {page} of {maxPage}</span>
+                            <button
+                                disabled={!hasNext}
+                                onClick={() => setPage(page + 1)}
+                                className="px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
+                    <h2 className="mt-8 mb-4 text-2xl font-bold tracking-tight text-gray-900 md:text-3xl lg:text-4xl">Hashrate Chart</h2>
+                    {host.includes('localhost') ? (
+                        <ChartComponent client={client} />
+                    ) : (
+                        <p className="text-gray-600">Hashrate chart is not available for public nodes.</p>
                     )}
                 </>
-            )}
-            {mode === 'all' && !loading && !isSearching && (
-                <div className="flex justify-between items-center mt-6">
-                    <button
-                        disabled={page === 1}
-                        onClick={() => setPage(page - 1)}
-                        className="px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                    >
-                        Previous
-                    </button>
-                    <span className="text-sm text-gray-600">Page {page} of {maxPage}</span>
-                    <button
-                        disabled={!hasNext}
-                        onClick={() => setPage(page + 1)}
-                        className="px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                    >
-                        Next
-                    </button>
-                </div>
-            )}
-            <h2 className="mt-8 mb-4 text-2xl font-bold tracking-tight text-gray-900 md:text-3xl lg:text-4xl">Hashrate Chart</h2>
-            {host.includes('localhost') ? (
-                <ChartComponent client={client} />
-            ) : (
-                <p className="text-gray-600">Hashrate chart is not available for public nodes.</p>
             )}
         </div>
     );
