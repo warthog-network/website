@@ -1,0 +1,8 @@
+---
+import AddressTransactions from "../../components/explorer/AddressTransactions.jsx";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+const { address } = Astro.params;
+---
+<BaseLayout title={`Address Transactions: ${address}`}>
+  <AddressTransactions address={address} client:load />
+</BaseLayout>
