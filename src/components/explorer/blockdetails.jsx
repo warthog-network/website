@@ -133,8 +133,8 @@ function BlockDetails({ height }) {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold mb-6 text-gray-900 dark:text-white">Block Details</h1>
-      <h2 className="mb-4 text-2xl font-bold tracking-tight text-gray-900 md:text-3xl lg:text-4xl">
+      <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Block Details</h1>
+      <h2 className="mb-4 text-2xl font-bold tracking-tight text-white-900 md:text-3xl lg:text-4xl">
         Block {format_height(block.height)}
       </h2>
       <div className="bg-white border border-gray-200 rounded-xl shadow-lg dark:bg-gray-800 dark:border-gray-700">
