@@ -4,85 +4,85 @@ import APIClient from './assets/api_ws.js';
 import { Block } from './assets/api_ws.js';
 
 function Explorer() {
-    const [selectedNode, setSelectedNode] = useState('local');
-    const [host, setHost] = useState('http://localhost:3000');
+    const [selectedNode, setSelectedNode] = useState('polaire');
+    const [host, setHost] = useState('http://217.182.64.43:3001');
     const [customIP, setCustomIP] = useState('localhost');
     const [customPort, setCustomPort] = useState('3000');
     const [customConnected, setCustomConnected] = useState(false);
+    const [isInitialized, setIsInitialized] = useState(false); // New: Flag to delay loading until localStorage is populated
 
     const nodeOptions = [
-         { value: 'Rafiki', label: 'Rafiki'},
-         { value: 'polaire', label: 'Polaire' },
+        { value: 'polaire', label: 'Polaire' },
         { value: 'losthymns', label: 'Losthymns' },
-           { value: 'local', label: 'Local Node' },
+        { value: 'local', label: 'Local Node' },
         { value: 'custom', label: 'Custom Node' },
     ];
 
     const getHost = (node) => {
-         if (node === 'Rafiki') return 'http://65.87.7.86:3001';
         if (node === 'losthymns') return 'https://warthognode.duckdns.org';
-         if (node === 'polaire') return 'http://217.182.64.43:3001';
+        if (node === 'polaire') return 'http://217.182.64.43:3001';
         if (node === 'local') return 'http://localhost:3000';
-       
-        
         return 'http://localhost:3000';
     };
 
     useEffect(() => {
-        // Load saved settings
+        // Load saved settings from localStorage
         const savedNode = localStorage.getItem('selectedNode');
-        if (savedNode) {
-            if (nodeOptions.some(opt => opt.value === savedNode)) {
-                setSelectedNode(savedNode);
-            } else if (savedNode === 'http://localhost:3000') {
-                setSelectedNode('local');
-            } else if (savedNode === 'https://warthognode.duckdns.org') {
-                setSelectedNode('losthymns');
-            } else if (savedNode === 'http://217.182.64.43:3001') {
-                setSelectedNode('polaire');
-            } else {
-                // If it's a custom URL, set to custom and parse
-                setSelectedNode('custom');
-                // Parse the URL to set customIP and customPort
-                try {
-                    const url = new URL(savedNode);
-                    setCustomIP(url.hostname);
-                    setCustomPort(url.port || '3000');
-                } catch (e) {
-                    // If invalid, keep defaults
-                }
-            }
-        }
+        const savedHost = localStorage.getItem('selectedHost'); // New: Load saved host directly
         const savedIP = localStorage.getItem('customIP');
-        if (savedIP) setCustomIP(savedIP);
         const savedPort = localStorage.getItem('customPort');
-        if (savedPort) setCustomPort(savedPort);
+
+        if (savedNode && savedHost) {
+            setSelectedNode(savedNode);
+            setHost(savedHost);
+            if (savedNode === 'custom' && savedIP && savedPort) {
+                setCustomIP(savedIP);
+                setCustomPort(savedPort);
+            }
+        } else {
+            // If no saved values, use defaults but save them
+            localStorage.setItem('selectedNode', selectedNode);
+            localStorage.setItem('selectedHost', host);
+        }
+
+        setIsInitialized(true); // Mark as initialized after loading
     }, []);
 
     useEffect(() => {
+        if (!isInitialized) return; // Don't save until initialized
+
+        // Save selectedNode and host to localStorage, replacing existing
         localStorage.setItem('selectedNode', selectedNode);
-    }, [selectedNode]);
+        localStorage.setItem('selectedHost', host);
+    }, [selectedNode, host, isInitialized]);
 
     useEffect(() => {
+        if (!isInitialized) return; // Don't save until initialized
+
+        // Save customIP and customPort
         localStorage.setItem('customIP', customIP);
         localStorage.setItem('customPort', customPort);
-    }, [customIP, customPort]);
+    }, [customIP, customPort, isInitialized]);
 
     useEffect(() => {
+        if (!isInitialized) return; // Don't update host until initialized
+
         if (selectedNode === 'custom') {
             if (customConnected) {
                 let fullIP = customIP;
                 if (!fullIP.includes('://')) {
                     fullIP = `http://${fullIP}`;
                 }
-                setHost(`${fullIP}:${customPort}`);
+                const newHost = `${fullIP}:${customPort}`;
+                setHost(newHost);
             }
             // else stay on previous host
         } else {
-            setHost(getHost(selectedNode));
+            const newHost = getHost(selectedNode);
+            setHost(newHost);
             setCustomConnected(false);
         }
-    }, [selectedNode, customIP, customPort, customConnected]);
+    }, [selectedNode, customIP, customPort, customConnected, isInitialized]);
 
     const [client, setClient] = useState(null);
     const [subscribed, setSubscribed] = useState(false);
@@ -94,10 +94,12 @@ function Explorer() {
     const [searchInput, setSearchInput] = useState('');
     const [txSearchInput, setTxSearchInput] = useState('');
     const [isSearching, setIsSearching] = useState(false);
-    const [connectionError, setConnectionError] = useState(null); // New: For UI feedback on connection issues
+    const [connectionError, setConnectionError] = useState(null);
     const perPage = 10;
 
     useEffect(() => {
+        if (!isInitialized) return; // Don't fetch until localStorage is populated
+
         setSubscribed(false);
         setChain({ blocks: [] });
         setCurrentBlocks([]);
@@ -105,9 +107,9 @@ function Explorer() {
         setIsSearching(false);
         setSearchInput('');
         setLoading(true);
-        setConnectionError(null); // Reset error on host change
+        setConnectionError(null);
 
-        const cl = new APIClient(host, false); // Always use /stream for consistency
+        const cl = new APIClient(host, false);
         cl.setters = {
             setConnections: () => {},
             setLog: () => {},
@@ -116,7 +118,6 @@ function Explorer() {
         };
         setClient(cl);
 
-        // Fetch initial blocks for all nodes
         (async () => {
             try {
                 const headResponse = await cl.get('/chain/head');
@@ -143,12 +144,10 @@ function Explorer() {
         return () => {
             cl.closeConnection();
         };
-    }, [host]);
-
-
+    }, [host, isInitialized]);
 
     useEffect(() => {
-        if (!client) return;
+        if (!client || !isInitialized) return;
 
         if (mode === 'latest') {
             setCurrentBlocks(chain.blocks || []);
@@ -193,7 +192,7 @@ function Explorer() {
             }
         }
         loadBlocks();
-    }, [mode, page, chain, client, isSearching]);
+    }, [mode, page, chain, client, isSearching, isInitialized]);
 
     const toggleMode = () => {
         setMode(mode === 'latest' ? 'all' : 'latest');
@@ -269,6 +268,10 @@ function Explorer() {
     const hasNext = page < maxPage;
 
     const isLocal = host.includes('localhost');
+
+    if (!isInitialized) {
+        return <div className="container mx-auto px-4 py-8">Loading settings...</div>; // Delay rendering until initialized
+    }
 
     return (
         <div className="container mx-auto px-4 py-8">
