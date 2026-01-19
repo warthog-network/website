@@ -76,6 +76,7 @@ function AddressTransactions({ address }) {
   const [isMobile, setIsMobile] = useState(false);
   const [copiedField, setCopiedField] = useState(null);
   const [balance, setBalance] = useState(null);
+  const [usdBalance, setUsdBalance] = useState(null);
   const clientRef = useRef(null);
 
   useEffect(() => {
@@ -154,11 +155,26 @@ function AddressTransactions({ address }) {
       // Fetch balance
       client.get(`/account/${address}/balance`)
         .then(response => {
-          setBalance(response.data?.balance || response.data || 'N/A');
+          const bal = response.data?.balance || response.data || 'N/A';
+          setBalance(bal);
+          // Fetch USD equivalent
+          if (bal && bal !== 'N/A') {
+            fetch('https://api.coingecko.com/api/v3/simple/price?ids=warthog&vs_currencies=usd')
+              .then(res => res.json())
+              .then(data => {
+                const price = data.warthog?.usd || 0;
+                const usd = (parseFloat(bal) * price).toFixed(2);
+                setUsdBalance(`$${usd}`);
+              })
+              .catch(() => setUsdBalance('N/A'));
+          } else {
+            setUsdBalance('N/A');
+          }
         })
         .catch(err => {
           console.error('Failed to fetch balance', err);
           setBalance('N/A');
+          setUsdBalance('N/A');
         });
     }
   }, [address]);
@@ -226,7 +242,7 @@ function AddressTransactions({ address }) {
             </div>
             <div>
               <dt className="font-medium text-gray-500 uppercase">Balance</dt>
-              <dd className="mt-1 text-gray-800 dark:text-neutral-200">{balance ?? 'Loading...'}</dd>
+              <dd className="mt-1 text-gray-800 dark:text-neutral-200">{balance ?? 'Loading...'} {usdBalance && usdBalance !== 'N/A' ? `(${usdBalance})` : ''}</dd>
             </div>
           </dl>
         </div>
