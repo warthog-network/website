@@ -93,6 +93,7 @@ function Explorer() {
     const [loading, setLoading] = useState(true);
     const [searchInput, setSearchInput] = useState('');
     const [txSearchInput, setTxSearchInput] = useState('');
+    const [addressSearchInput, setAddressSearchInput] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [connectionError, setConnectionError] = useState(null);
     const perPage = 10;
@@ -233,6 +234,13 @@ function Explorer() {
         if (!txSearchInput.trim()) return;
         window.location.href = `/transaction/lookup/${encodeURIComponent(txSearchInput)}`;
         setTxSearchInput('');
+    };
+
+    const handleAddressSearch = (e) => {
+        e.preventDefault();
+        if (!addressSearchInput.trim()) return;
+        window.location.href = `/address/${encodeURIComponent(addressSearchInput)}`;
+        setAddressSearchInput('');
     };
 
     const parseSearchInput = (input) => {
@@ -388,6 +396,23 @@ function Explorer() {
                                         className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-r-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
                                     >
                                         Lookup TX
+                                    </button>
+                                </div>
+                            </form>
+                            <form onSubmit={handleAddressSearch} className="mb-6">
+                                <div className="flex items-center">
+                                    <input
+                                        type="text"
+                                        value={addressSearchInput}
+                                        onChange={(e) => setAddressSearchInput(e.target.value)}
+                                        placeholder="Enter Address: e.g., bc1q..."
+                                        className="flex-grow px-4 py-2 text-sm text-gray-900 border border-gray-300 rounded-l-lg focus:ring-zinc-500 focus:border-zinc-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:border-zinc-500"
+                                    />
+                                    <button
+                                        type="submit"
+                                        className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-r-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
+                                    >
+                                        Lookup Address
                                     </button>
                                 </div>
                             </form>
