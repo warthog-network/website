@@ -31,14 +31,18 @@ const TransactionHistory = ({ address, node }) => {
       });
       const rawData = response.data.data || response.data;
       if (rawData.perBlock && Array.isArray(rawData.perBlock)) {
-        const newItems = rawData.perBlock.flatMap(block => 
-          (block.transactions.transfers || []).map(tx => ({
+        const newItems = rawData.perBlock.flatMap(block => {
+          const txs = [
+            ...(block.transactions?.transfers || []),
+            ...(block.transactions?.rewards || [])
+          ];
+          return txs.map(tx => ({
             ...tx,
             confirmations: block.confirmations,
             height: block.height,
             txid: tx.txHash, // Use txHash as txid
-          }))
-        );
+          }));
+        });
         setAllHistory(prev => [...prev, ...newItems]);
         setHasMore(newItems.length > 0 && rawData.fromId > 0);
         setNextCursor(rawData.fromId > 0 ? rawData.fromId : null);
@@ -114,12 +118,12 @@ const TransactionHistory = ({ address, node }) => {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <strong style={{ color: '#caa21eff' }}>From:</strong>
-                <span 
-                  title={tx.fromAddress || 'N/A'} 
-                  style={{ cursor: 'pointer' }} 
-                  onClick={() => copyToClipboard(tx.fromAddress || '')}
+                <span
+                  title={!tx.fromAddress ? 'Block Reward' : tx.fromAddress}
+                  style={{ cursor: tx.fromAddress ? 'pointer' : 'default' }}
+                  onClick={() => tx.fromAddress && copyToClipboard(tx.fromAddress)}
                 >
-                  {tx.fromAddress ? `${tx.fromAddress.slice(0, 6)}...${tx.fromAddress.slice(-6)}` : 'N/A'}
+                  {!tx.fromAddress ? 'Block Reward' : `${tx.fromAddress.slice(0, 6)}...${tx.fromAddress.slice(-6)}`}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
