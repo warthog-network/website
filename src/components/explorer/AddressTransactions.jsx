@@ -103,14 +103,18 @@ function AddressTransactions({ address }) {
       const response = await clientRef.current.get(`/account/${address}/history/${nextCursor}`);
       const rawData = response.data || response;
       if (rawData.perBlock && Array.isArray(rawData.perBlock)) {
-        const newItems = rawData.perBlock.flatMap(block =>
-          (block.transactions.transfers || []).map(tx => ({
+        const newItems = rawData.perBlock.flatMap(block => {
+          const txs = [
+            ...(block.transactions?.transfers || []),
+            ...(block.transactions?.rewards || [])
+          ];
+          return txs.map(tx => ({
             ...tx,
             confirmations: block.confirmations,
             height: block.height,
             txid: tx.txHash,
-          }))
-        );
+          }));
+        });
         setAllHistory(prev => [...prev, ...newItems]);
         setHasMore(newItems.length > 0 && rawData.fromId > 0);
         setNextCursor(rawData.fromId > 0 ? rawData.fromId : null);
