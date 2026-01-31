@@ -4,6 +4,7 @@ import BitCom from '../BalkyImages/wheretobuyimgs/bit.png';
 import Exibitron from '../BalkyImages/wheretobuyimgs/exibitron.png';
 
 import Bitcointry from '../BalkyImages/wheretobuyimgs/logo-full.webp'
+import Safetrade from '../BalkyImages/wheretobuyimgs/safetrade.png'
 import LinkBox from '../BalkyImages/LinkBox.svg';
 
 const icons = [
@@ -11,6 +12,7 @@ const icons = [
     {Visible: true, Name:"Bit.com exchange", ImgSrc: BitCom.src, Url:"https://www.bit.com/spot?pair=WART-USDT"},
     {Visible: true, Name:"Exbitron exchange", ImgSrc: Exibitron.src, Url:"https://app.exbitron.com/login/?returnUrl=%2Ftrade%2F%3Fmarket%3Dwart-usdt"},
     {Visible: true, Name:"Bitcointry exchange", ImgSrc: Bitcointry.src, Url:"https://bitcointry.com/en/exchange/WART_USDT"},
+    {Visible: true, Name:"Safetrade exchange", ImgSrc: Safetrade.src, Url:"https://safetrade.com/exchange/WART-USDT?type=basic"},
 ];
 
 
@@ -49,6 +51,9 @@ const icons = [
   .exchange-card span {
     font-weight: 600;
   }
+  .exchangecard-bottom{
+    margin-top: auto;
+  }
 </style>
 
 <section id="wheretobuy" class="buy-section site-shell">
@@ -67,8 +72,11 @@ const icons = [
         .map((icon) => (
           <a class="exchange-card" href={icon.Url} target="_blank" rel="noreferrer noopener">
             <img src={icon.ImgSrc} alt={icon.Name} loading="lazy" />
+            <div class="exchangecard-bottom ">
             <span>{icon.Name}</span>
+
             <img src={LinkBox.src} alt="" width="18" height="18" loading="lazy" class="mx-auto opacity-70" />
+            </div>
           </a>
         ))
     }
