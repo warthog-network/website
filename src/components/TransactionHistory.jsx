@@ -6,7 +6,7 @@ import axios from 'axios';
 const API_URL = '/api/proxy';
 const PAGE_SIZE = 15;
 
-const TransactionHistory = ({ address, node }) => {
+const TransactionHistory = ({ address, node, onCountsUpdate }) => {
   const [allHistory, setAllHistory] = useState([]); // Accumulate all fetched transactions
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -14,11 +14,27 @@ const TransactionHistory = ({ address, node }) => {
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
 
+  console.log('TransactionHistory using endpoint:', `${API_URL}?nodePath=account/${address}/history/${nextCursor}&nodeBase=${node}`);
+
   useEffect(() => {
     if (address && node && allHistory.length === 0) {
       fetchMoreHistory();
     }
   }, [address, node]);
+
+  useEffect(() => {
+    if (allHistory.length > 0 && onCountsUpdate) {
+      const now = Date.now() / 1000; // in seconds
+      const oneDayAgo = now - 24 * 60 * 60;
+      const oneWeekAgo = now - 7 * 24 * 60 * 60;
+      const oneMonthAgo = now - 30 * 24 * 60 * 60;
+      const rewards = allHistory.filter(tx => !tx.fromAddress && tx.timestamp);
+      const count24h = rewards.filter(tx => tx.timestamp >= oneDayAgo).length;
+      const countWeek = rewards.filter(tx => tx.timestamp >= oneWeekAgo).length;
+      const countMonth = rewards.filter(tx => tx.timestamp >= oneMonthAgo).length;
+      onCountsUpdate({ '24h': count24h, week: countWeek, month: countMonth });
+    }
+  }, [allHistory, onCountsUpdate]);
 
   const fetchMoreHistory = async () => {
     if (!hasMore || loading) return;
@@ -31,6 +47,19 @@ const TransactionHistory = ({ address, node }) => {
       });
       const rawData = response.data.data || response.data;
       if (rawData.perBlock && Array.isArray(rawData.perBlock)) {
+        // Fetch timestamps for each block
+        const blockPromises = rawData.perBlock.map(block =>
+          axios.get(`${API_URL}?nodePath=chain/block/${block.height}&${nodeBaseParam}`)
+        );
+        const blockResponses = await Promise.allSettled(blockPromises);
+        const timestampMap = {};
+        blockResponses.forEach((res, idx) => {
+          if (res.status === 'fulfilled') {
+            const blockData = res.value.data.data || res.value.data;
+            timestampMap[rawData.perBlock[idx].height] = blockData.timestamp;
+          }
+        });
+
         const newItems = rawData.perBlock.flatMap(block => {
           const txs = [
             ...(block.transactions?.transfers || []),
@@ -41,6 +70,7 @@ const TransactionHistory = ({ address, node }) => {
             confirmations: block.confirmations,
             height: block.height,
             txid: tx.txHash, // Use txHash as txid
+            timestamp: tx.timestamp || block.timestamp || timestampMap[block.height],
           }));
         });
         setAllHistory(prev => [...prev, ...newItems]);
@@ -148,9 +178,13 @@ const TransactionHistory = ({ address, node }) => {
                 <strong style={{ color: '#caa21eff' }}>Confirmations:</strong>
                 <span>{tx.confirmations || 'N/A'}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <strong style={{ color: '#caa21eff' }}>Height:</strong>
                 <span>{tx.height || 'N/A'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <strong style={{ color: '#caa21eff' }}>Date:</strong>
+                <span>{tx.timestamp ? new Date(tx.timestamp * 1000).toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ' UTC') : 'N/A'}</span>
               </div>
             </div>
           ))}
