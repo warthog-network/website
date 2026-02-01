@@ -6,19 +6,53 @@ import axios from 'axios';
 const API_URL = '/api/proxy';
 const PAGE_SIZE = 15;
 
-const TransactionHistory = ({ address, node }) => {
+const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts }) => {
   const [allHistory, setAllHistory] = useState([]); // Accumulate all fetched transactions
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [nextCursor, setNextCursor] = useState('4294967295'); // Start with large number
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showTooltip24h, setShowTooltip24h] = useState(false);
+  const [showTooltipWeek, setShowTooltipWeek] = useState(false);
+  const [showTooltipMonth, setShowTooltipMonth] = useState(false);
+  const [timeoutId24h, setTimeoutId24h] = useState(null);
+  const [timeoutIdWeek, setTimeoutIdWeek] = useState(null);
+  const [timeoutIdMonth, setTimeoutIdMonth] = useState(null);
+
+  const abbreviate = (str) => str ? `${str.slice(0,6)}...${str.slice(-4)}` : 'N/A';
+
+  console.log('TransactionHistory using endpoint:', `${API_URL}?nodePath=account/${address}/history/${nextCursor}&nodeBase=${node}`);
 
   useEffect(() => {
     if (address && node && allHistory.length === 0) {
       fetchMoreHistory();
     }
   }, [address, node]);
+
+  useEffect(() => {
+    if (allHistory.length > 0 && onCountsUpdate) {
+      const now = Date.now() / 1000; // in seconds
+      const oneDayAgo = now - 24 * 60 * 60;
+      const oneWeekAgo = now - 7 * 24 * 60 * 60;
+      const oneMonthAgo = now - 30 * 24 * 60 * 60;
+      const rewards = allHistory.filter(tx => !tx.fromAddress && tx.timestamp);
+      const rewards24h = rewards.filter(tx => tx.timestamp >= oneDayAgo);
+      const rewardsWeek = rewards.filter(tx => tx.timestamp >= oneWeekAgo);
+      const rewardsMonth = rewards.filter(tx => tx.timestamp >= oneMonthAgo);
+      const count24h = rewards24h.length;
+      const countWeek = rewardsWeek.length;
+      const countMonth = rewardsMonth.length;
+      onCountsUpdate({
+        '24h': count24h,
+        week: countWeek,
+        month: countMonth,
+        rewards24h: rewards24h.map(tx => tx.txid),
+        rewardsWeek: rewardsWeek.map(tx => tx.txid),
+        rewardsMonth: rewardsMonth.map(tx => tx.txid),
+      });
+    }
+  }, [allHistory, onCountsUpdate]);
 
   const fetchMoreHistory = async () => {
     if (!hasMore || loading) return;
@@ -31,6 +65,19 @@ const TransactionHistory = ({ address, node }) => {
       });
       const rawData = response.data.data || response.data;
       if (rawData.perBlock && Array.isArray(rawData.perBlock)) {
+        // Fetch timestamps for each block
+        const blockPromises = rawData.perBlock.map(block =>
+          axios.get(`${API_URL}?nodePath=chain/block/${block.height}&${nodeBaseParam}`)
+        );
+        const blockResponses = await Promise.allSettled(blockPromises);
+        const timestampMap = {};
+        blockResponses.forEach((res, idx) => {
+          if (res.status === 'fulfilled') {
+            const blockData = res.value.data.data || res.value.data;
+            timestampMap[rawData.perBlock[idx].height] = blockData.timestamp;
+          }
+        });
+
         const newItems = rawData.perBlock.flatMap(block => {
           const txs = [
             ...(block.transactions?.transfers || []),
@@ -41,6 +88,7 @@ const TransactionHistory = ({ address, node }) => {
             confirmations: block.confirmations,
             height: block.height,
             txid: tx.txHash, // Use txHash as txid
+            timestamp: tx.timestamp || block.timestamp || timestampMap[block.height],
           }));
         });
         setAllHistory(prev => [...prev, ...newItems]);
@@ -88,22 +136,60 @@ const TransactionHistory = ({ address, node }) => {
 
   return (
     <section style={{ fontFamily: 'Montserrat', color: '#FFECB3' }}>
-      <h2 style={{ color: '#caa21eff' }}>Transaction History (Page {currentPage})</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2 style={{ color: '#caa21eff' }}>Transaction History (Page {currentPage})</h2>
+        {blockCounts && (
+          <div className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-sm font-medium" style={{ marginBottom: '8px' }}>
+            blocks 24h <span className="relative cursor-pointer" onMouseEnter={() => { if (timeoutId24h) clearTimeout(timeoutId24h); setShowTooltip24h(true); }} onMouseLeave={() => { const id = setTimeout(() => setShowTooltip24h(false), 1000); setTimeoutId24h(id); }}>
+              {blockCounts['24h']}
+              {showTooltip24h && blockCounts.rewards24h.length > 0 && (
+                <div className="absolute top-full left-0 mt-1 bg-gray-700 text-white text-xs rounded p-2 z-10 max-w-md" onMouseEnter={() => { if (timeoutId24h) clearTimeout(timeoutId24h); }} onMouseLeave={() => { const id = setTimeout(() => setShowTooltip24h(false), 1000); setTimeoutId24h(id); }}>
+                  <div className="font-semibold mb-1">Reward TXIDs (24h):</div>
+                  <ul className="space-y-1">
+                    {blockCounts.rewards24h.map(txid => <li key={txid} className="break-all cursor-pointer hover:underline" onClick={() => copyToClipboard(txid)}>{abbreviate(txid)}</li>)}
+                  </ul>
+                </div>
+              )}
+            </span> week <span className="relative cursor-pointer" onMouseEnter={() => { if (timeoutIdWeek) clearTimeout(timeoutIdWeek); setShowTooltipWeek(true); }} onMouseLeave={() => { const id = setTimeout(() => setShowTooltipWeek(false), 1000); setTimeoutIdWeek(id); }}>
+              {blockCounts.week}
+              {showTooltipWeek && blockCounts.rewardsWeek.length > 0 && (
+                <div className="absolute top-full left-0 mt-1 bg-gray-700 text-white text-xs rounded p-2 z-10 max-w-md" onMouseEnter={() => { if (timeoutIdWeek) clearTimeout(timeoutIdWeek); }} onMouseLeave={() => { const id = setTimeout(() => setShowTooltipWeek(false), 1000); setTimeoutIdWeek(id); }}>
+                  <div className="font-semibold mb-1">Reward TXIDs (Week):</div>
+                  <ul className="space-y-1">
+                    {blockCounts.rewardsWeek.map(txid => <li key={txid} className="break-all cursor-pointer hover:underline" onClick={() => copyToClipboard(txid)}>{abbreviate(txid)}</li>)}
+                  </ul>
+                </div>
+              )}
+            </span> month <span className="relative cursor-pointer" onMouseEnter={() => { if (timeoutIdMonth) clearTimeout(timeoutIdMonth); setShowTooltipMonth(true); }} onMouseLeave={() => { const id = setTimeout(() => setShowTooltipMonth(false), 1000); setTimeoutIdMonth(id); }}>
+              {blockCounts.month}
+              {showTooltipMonth && blockCounts.rewardsMonth.length > 0 && (
+                <div className="absolute top-full left-0 mt-1 bg-gray-700 text-white text-xs rounded p-2 z-10 max-w-md" onMouseEnter={() => { if (timeoutIdMonth) clearTimeout(timeoutIdMonth); }} onMouseLeave={() => { const id = setTimeout(() => setShowTooltipMonth(false), 1000); setTimeoutIdMonth(id); }}>
+                  <div className="font-semibold mb-1">Reward TXIDs (Month):</div>
+                  <ul className="space-y-1">
+                    {blockCounts.rewardsMonth.map(txid => <li key={txid} className="break-all cursor-pointer hover:underline" onClick={() => copyToClipboard(txid)}>{abbreviate(txid)}</li>)}
+                  </ul>
+                </div>
+              )}
+            </span>
+          </div>
+        )}
+      </div>
       {loading && <p>Loading...</p>}
       {error && <div className="error"><strong>Error:</strong> {error}</div>}
       {allHistory.length === 0 && !loading && <p>No transactions found.</p>}
       {currentHistory.length > 0 && (
         <div style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '10px' }}>
           {currentHistory.map((tx, index) => (
-            <div 
-              key={index} 
-              style={{ 
-                backgroundColor: '#ffecb33d', 
-                border: '1px solid #caa21eff', 
-                borderRadius: '8px', 
-                padding: '16px', 
-                marginBottom: '16px', 
-                color: '#e9e6dbff' 
+            <div
+              key={index}
+              id={`tx-${tx.txid}`}
+              style={{
+                backgroundColor: '#ffecb33d',
+                border: '1px solid #caa21eff',
+                borderRadius: '8px',
+                padding: '16px',
+                marginBottom: '16px',
+                color: '#e9e6dbff'
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -148,9 +234,13 @@ const TransactionHistory = ({ address, node }) => {
                 <strong style={{ color: '#caa21eff' }}>Confirmations:</strong>
                 <span>{tx.confirmations || 'N/A'}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <strong style={{ color: '#caa21eff' }}>Height:</strong>
                 <span>{tx.height || 'N/A'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <strong style={{ color: '#caa21eff' }}>Date:</strong>
+                <span>{tx.timestamp ? new Date(tx.timestamp * 1000).toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ' UTC') : 'N/A'}</span>
               </div>
             </div>
           ))}

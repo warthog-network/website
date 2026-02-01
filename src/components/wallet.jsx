@@ -3,7 +3,6 @@ import CryptoJS from 'crypto-js';
 import axios from 'axios';
 import { ethers } from 'ethers';
 import TransactionHistory from './TransactionHistory';
-import './Wallet.css';
 
 const API_URL = '/api/proxy';
 
@@ -52,7 +51,18 @@ const Wallet = () => {
   const [copiedToAddr, setCopiedToAddr] = useState(null); // New: to track copied To Address for feedback
   const [copiedFromAddr, setCopiedFromAddr] = useState(null); // New: to track copied From Address for feedback
 const [isSmallScreen767, setIsSmallScreen767] = useState(false);
+const [blockCounts, setBlockCounts] = useState({ '24h': 0, week: 0, month: 0, rewards24h: [], rewardsWeek: [], rewardsMonth: [] });
+const [showTooltip24h, setShowTooltip24h] = useState(false);
+const [showTooltipWeek, setShowTooltipWeek] = useState(false);
+const [showTooltipMonth, setShowTooltipMonth] = useState(false);
+const [scrollToTxid, setScrollToTxid] = useState(null);
+const [timeoutId24h, setTimeoutId24h] = useState(null);
+const [timeoutIdWeek, setTimeoutIdWeek] = useState(null);
+const [timeoutIdMonth, setTimeoutIdMonth] = useState(null);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [registration, setRegistration] = useState(null);
 
+const abbreviate = (str) => str ? `${str.slice(0,6)}...${str.slice(-4)}` : 'N/A';
 
 useEffect(() => {
   const handleResize = () => {
@@ -129,6 +139,40 @@ useEffect(() => {
   return () => window.removeEventListener('resize', handleResize);
 }, []);
 
+// PWA Update Logic
+useEffect(() => {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').then((reg) => {
+      setRegistration(reg);
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              setUpdateAvailable(true);
+            }
+          });
+        }
+      });
+    }).catch((error) => {
+      console.error('Service Worker registration failed:', error);
+    });
+  }
+}, []);
+
+const handleUpdate = () => {
+  if (registration && registration.waiting) {
+    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    registration.waiting.addEventListener('statechange', (e) => {
+      if (e.target.state === 'activated') {
+        window.location.reload();
+      }
+    });
+  }
+};
+
+
+
   const wartToE8 = (wart) => {
     try {
       const num = parseFloat(wart);
@@ -204,6 +248,10 @@ const updateTxStatuses = async () => {
   );
   setSentTransactions(updatedTxs);
 };
+
+
+
+
 
   const encryptWallet = (walletData, password) => {
     const { privateKey, publicKey, address } = walletData;
@@ -683,121 +731,145 @@ const importFromPrivateKey = (privKey) => {
   };
 
   return (
-    <div className="container">
-      <h1>Warthog Wallet</h1>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Warthog Wallet</h1>
+      </div>
 {deferredPrompt && (
-  <button onClick={handleInstallClick} style={{ marginBottom: '20px', padding: '8px 16px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+  <button onClick={handleInstallClick} className="mb-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-4 focus:outline-none focus:ring-green-300 transition-colors duration-200">
     Install Wallet App
+  </button>
+)}
+{updateAvailable && (
+  <button onClick={handleUpdate} className="mb-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 transition-colors duration-200">
+    Update App Available
   </button>
 )}
       {!showModal && (
         <>
-          <section>
-            <h2>Node Selection</h2>
-            <div className="form-group">
-              <label>Select Node:</label>
-              <select
-                value={selectedNode}
-                onChange={(e) => setSelectedNode(e.target.value)}
-                className="input"
-             >
-                {defaultNodeList.map((node, index) => (
-                  <option key={index} value={node}>
-                    {node}
-                  </option>
-                ))}
-              </select>
+          {isLoggedIn && (
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
+              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Node Selection</h2>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Node:</label>
+                <select
+                  value={selectedNode}
+                  onChange={(e) => setSelectedNode(e.target.value)}
+                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+               >
+                  {defaultNodeList.map((node, index) => (
+                    <option key={index} value={node}>
+                      {node}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </section>
+          )}
 
           {showPasswordPrompt && !wallet && (
-            <section>
-              <h2>Unlock Wallet</h2>
-              <div className="form-group">
-                <label>Upload Wallet File (optional):</label>
-                <input type="file" accept=".txt" onChange={handleFileUpload} className="input" />
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
+              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Unlock Wallet</h2>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Upload Wallet File (optional):</label>
+                <input type="file" accept=".txt" onChange={handleFileUpload} className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
               </div>
-              <div className="form-group">
-                <label>Password:</label>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password:</label>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter password to unlock wallet"
-                  className="input"
+                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 />
               </div>
-              <button onClick={loadWallet}>Unlock Wallet</button>
-              <button
-                onClick={() => {
-                  setShowPasswordPrompt(false);
-                  setPassword('');
-                  setUploadedFile(null);
-                }}
-              >
-                Cancel
-              </button>
-            </section>
-          )}
-
-          {wallet && (
-  <section>
-    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-      <h2>Wallet</h2>
-      <button
-        className="download-wallet-btn"
-        onClick={() => setShowDownloadPrompt(true)}
-      >
-        Download Wallet File
-      </button>
-    </div>
-    <p className="wallet-address">
-      <strong>Address:</strong> {wallet.address}
-    </p>
-    <p>
-      <strong>Balance:</strong>{' '}
-      {balance !== null ? `${balance} WART` : 'Loading...'}
-    </p>
-    <button onClick={() => fetchBalanceAndNonce(wallet.address)}>
-      Refresh Balance
-    </button>
-    <button onClick={clearWallet}>Clear Wallet</button>
-    <p className="warning">
-      Warning: Private key is encrypted in localStorage. Keep your password secure.
-    </p>
-    <TransactionHistory address={wallet.address} node={selectedNode} />
-  </section>
-)}
-
-          {showDownloadPrompt && (
-            <div className="modal-overlay" style={{background: '#000'}}>
-              <div className="modal-content" style={{maxHeight: 'none'}}>
-                <h2>Download Wallet File</h2>
-                <div className="form-group">
-                  <label>Password to Encrypt Wallet:</label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter password to encrypt wallet"
-                    className="input"
-                  />
-                </div>
-                <button onClick={() => { downloadWallet(wallet); setShowDownloadPrompt(false); }}>
-                  Download
-                </button>
-                <button onClick={() => { setShowDownloadPrompt(false); setPassword(''); }}>
+              <div className="flex space-x-2">
+                <button onClick={loadWallet} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800">Unlock Wallet</button>
+                <button
+                  onClick={() => {
+                    setShowPasswordPrompt(false);
+                    setPassword('');
+                    setUploadedFile(null);
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200"
+                >
                   Cancel
                 </button>
               </div>
             </div>
           )}
 
+          {wallet && (
+  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
+    <div className="flex justify-between items-center mb-4">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Wallet</h2>
+      <button
+        className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
+        onClick={() => setShowDownloadPrompt(true)}
+      >
+        Download Wallet File
+      </button>
+    </div>
+    <div className="mb-4">
+      <p className="text-sm font-medium text-gray-700 dark:text-gray-300"><strong>Address:</strong></p>
+      <p
+        className="text-gray-900 dark:text-white break-all cursor-pointer"
+        onClick={() => navigator.clipboard.writeText(wallet.address).then(() => alert('Address copied to clipboard!'))}
+        title="Click to copy address"
+      >
+        {wallet.address}
+      </p>
+    </div>
+    <div className="mb-4">
+      <p className="text-sm font-medium text-gray-700 dark:text-gray-300"><strong>Balance:</strong> {balance !== null ? `${balance} WART` : 'Loading...'}</p>
+    </div>
+    <div className="flex space-x-2 mb-4">
+      <button onClick={() => fetchBalanceAndNonce(wallet.address)} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800">
+        Refresh Balance
+      </button>
+      <button onClick={clearWallet} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200">
+        Clear Wallet
+      </button>
+    </div>
+    <p className="text-yellow-600 dark:text-yellow-400 text-sm mb-4">
+      Warning: Private key is encrypted in localStorage. Keep your password secure.
+    </p>
+    <TransactionHistory address={wallet.address} node={selectedNode} onCountsUpdate={setBlockCounts} blockCounts={blockCounts} />
+  </div>
+)}
+
+          {showDownloadPrompt && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full">
+                <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Download Wallet File</h2>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password to Encrypt Wallet:</label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter password to encrypt wallet"
+                    className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                </div>
+                <div className="flex space-x-2">
+                  <button onClick={() => { downloadWallet(wallet); setShowDownloadPrompt(false); }} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800">
+                    Download
+                  </button>
+                  <button onClick={() => { setShowDownloadPrompt(false); setPassword(''); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {!isLoggedIn && (
-            <section>
-              <h2>Wallet Management</h2>
-              <div className="form-group">
-                <label>Action:</label>
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
+              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Wallet Management</h2>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Action:</label>
                 <select
                   value={walletAction}
                   onChange={(e) => {
@@ -809,7 +881,7 @@ const importFromPrivateKey = (privKey) => {
                     setPassword('');
                     setIsWalletProcessed(false);
                   }}
-                  className="input"
+                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 >
                   <option value="create">Create New Wallet</option>
                   <option value="derive">Derive Wallet from Seed Phrase</option>
@@ -818,59 +890,59 @@ const importFromPrivateKey = (privKey) => {
                 </select>
               </div>
               {walletAction === 'derive' && (
-                <div className="form-group">
-                  <label>Seed Phrase:</label>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Seed Phrase:</label>
                   <input
                     type="text"
                     value={mnemonic}
                     onChange={(e) => setMnemonic(e.target.value)}
                     placeholder="Enter 12 or 24-word seed phrase"
-                    className="input"
+                    className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   />
                 </div>
               )}
               {walletAction === 'import' && (
-                <div className="form-group">
-                  <label>Private Key:</label>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Private Key:</label>
                   <input
                     type="text"
                     value={privateKeyInput}
                    onChange={(e) => setPrivateKeyInput(e.target.value.replace(/\s/g, ''))}
                     placeholder="Enter 64-character hex private key"
-                    className="input"
+                    className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   />
                 </div>
               )}
               {walletAction === 'login' && (
                 <>
-                  <div className="form-group">
-                    <label>Upload Wallet File (warthog_wallet.txt):</label>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Upload Wallet File (warthog_wallet.txt):</label>
                     <input
                       type="file"
                       accept=".txt"
                       onChange={handleFileUpload}
-                      className="input"
+                      className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
                   </div>
-                  <div className="form-group">
-                    <label>Password:</label>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password:</label>
                     <input
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Enter password to decrypt wallet"
-                      className="input"
+                      className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
                   </div>
                 </>
               )}
               {(walletAction === 'create' || walletAction === 'derive') && (
-                <div className="form-group">
-                  <label>Word Count:</label>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Word Count:</label>
                   <select
                     value={wordCount}
                     onChange={(e) => setWordCount(e.target.value)}
-                    className="input"
+                    className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   >
                     <option value="12">12 Words</option>
                     <option value="24">24 Words</option>
@@ -878,19 +950,19 @@ const importFromPrivateKey = (privKey) => {
                 </div>
               )}
               {(walletAction === 'create' || walletAction === 'derive') && wordCount === '12' && (
-                <div className="form-group">
-                  <label>Derivation Path Type:</label>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Derivation Path Type:</label>
                   <select
                     value={pathType}
                     onChange={(e) => setPathType(e.target.value)}
-                    className="input"
+                    className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   >
                     <option value="hardened">Hardened (m/44'/2070'/0'/0/0)</option>
                     <option value="non-hardened">Non-Hardened (m/44'/2070'/0/0/0)</option>
                   </select>
                 </div>
               )}
-              <button onClick={handleWalletAction}>
+              <button onClick={handleWalletAction} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800">
                 {walletAction === 'create'
                   ? 'Create Wallet'
                   : walletAction === 'derive'
@@ -899,173 +971,179 @@ const importFromPrivateKey = (privKey) => {
                   ? 'Import Wallet'
                   : 'Login'}
               </button>
-            </section>
+            </div>
           )}
 
-          <section>
-            <h2>Validate Address</h2>
-            <div className="form-group">
-              <label>Address:</label>
-              <input
-                type="text"
-                value={address}
-                onChange={(e) => setAddress(e.target.value.trim())}
-                placeholder="Enter 48-character address"
-                className="input"
-              />
-            </div>
-            <button onClick={handleValidateAddress}>Validate Address</button>
-            {validateResult && (
-              <div className="result">
-                <pre>{JSON.stringify(validateResult, null, 2)}</pre>
+          {isLoggedIn && (
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
+              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Validate Address</h2>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Address:</label>
+                <input
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value.trim())}
+                  placeholder="Enter 48-character address"
+                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                />
               </div>
-            )}
-          </section>
+              <button onClick={handleValidateAddress} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800">Validate Address</button>
+              {validateResult && (
+                <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-md">
+                  <pre className="text-sm text-gray-900 dark:text-white">{JSON.stringify(validateResult, null, 2)}</pre>
+                </div>
+              )}
+            </div>
+          )}
 
           {isLoggedIn && (
-            <section>
-              <h2>Send Transaction</h2>
-              <div className="form-group">
-                <label>To Address:</label>
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
+              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Send Transaction</h2>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">To Address:</label>
                 <input
                   type="text"
                   value={toAddr}
                   onChange={(e) => setToAddr(e.target.value.trim())}
                   placeholder="Enter 48-character to address"
-                  className="input"
+                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 />
               </div>
-              <div className="form-group">
-                <label>Amount (WART):</label>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Amount (WART):</label>
                 <input
                   type="text"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value.trim())}
                   placeholder="Enter amount in WART (e.g., 1)"
-                  className="input"
+                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 />
               </div>
-              <div className="form-group">
-                <label>Fee (WART):</label>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fee (WART):</label>
                 <input
                   type="text"
                   value={fee}
                   onChange={(e) => setFee(e.target.value.trim())}
                   placeholder="Enter fee in WART (e.g., 0.0001)"
-                  className="input"
+                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 />
               </div>
-              <div className="form-group">
-                <label>Nonce:</label>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nonce:</label>
                 <input
                   type="text"
                   value={nonceInput}
                   onChange={(e) => setNonceInput(e.target.value.trim())}
                   placeholder={`Auto: ${nextNonce || 'Loading'}`}
-                  className="input"
+                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 />
               </div>
-              <button onClick={handleSendTransaction} disabled={sending}>
+              <button onClick={handleSendTransaction} disabled={sending} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed">
                 {sending ? 'Sending...' : 'Send Transaction'}
               </button>
               {sendResult && (
-                <div className="result">
-                  <pre>{JSON.stringify(sendResult, null, 2)}</pre>
+                <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-md">
+                  <pre className="text-sm text-gray-900 dark:text-white">{JSON.stringify(sendResult, null, 2)}</pre>
                 </div>
               )}
-            </section>
+            </div>
           )}
 {isLoggedIn && sentTransactions.length > 0 && (
-  <section>
-    <h2>Sent Transactions Log</h2>
-    <button onClick={updateTxStatuses}>Refresh Tx Status</button>
-    <ul>
+  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
+    <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Sent Transactions Log</h2>
+    <button onClick={updateTxStatuses} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800 mb-4">Refresh Tx Status</button>
+    <ul className="space-y-4">
       {sentTransactions.map((tx, index) => (
-        <li key={index} className="tx-log-item">
-          <p><strong>Timestamp:</strong> {tx.timestamp}</p>
-          <p>
-            <strong>From:</strong>{' '}
-            <span
-              className="truncate-text cursor-pointer"
-              title={wallet.address}
-              onClick={() => copyToClipboard(wallet.address, setCopiedFromAddr)}
-            >
-              {isSmallScreen767 ? `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}` : wallet.address}
-              {copiedFromAddr === wallet.address ? ' (Copied!)' : ''}
-            </span>
-          </p>
-          <p>
-            <strong>To:</strong>{' '}
-            <span
-              className="truncate-text cursor-pointer"
-              title={tx.toAddr}
-              onClick={() => copyToClipboard(tx.toAddr, setCopiedToAddr)}
-            >
-              {isSmallScreen767 ? `${tx.toAddr.slice(0, 6)}...${tx.toAddr.slice(-4)}` : tx.toAddr}
-              {copiedToAddr === tx.toAddr ? ' (Copied!)' : ''}
-            </span>
-          </p>
-          <p><strong>Amount:</strong> {tx.amount} WART</p>
-          <p><strong>Fee:</strong> {tx.fee} WART</p>
-          <p><strong>Nonce (Session Index):</strong> {tx.nonce}</p>
-          <p>
-            <strong>Tx Hash:</strong>{' '}
-            <span
-              className="truncate-text cursor-pointer"
-              title={tx.txHash}
-              onClick={() => copyToClipboard(tx.txHash, setCopiedTxId)}
-            >
-              {isSmallScreen767 ? `${tx.txHash.slice(0, 6)}...${tx.txHash.slice(-4)}` : tx.txHash}
-              {copiedTxId === tx.txHash ? ' (Copied!)' : ''}
-            </span>
-          </p>
-          <p><strong>Status:</strong> {tx.status} {tx.confirmations ? `(${tx.confirmations} confirmations)` : ''}</p>
+        <li key={index} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md border border-gray-200 dark:border-gray-600">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+            <p><strong className="text-gray-700 dark:text-gray-300">Timestamp:</strong> {tx.timestamp}</p>
+            <p>
+              <strong className="text-gray-700 dark:text-gray-300">From:</strong>{' '}
+              <span
+                className="text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 break-all"
+                title={wallet.address}
+                onClick={() => copyToClipboard(wallet.address, setCopiedFromAddr)}
+              >
+                {isSmallScreen767 ? `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}` : wallet.address}
+                {copiedFromAddr === wallet.address ? ' (Copied!)' : ''}
+              </span>
+            </p>
+            <p>
+              <strong className="text-gray-700 dark:text-gray-300">To:</strong>{' '}
+              <span
+                className="text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 break-all"
+                title={tx.toAddr}
+                onClick={() => copyToClipboard(tx.toAddr, setCopiedToAddr)}
+              >
+                {isSmallScreen767 ? `${tx.toAddr.slice(0, 6)}...${tx.toAddr.slice(-4)}` : tx.toAddr}
+                {copiedToAddr === tx.toAddr ? ' (Copied!)' : ''}
+              </span>
+            </p>
+            <p><strong className="text-gray-700 dark:text-gray-300">Amount:</strong> {tx.amount} WART</p>
+            <p><strong className="text-gray-700 dark:text-gray-300">Fee:</strong> {tx.fee} WART</p>
+            <p><strong className="text-gray-700 dark:text-gray-300">Nonce:</strong> {tx.nonce}</p>
+            <p>
+              <strong className="text-gray-700 dark:text-gray-300">Tx Hash:</strong>{' '}
+              <span
+                className="text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 break-all"
+                title={tx.txHash}
+                onClick={() => copyToClipboard(tx.txHash, setCopiedTxId)}
+              >
+                {isSmallScreen767 ? `${tx.txHash.slice(0, 6)}...${tx.txHash.slice(-4)}` : tx.txHash}
+                {copiedTxId === tx.txHash ? ' (Copied!)' : ''}
+              </span>
+            </p>
+            <p><strong className="text-gray-700 dark:text-gray-300">Status:</strong> {tx.status} {tx.confirmations ? `(${tx.confirmations} confirmations)` : ''}</p>
+          </div>
         </li>
       ))}
     </ul>
-  </section>
+  </div>
 )}
           {isLoggedIn && failedTransactions.length > 0 && (
-            <section>
-              <h2>Failed Transactions Log</h2>
-              <ul>
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
+              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Failed Transactions Log</h2>
+              <ul className="space-y-4">
                 {failedTransactions.map((tx, index) => (
-                  <li key={index} className="tx-log-item">
-                    <p><strong>Timestamp:</strong> {tx.timestamp}</p>
-                    <p>
-                      <strong>From:</strong>{' '}
-                      <span
-                        className="truncate-text cursor-pointer"
-                        title={wallet.address}
-                        onClick={() => copyToClipboard(wallet.address, setCopiedFromAddr)}
-                      >
-                        {isSmallScreen767 ? `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}` : wallet.address}
-                        {copiedFromAddr === wallet.address ? ' (Copied!)' : ''}
-                      </span>
-                    </p>
-                    <p>
-                      <strong>To:</strong>{' '}
-                      <span
-                        className="truncate-text cursor-pointer"
-                        title={tx.toAddr}
-                        onClick={() => copyToClipboard(tx.toAddr, setCopiedToAddr)}
-                      >
-                        {isSmallScreen767 ? `${tx.toAddr.slice(0, 6)}...${tx.toAddr.slice(-4)}` : tx.toAddr}
-                        {copiedToAddr === tx.toAddr ? ' (Copied!)' : ''}
-                      </span>
-                    </p>
-                    <p><strong>Amount:</strong> {tx.amount} WART</p>
-                    <p><strong>Fee:</strong> {tx.fee} WART</p>
-                    <p><strong>Nonce:</strong> {tx.nonce}</p>
-                    <p><strong>Error:</strong> {tx.error}</p>
+                  <li key={index} className="bg-red-50 dark:bg-red-900 p-4 rounded-md border border-red-200 dark:border-red-700">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                      <p><strong className="text-red-700 dark:text-red-300">Timestamp:</strong> {tx.timestamp}</p>
+                      <p>
+                        <strong className="text-red-700 dark:text-red-300">From:</strong>{' '}
+                        <span
+                          className="text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 break-all"
+                          title={wallet.address}
+                          onClick={() => copyToClipboard(wallet.address, setCopiedFromAddr)}
+                        >
+                          {isSmallScreen767 ? `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}` : wallet.address}
+                          {copiedFromAddr === wallet.address ? ' (Copied!)' : ''}
+                        </span>
+                      </p>
+                      <p>
+                        <strong className="text-red-700 dark:text-red-300">To:</strong>{' '}
+                        <span
+                          className="text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 break-all"
+                          title={tx.toAddr}
+                          onClick={() => copyToClipboard(tx.toAddr, setCopiedToAddr)}
+                        >
+                          {isSmallScreen767 ? `${tx.toAddr.slice(0, 6)}...${tx.toAddr.slice(-4)}` : tx.toAddr}
+                          {copiedToAddr === tx.toAddr ? ' (Copied!)' : ''}
+                        </span>
+                      </p>
+                      <p><strong className="text-red-700 dark:text-red-300">Amount:</strong> {tx.amount} WART</p>
+                      <p><strong className="text-red-700 dark:text-red-300">Fee:</strong> {tx.fee} WART</p>
+                      <p><strong className="text-red-700 dark:text-red-300">Nonce:</strong> {tx.nonce}</p>
+                      <p><strong className="text-red-700 dark:text-red-300">Error:</strong> {tx.error}</p>
+                    </div>
                   </li>
                 ))}
               </ul>
-            </section>
+            </div>
           )}
 
           {error && (
-            <div className="error">
+            <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 p-4 rounded-md mb-6">
               <strong>Error:</strong> {error}
             </div>
           )}
@@ -1073,71 +1151,75 @@ const importFromPrivateKey = (privKey) => {
       )}
 
      {showModal && walletData && (
-  <div className="modal-overlay" style={{background: '#000', fontFamily: 'Montserrat'}}>
-    <div className="modal-content" style={{textAlign: 'center', maxHeight: 'none'}}>
-      <h2>Wallet Information</h2>
-      <p className="warning">
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Wallet Information</h2>
+      <p className="text-yellow-600 dark:text-yellow-400 mb-4">
         Warning: Please write down your seed phrase (if available) and private key on a piece of paper and store them securely. Do not share them with anyone.
       </p>
-      <p style={{color: '#FFECB3'}}>Options for securing your wallet:</p>
-      <ul style={{color: '#FFECB3'}}>
+      <p className="text-gray-700 dark:text-gray-300 mb-2">Options for securing your wallet:</p>
+      <ul className="text-gray-700 dark:text-gray-300 mb-4 list-disc list-inside">
         <li>Save the wallet to localStorage (encrypted with your password). This allows easy access but is tied to this browser.</li>
         <li>Download the wallet as an encrypted file (warthog_wallet.txt). You can store this file securely and upload it later to login.</li>
       </ul>
        {walletData.wordCount && (
-        <p  style={{padding: '1rem',fontFamily: 'Montserrat'}}>
-          <strong>Word Count:</strong> {walletData.wordCount}
+        <p className="mb-2">
+          <strong className="text-gray-700 dark:text-gray-300">Word Count:</strong> {walletData.wordCount}
         </p>
       )}
       {walletData.mnemonic && (
-        <div>
-          <strong style={{color: '#e9e6dbff'}}>Seed Phrase:</strong>
-        <p style={{backgroundColor: '#ffecb33d', padding: '10px', borderRadius: '5px'}}>
-           <span style={{color: '#caa21eff', fontSize:"large", fontFamily: 'Montserrat', fontWeight: 'bold', textShadow: '1px 1px 1px rgba(0, 0, 0, 0.5)'}}>{walletData.mnemonic}</span>
-        </p>
+        <div className="mb-4">
+          <strong className="text-gray-700 dark:text-gray-300">Seed Phrase:</strong>
+          <p className="bg-yellow-50 dark:bg-yellow-900 p-4 rounded-md mt-2 border border-yellow-200 dark:border-yellow-700">
+            <span className="text-yellow-800 dark:text-yellow-200 font-mono text-lg font-bold">{walletData.mnemonic}</span>
+          </p>
         </div>
       )}
-     
+
       {walletData.pathType && (
-        <p style={{padding: '.75rem'}}>
-          <strong>Path Type:</strong> {walletData.pathType}
+        <p className="mb-2">
+          <strong className="text-gray-700 dark:text-gray-300">Path Type:</strong> {walletData.pathType}
         </p>
       )}
-      <p>
-        <strong>Private Key:</strong><br /><span className="wallet-info-value">{walletData.privateKey}</span>
-      </p>
-      <p>
-        <strong>Public Key:</strong><br /><span className="wallet-info-value">{walletData.publicKey}</span>
-      </p>
-      <p>
-        <strong>Address:</strong><br /> <span className="wallet-info-value">{walletData.address}</span>
-      </p>
-      <div className="form-group" style={{padding: '.75rem'}}>
-        <label>Password to Encrypt Wallet:</label>
+      <div className="mb-2">
+        <strong className="text-gray-700 dark:text-gray-300">Private Key:</strong><br />
+        <span className="text-gray-900 dark:text-white font-mono break-all">{walletData.privateKey}</span>
+      </div>
+      <div className="mb-2">
+        <strong className="text-gray-700 dark:text-gray-300">Public Key:</strong><br />
+        <span className="text-gray-900 dark:text-white font-mono break-all">{walletData.publicKey}</span>
+      </div>
+      <div className="mb-4">
+        <strong className="text-gray-700 dark:text-gray-300">Address:</strong><br />
+        <span className="text-gray-900 dark:text-white font-mono break-all">{walletData.address}</span>
+      </div>
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password to Encrypt Wallet:</label>
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Enter password to encrypt wallet"
-          className="input"
+          className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
         />
       </div>
       {error && (
-        <div className="error" style={{marginBottom: '10px'}}>
+        <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 p-4 rounded-md mb-4">
           <strong>Error:</strong> {error}
         </div>
       )}
-      <div className="form-group">
-        <label>
+      <div className="mb-4">
+        <label className="flex items-center">
           <input
             type="checkbox"
             checked={saveWalletConsent}
             onChange={(e) => setSaveWalletConsent(e.target.checked)}
+            className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
           />
-          Save wallet to localStorage (encrypted)
+          <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Save wallet to localStorage (encrypted)</span>
         </label>
       </div>
-      <div style={{marginBottom: '20px'}}>
+      <div className="flex space-x-2 mb-4">
         <button
           onClick={() => {
             if (!password) {
@@ -1153,6 +1235,7 @@ const importFromPrivateKey = (privKey) => {
             setShowModal(false);
             setWalletData(null);
           }}
+          className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
         >
           Save Wallet
         </button>
@@ -1167,18 +1250,20 @@ const importFromPrivateKey = (privKey) => {
             setShowModal(false);
             setWalletData(null);
           }}
+          className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
         >
           Download Wallet File
         </button>
       </div>
-      <div style={{display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '10px'}}>
-        <label>
+      <div className="flex items-center justify-end space-x-2">
+        <label className="flex items-center text-sm">
           <input
             type="checkbox"
             checked={consentToClose}
             onChange={(e) => setConsentToClose(e.target.checked)}
+            className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
           />
-          I consent to close without saving to local storage or downloading the wallet file
+          <span className="ml-2 text-gray-700 dark:text-gray-300">I consent to close without saving to local storage or downloading the wallet file</span>
         </label>
         <button
           disabled={!consentToClose}
@@ -1190,6 +1275,7 @@ const importFromPrivateKey = (privKey) => {
             setConsentToClose(false);
             setError(null);
           }}
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Close
         </button>
