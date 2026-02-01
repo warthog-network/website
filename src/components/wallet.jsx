@@ -59,6 +59,8 @@ const [scrollToTxid, setScrollToTxid] = useState(null);
 const [timeoutId24h, setTimeoutId24h] = useState(null);
 const [timeoutIdWeek, setTimeoutIdWeek] = useState(null);
 const [timeoutIdMonth, setTimeoutIdMonth] = useState(null);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [registration, setRegistration] = useState(null);
 
 const abbreviate = (str) => str ? `${str.slice(0,6)}...${str.slice(-4)}` : 'N/A';
 
@@ -136,6 +138,38 @@ useEffect(() => {
   window.addEventListener('resize', handleResize);
   return () => window.removeEventListener('resize', handleResize);
 }, []);
+
+// PWA Update Logic
+useEffect(() => {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').then((reg) => {
+      setRegistration(reg);
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              setUpdateAvailable(true);
+            }
+          });
+        }
+      });
+    }).catch((error) => {
+      console.error('Service Worker registration failed:', error);
+    });
+  }
+}, []);
+
+const handleUpdate = () => {
+  if (registration && registration.waiting) {
+    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    registration.waiting.addEventListener('statechange', (e) => {
+      if (e.target.state === 'activated') {
+        window.location.reload();
+      }
+    });
+  }
+};
 
 
 
@@ -704,6 +738,11 @@ const importFromPrivateKey = (privKey) => {
 {deferredPrompt && (
   <button onClick={handleInstallClick} className="mb-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-4 focus:outline-none focus:ring-green-300 transition-colors duration-200">
     Install Wallet App
+  </button>
+)}
+{updateAvailable && (
+  <button onClick={handleUpdate} className="mb-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 transition-colors duration-200">
+    Update App Available
   </button>
 )}
       {!showModal && (
