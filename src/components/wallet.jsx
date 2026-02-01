@@ -51,8 +51,16 @@ const Wallet = () => {
   const [copiedToAddr, setCopiedToAddr] = useState(null); // New: to track copied To Address for feedback
   const [copiedFromAddr, setCopiedFromAddr] = useState(null); // New: to track copied From Address for feedback
 const [isSmallScreen767, setIsSmallScreen767] = useState(false);
-const [blockCounts, setBlockCounts] = useState({ '24h': 0, week: 0, month: 0 });
+const [blockCounts, setBlockCounts] = useState({ '24h': 0, week: 0, month: 0, rewards24h: [], rewardsWeek: [], rewardsMonth: [] });
+const [showTooltip24h, setShowTooltip24h] = useState(false);
+const [showTooltipWeek, setShowTooltipWeek] = useState(false);
+const [showTooltipMonth, setShowTooltipMonth] = useState(false);
+const [scrollToTxid, setScrollToTxid] = useState(null);
+const [timeoutId24h, setTimeoutId24h] = useState(null);
+const [timeoutIdWeek, setTimeoutIdWeek] = useState(null);
+const [timeoutIdMonth, setTimeoutIdMonth] = useState(null);
 
+const abbreviate = (str) => str ? `${str.slice(0,6)}...${str.slice(-4)}` : 'N/A';
 
 useEffect(() => {
   const handleResize = () => {
@@ -692,11 +700,6 @@ const importFromPrivateKey = (privKey) => {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Warthog Wallet</h1>
-        {wallet && (
-          <div className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-sm font-medium">
-            blocks 24h {blockCounts['24h']} week {blockCounts.week} month {blockCounts.month}
-          </div>
-        )}
       </div>
 {deferredPrompt && (
   <button onClick={handleInstallClick} className="mb-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-4 focus:outline-none focus:ring-green-300 transition-colors duration-200">
@@ -705,23 +708,25 @@ const importFromPrivateKey = (privKey) => {
 )}
       {!showModal && (
         <>
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
-            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Node Selection</h2>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Node:</label>
-              <select
-                value={selectedNode}
-                onChange={(e) => setSelectedNode(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-             >
-                {defaultNodeList.map((node, index) => (
-                  <option key={index} value={node}>
-                    {node}
-                  </option>
-                ))}
-              </select>
+          {isLoggedIn && (
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
+              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Node Selection</h2>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Node:</label>
+                <select
+                  value={selectedNode}
+                  onChange={(e) => setSelectedNode(e.target.value)}
+                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+               >
+                  {defaultNodeList.map((node, index) => (
+                    <option key={index} value={node}>
+                      {node}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
+          )}
 
           {showPasswordPrompt && !wallet && (
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
@@ -769,7 +774,13 @@ const importFromPrivateKey = (privKey) => {
     </div>
     <div className="mb-4">
       <p className="text-sm font-medium text-gray-700 dark:text-gray-300"><strong>Address:</strong></p>
-      <p className="text-gray-900 dark:text-white break-all">{wallet.address}</p>
+      <p
+        className="text-gray-900 dark:text-white break-all cursor-pointer"
+        onClick={() => navigator.clipboard.writeText(wallet.address).then(() => alert('Address copied to clipboard!'))}
+        title="Click to copy address"
+      >
+        {wallet.address}
+      </p>
     </div>
     <div className="mb-4">
       <p className="text-sm font-medium text-gray-700 dark:text-gray-300"><strong>Balance:</strong> {balance !== null ? `${balance} WART` : 'Loading...'}</p>
@@ -785,7 +796,7 @@ const importFromPrivateKey = (privKey) => {
     <p className="text-yellow-600 dark:text-yellow-400 text-sm mb-4">
       Warning: Private key is encrypted in localStorage. Keep your password secure.
     </p>
-    <TransactionHistory address={wallet.address} node={selectedNode} onCountsUpdate={setBlockCounts} />
+    <TransactionHistory address={wallet.address} node={selectedNode} onCountsUpdate={setBlockCounts} blockCounts={blockCounts} />
   </div>
 )}
 
@@ -924,25 +935,27 @@ const importFromPrivateKey = (privKey) => {
             </div>
           )}
 
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
-            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Validate Address</h2>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Address:</label>
-              <input
-                type="text"
-                value={address}
-                onChange={(e) => setAddress(e.target.value.trim())}
-                placeholder="Enter 48-character address"
-                className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-            </div>
-            <button onClick={handleValidateAddress} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800">Validate Address</button>
-            {validateResult && (
-              <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-md">
-                <pre className="text-sm text-gray-900 dark:text-white">{JSON.stringify(validateResult, null, 2)}</pre>
+          {isLoggedIn && (
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
+              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Validate Address</h2>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Address:</label>
+                <input
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value.trim())}
+                  placeholder="Enter 48-character address"
+                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                />
               </div>
-            )}
-          </div>
+              <button onClick={handleValidateAddress} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800">Validate Address</button>
+              {validateResult && (
+                <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-md">
+                  <pre className="text-sm text-gray-900 dark:text-white">{JSON.stringify(validateResult, null, 2)}</pre>
+                </div>
+              )}
+            </div>
+          )}
 
           {isLoggedIn && (
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
