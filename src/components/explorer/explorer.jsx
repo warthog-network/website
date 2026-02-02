@@ -119,7 +119,7 @@ function Explorer() {
         };
         setClient(cl);
 
-        (async () => {
+        const fetchLatest = async () => {
             try {
                 const headResponse = await cl.get('/chain/head');
                 const headHeight = headResponse.data.height;
@@ -140,10 +140,16 @@ function Explorer() {
             } finally {
                 setLoading(false);
             }
-        })();
+        };
+
+        fetchLatest();
+
+        // Poll for updates every 10 seconds
+        const interval = setInterval(fetchLatest, 10000);
 
         return () => {
             cl.closeConnection();
+            clearInterval(interval);
         };
     }, [host, isInitialized]);
 
@@ -276,6 +282,16 @@ function Explorer() {
     const hasNext = page < maxPage;
 
     const isLocal = host.includes('localhost');
+
+    const formatTimeAgo = (timestamp) => {
+        if (!timestamp) return 'N/A';
+        const now = Date.now() / 1000;
+        const diff = now - timestamp;
+        if (diff < 60) return `${Math.floor(diff)}s ago`;
+        if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+        if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+        return `${Math.floor(diff / 86400)}d ago`;
+    };
 
     if (!isInitialized) {
         return <div className="container mx-auto px-4 py-8">Loading settings...</div>; // Delay rendering until initialized
@@ -430,7 +446,7 @@ function Explorer() {
                                     >
                                         <div className="flex justify-between items-center px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                                             <span className="px-3 py-1 text-sm font-medium text-yellow-700 bg-yellow-100 rounded-full">Block {format_height(block.height)}</span>
-                                            <span className="text-sm text-gray-500">5s ago</span>
+                                            <span className="text-sm text-gray-500">{formatTimeAgo(block.header.timestamp)}</span>
                                         </div>
                                         <div className="px-4 py-3">
                                             <dl className="space-y-2">

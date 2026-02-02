@@ -136,7 +136,7 @@ function AddressTransactions({ address }) {
       return 'http://localhost:3000';
     };
 
-    const selectedNode = typeof window !== 'undefined' ? localStorage.getItem('selectedNode') || 'local' : 'local';
+    const selectedNode = typeof window !== 'undefined' ? localStorage.getItem('selectedNode') || 'polaire' : 'polaire';
     let selectedHost;
     if (selectedNode === 'custom') {
       const customIP = localStorage.getItem('customIP') || 'localhost';
@@ -152,11 +152,7 @@ function AddressTransactions({ address }) {
     const client = new APIClient(selectedHost);
     clientRef.current = client;
 
-    if (address) {
-      if (allHistory.length === 0) {
-        fetchMoreHistory();
-      }
-      // Fetch balance
+    const fetchBalance = async () => {
       client.get(`/account/${address}/balance`)
         .then(response => {
           const bal = response.data?.balance || response.data || 'N/A';
@@ -180,6 +176,16 @@ function AddressTransactions({ address }) {
           setBalance('N/A');
           setUsdBalance('N/A');
         });
+    };
+
+    if (address) {
+      if (allHistory.length === 0) {
+        fetchMoreHistory();
+      }
+      fetchBalance();
+      // Poll balance every 30 seconds
+      const balanceInterval = setInterval(fetchBalance, 30000);
+      return () => clearInterval(balanceInterval);
     }
   }, [address]);
 
@@ -208,11 +214,11 @@ function AddressTransactions({ address }) {
     );
   }
 
-  if (!address || error) {
+  if (!address) {
     return (
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold mb-6 text-gray-900 dark:text-white">Address Not Found</h1>
-        <p className="text-gray-600">The requested address could not be found or there was an error.</p>
+        <p className="text-gray-600">No address provided.</p>
         <a
           href="/explorer"
           className="mt-6 inline-flex items-center px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-gray-200 transition-colors duration-200 dark:bg-gray-800 dark:text-zinc-300 dark:border-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-700"

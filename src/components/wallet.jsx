@@ -8,9 +8,10 @@ const API_URL = '/api/proxy';
 
 const defaultNodeList = [
   'http://217.182.64.43:3001',
-  'http://65.87.7.86:3001',
   'https://warthognode.duckdns.org',
-];
+ 
+  
+  ];
 
 const Wallet = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -56,6 +57,9 @@ const Wallet = () => {
   const [copiedTxId, setCopiedTxId] = useState(null); // New: to track copied Tx ID for feedback
   const [copiedToAddr, setCopiedToAddr] = useState(null); // New: to track copied To Address for feedback
   const [copiedFromAddr, setCopiedFromAddr] = useState(null); // New: to track copied From Address for feedback
+  const [downloadPassword, setDownloadPassword] = useState('');
+  const [confirmDownloadPassword, setConfirmDownloadPassword] = useState('');
+  const [showConfirmDownloadPassword, setShowConfirmDownloadPassword] = useState(false);
 const [isSmallScreen767, setIsSmallScreen767] = useState(false);
 const [blockCounts, setBlockCounts] = useState({ '24h': 0, week: 0, month: 0, rewards24h: [], rewardsWeek: [], rewardsMonth: [] });
 const [showTooltip24h, setShowTooltip24h] = useState(false);
@@ -65,8 +69,10 @@ const [scrollToTxid, setScrollToTxid] = useState(null);
 const [timeoutId24h, setTimeoutId24h] = useState(null);
 const [timeoutIdWeek, setTimeoutIdWeek] = useState(null);
 const [timeoutIdMonth, setTimeoutIdMonth] = useState(null);
+const [refreshHistory, setRefreshHistory] = useState(false);
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [registration, setRegistration] = useState(null);
+  const [usdBalance, setUsdBalance] = useState(null);
 
 const abbreviate = (str) => str ? `${str.slice(0,6)}...${str.slice(-4)}` : 'N/A';
 
@@ -117,6 +123,22 @@ useEffect(() => {
     if (wallet?.address) {
       console.log('Fetching balance for address:', wallet.address);
       fetchBalanceAndNonce(wallet.address);
+      // Poll for balance update every 30 seconds
+      const balanceInterval = setInterval(() => fetchBalanceAndNonce(wallet.address), 30000);
+      return () => clearInterval(balanceInterval);
+    }
+  }, [wallet, selectedNode]);
+
+  // Poll for transaction history update every 30 seconds
+  useEffect(() => {
+    if (wallet?.address) {
+      const historyInterval = setInterval(() => {
+        // Trigger history refresh by resetting or refetching (via TransactionHistory component)
+        // Since TransactionHistory uses useEffect on address, we can force a re-render or add a refresh prop
+        // For simplicity, we'll add a refresh trigger
+        setRefreshHistory(prev => !prev);
+      }, 30000);
+      return () => clearInterval(historyInterval);
     }
   }, [wallet, selectedNode]);
 
@@ -214,6 +236,21 @@ const handleUpdate = () => {
 
       const balanceInWart = balanceData.balance !== undefined ? (balanceData.balance / 1).toFixed(8) : '0';
       setBalance(balanceInWart);
+
+      // Fetch USD equivalent
+      if (balanceInWart && balanceInWart !== '0.00000000') {
+        fetch('https://api.coingecko.com/api/v3/simple/price?ids=warthog&vs_currencies=usd')
+          .then(res => res.json())
+          .then(data => {
+            const price = data.warthog?.usd || 0;
+            const usd = (parseFloat(balanceInWart) * price).toFixed(2);
+            setUsdBalance(`$${usd}`);
+          })
+          .catch(() => setUsdBalance('N/A'));
+      } else {
+        setUsdBalance('$0.00');
+      }
+
       setNextNonce(newNextNonce);
       setPinHeight(chainHeadData.pinHeight);
       setPinHash(chainHeadData.pinHash);
@@ -252,7 +289,14 @@ const updateTxStatuses = async () => {
       }
     })
   );
+  // Check if any tx status changed to confirmed
+  const hadConfirmation = updatedTxs.some((tx, idx) => tx.status === 'confirmed' && sentTransactions[idx].status !== 'confirmed');
   setSentTransactions(updatedTxs);
+  if (hadConfirmation) {
+    // Trigger balance and history refresh
+    fetchBalanceAndNonce(wallet.address);
+    setRefreshHistory(prev => !prev);
+  }
 };
 
 
@@ -299,12 +343,12 @@ const updateTxStatuses = async () => {
     }
   };
 
-  const downloadWallet = (walletData) => {
-    if (!password) {
+  const downloadWallet = (walletData, pwd) => {
+    if (!pwd) {
       setError('Please provide a password to encrypt the wallet file');
       return;
     }
-    const encrypted = encryptWallet(walletData, password);
+    const encrypted = encryptWallet(walletData, pwd);
     const blob = new Blob([encrypted], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -313,8 +357,10 @@ const updateTxStatuses = async () => {
     a.click();
     URL.revokeObjectURL(url);
     setIsWalletProcessed(true);
-    setPassword('');
-    setSaveWalletConsent(false);
+    setDownloadPassword('');
+    setConfirmDownloadPassword('');
+    setShowDownloadPassword(false);
+    setShowConfirmDownloadPassword(false);
   };
 
   const handleFileUpload = (event) => {
@@ -844,7 +890,7 @@ const importFromPrivateKey = (privKey) => {
       </p>
     </div>
     <div className="mb-4">
-      <p className="text-sm font-medium text-gray-700 dark:text-gray-300"><strong>Balance:</strong> {balance !== null ? `${balance} WART` : 'Loading...'}</p>
+      <p className="text-sm font-medium text-gray-700 dark:text-gray-300"><strong>Balance:</strong> {balance !== null ? `${balance}` : 'Loading...'} {usdBalance && usdBalance !== '$0.00' && usdBalance !== 'N/A' ? `(${usdBalance})` : ''}</p>
     </div>
     <div className="flex space-x-2 mb-4">
       <button onClick={() => fetchBalanceAndNonce(wallet.address)} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800">
@@ -857,7 +903,7 @@ const importFromPrivateKey = (privKey) => {
     <p className="text-yellow-600 dark:text-yellow-400 text-sm mb-4">
       Warning: Private key is encrypted in localStorage. Keep your password secure.
     </p>
-    <TransactionHistory address={wallet.address} node={selectedNode} onCountsUpdate={setBlockCounts} blockCounts={blockCounts} />
+    <TransactionHistory address={wallet.address} node={selectedNode} onCountsUpdate={setBlockCounts} blockCounts={blockCounts} refreshTrigger={refreshHistory} />
   </div>
 )}
 
@@ -870,8 +916,8 @@ const importFromPrivateKey = (privKey) => {
                   <div className="relative">
                     <input
                       type={showDownloadPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      value={downloadPassword}
+                      onChange={(e) => setDownloadPassword(e.target.value)}
                       placeholder="Enter password to encrypt wallet"
                       className="mt-1 block w-full px-3 py-2 pr-10 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
@@ -884,11 +930,42 @@ const importFromPrivateKey = (privKey) => {
                     </button>
                   </div>
                 </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirm Password:</label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmDownloadPassword ? "text" : "password"}
+                      value={confirmDownloadPassword}
+                      onChange={(e) => setConfirmDownloadPassword(e.target.value)}
+                      placeholder="Confirm password"
+                      className="mt-1 block w-full px-3 py-2 pr-10 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmDownloadPassword(!showConfirmDownloadPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    >
+                      {showConfirmDownloadPassword ? "🙈" : "👁️"}
+                    </button>
+                  </div>
+                </div>
                 <div className="flex space-x-2">
-                  <button onClick={() => { downloadWallet(wallet); setShowDownloadPrompt(false); }} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800">
+                  <button onClick={() => {
+                    if (!downloadPassword) {
+                      setError('Please provide a password to encrypt and download the wallet file');
+                      return;
+                    }
+                    if (downloadPassword !== confirmDownloadPassword) {
+                      setError('Passwords do not match');
+                      return;
+                    }
+                    setError(null);
+                    downloadWallet(wallet, downloadPassword);
+                    setShowDownloadPrompt(false);
+                  }} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800">
                     Download
                   </button>
-                  <button onClick={() => { setShowDownloadPrompt(false); setPassword(''); setShowDownloadPassword(false); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200">
+                  <button onClick={() => { setShowDownloadPrompt(false); setDownloadPassword(''); setConfirmDownloadPassword(''); setShowDownloadPassword(false); setShowConfirmDownloadPassword(false); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200">
                     Cancel
                   </button>
                 </div>
