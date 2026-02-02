@@ -74,6 +74,14 @@ const [refreshHistory, setRefreshHistory] = useState(false);
   const [registration, setRegistration] = useState(null);
   const [usdBalance, setUsdBalance] = useState(null);
 
+  // Load selectedNode from localStorage on mount
+  useEffect(() => {
+    const savedNode = localStorage.getItem('selectedNode');
+    if (savedNode && defaultNodeList.includes(savedNode)) {
+      setSelectedNode(savedNode);
+    }
+  }, []);
+
 const abbreviate = (str) => str ? `${str.slice(0,6)}...${str.slice(-4)}` : 'N/A';
 
 useEffect(() => {
@@ -812,7 +820,10 @@ const importFromPrivateKey = (privKey) => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Node:</label>
                 <select
                   value={selectedNode}
-                  onChange={(e) => setSelectedNode(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedNode(e.target.value);
+                    localStorage.setItem('selectedNode', e.target.value);
+                  }}
                   className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                >
                   {defaultNodeList.map((node, index) => (

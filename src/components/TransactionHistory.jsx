@@ -203,22 +203,9 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
         }
       `}</style>
       <section style={{ fontFamily: 'Montserrat', color: '#FFECB3' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ color: '#caa21eff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          Transaction History (Page {currentPage})
-          <span
-            style={{
-              display: 'inline-block',
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              backgroundColor: loading ? '#facc15' : '#22c55e', // Yellow when loading, green when loaded
-              animation: loading ? 'blink 1s infinite' : 'none'
-            }}
-          ></span>
-        </h2>
+      <div className="flex flex-col md:flex-row justify-between md:items-center">
         {blockCounts && (
-          <div className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-sm font-medium" style={{ marginBottom: '8px' }}>
+          <div className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-sm font-medium order-1 md:order-2 mt-2 md:mt-0 mb-1 w-fit">
             blocks 24h <span className="relative cursor-pointer" onMouseEnter={() => { if (timeoutId24h) clearTimeout(timeoutId24h); setShowTooltip24h(true); }} onMouseLeave={() => { const id = setTimeout(() => setShowTooltip24h(false), 1000); setTimeoutId24h(id); }}>
               {blockCounts['24h']}
               {showTooltip24h && blockCounts.rewards24h.length > 0 && (
@@ -252,6 +239,12 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
             </span>
           </div>
         )}
+        <h2 className="text-base font-semibold text-orange-400 flex items-center gap-2 flex-wrap order-2 md:order-1">
+          Transaction History <span className="text-sm">(Page {currentPage})</span>
+          <span
+            className={`inline-block w-2 h-2 rounded-full ${loading ? 'bg-yellow-400 animate-pulse' : 'bg-green-500'}`}
+          ></span>
+        </h2>
       </div>
       {error && <div className="error"><strong>Error:</strong> {error}</div>}
       {allHistory.length === 0 && !loading && <p>No transactions found.</p>}
