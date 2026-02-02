@@ -47,6 +47,12 @@ const Wallet = () => {
   const [failedTransactions, setFailedTransactions] = useState([]); // New: to log failed transactions
 
   const [sentTransactions, setSentTransactions] = useState([]);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showUnlockPassword, setShowUnlockPassword] = useState(false);
+  const [showDownloadPassword, setShowDownloadPassword] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [copiedTxId, setCopiedTxId] = useState(null); // New: to track copied Tx ID for feedback
   const [copiedToAddr, setCopiedToAddr] = useState(null); // New: to track copied To Address for feedback
   const [copiedFromAddr, setCopiedFromAddr] = useState(null); // New: to track copied From Address for feedback
@@ -366,6 +372,7 @@ const updateTxStatuses = async () => {
     setPinHash(null);
     setError(null);
     setPassword('');
+    setConfirmPassword('');
     setSaveWalletConsent(false);
     setUploadedFile(null);
     setIsWalletProcessed(false);
@@ -379,6 +386,11 @@ const updateTxStatuses = async () => {
     setToAddr('');
     setAmount('');
     setFee('');
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+    setShowUnlockPassword(false);
+    setShowDownloadPassword(false);
+    setShowLoginPassword(false);
   };
 
   const generateWallet = async (wordCount, pathType) => {
@@ -776,13 +788,22 @@ const importFromPrivateKey = (privKey) => {
               </div>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password:</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter password to unlock wallet"
-                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
+                <div className="relative">
+                  <input
+                    type={showUnlockPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter password to unlock wallet"
+                    className="mt-1 block w-full px-3 py-2 pr-10 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowUnlockPassword(!showUnlockPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    {showUnlockPassword ? "🙈" : "👁️"}
+                  </button>
+                </div>
               </div>
               <div className="flex space-x-2">
                 <button onClick={loadWallet} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800">Unlock Wallet</button>
@@ -791,6 +812,7 @@ const importFromPrivateKey = (privKey) => {
                     setShowPasswordPrompt(false);
                     setPassword('');
                     setUploadedFile(null);
+                    setShowUnlockPassword(false);
                   }}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200"
                 >
@@ -845,19 +867,28 @@ const importFromPrivateKey = (privKey) => {
                 <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Download Wallet File</h2>
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password to Encrypt Wallet:</label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter password to encrypt wallet"
-                    className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showDownloadPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter password to encrypt wallet"
+                      className="mt-1 block w-full px-3 py-2 pr-10 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowDownloadPassword(!showDownloadPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    >
+                      {showDownloadPassword ? "🙈" : "👁️"}
+                    </button>
+                  </div>
                 </div>
                 <div className="flex space-x-2">
                   <button onClick={() => { downloadWallet(wallet); setShowDownloadPrompt(false); }} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800">
                     Download
                   </button>
-                  <button onClick={() => { setShowDownloadPrompt(false); setPassword(''); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200">
+                  <button onClick={() => { setShowDownloadPrompt(false); setPassword(''); setShowDownloadPassword(false); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200">
                     Cancel
                   </button>
                 </div>
@@ -880,6 +911,7 @@ const importFromPrivateKey = (privKey) => {
                     setUploadedFile(null);
                     setPassword('');
                     setIsWalletProcessed(false);
+                    setShowLoginPassword(false);
                   }}
                   className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 >
@@ -926,13 +958,22 @@ const importFromPrivateKey = (privKey) => {
                   </div>
                   <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password:</label>
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter password to decrypt wallet"
-                      className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showLoginPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Enter password to decrypt wallet"
+                        className="mt-1 block w-full px-3 py-2 pr-10 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowLoginPassword(!showLoginPassword)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                      >
+                        {showLoginPassword ? "🙈" : "👁️"}
+                      </button>
+                    </div>
                   </div>
                 </>
               )}
@@ -1195,13 +1236,41 @@ const importFromPrivateKey = (privKey) => {
       </div>
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password to Encrypt Wallet:</label>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Enter password to encrypt wallet"
-          className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-        />
+        <div className="relative">
+          <input
+            type={showPassword ? "text" : "password"}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter password to encrypt wallet"
+            className="mt-1 block w-full px-3 py-2 pr-10 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            {showPassword ? "🙈" : "👁️"}
+          </button>
+        </div>
+      </div>
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirm Password:</label>
+        <div className="relative">
+          <input
+            type={showConfirmPassword ? "text" : "password"}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Confirm password"
+            className="mt-1 block w-full px-3 py-2 pr-10 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            {showConfirmPassword ? "🙈" : "👁️"}
+          </button>
+        </div>
       </div>
       {error && (
         <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 p-4 rounded-md mb-4">
@@ -1226,6 +1295,10 @@ const importFromPrivateKey = (privKey) => {
               setError('Please provide a password to encrypt and save the wallet.');
               return;
             }
+            if (password !== confirmPassword) {
+              setError('Passwords do not match.');
+              return;
+            }
             if (!saveWalletConsent) {
               setError('Please consent to save the wallet.');
               return;
@@ -1234,6 +1307,10 @@ const importFromPrivateKey = (privKey) => {
             saveWallet(walletData);
             setShowModal(false);
             setWalletData(null);
+            setPassword('');
+            setConfirmPassword('');
+            setShowPassword(false);
+            setShowConfirmPassword(false);
           }}
           className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
         >
@@ -1245,10 +1322,18 @@ const importFromPrivateKey = (privKey) => {
               setError('Please provide a password to encrypt and download the wallet file.');
               return;
             }
+            if (password !== confirmPassword) {
+              setError('Passwords do not match.');
+              return;
+            }
             setError(null);
             downloadWallet(walletData);
             setShowModal(false);
             setWalletData(null);
+            setPassword('');
+            setConfirmPassword('');
+            setShowPassword(false);
+            setShowConfirmPassword(false);
           }}
           className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
         >
@@ -1271,9 +1356,12 @@ const importFromPrivateKey = (privKey) => {
             setShowModal(false);
             setWalletData(null);
             setPassword('');
+            setConfirmPassword('');
             setSaveWalletConsent(false);
             setConsentToClose(false);
             setError(null);
+            setShowPassword(false);
+            setShowConfirmPassword(false);
           }}
           className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
