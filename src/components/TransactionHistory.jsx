@@ -6,10 +6,11 @@ import axios from 'axios';
 const API_URL = '/api/proxy';
 const PAGE_SIZE = 15;
 
-const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts }) => {
+const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refreshTrigger }) => {
   const [allHistory, setAllHistory] = useState([]); // Accumulate all fetched transactions
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [nextCursor, setNextCursor] = useState('4294967295'); // Start with large number
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -26,9 +27,15 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts }) => {
 
   useEffect(() => {
     if (address && node && allHistory.length === 0) {
-      fetchMoreHistory();
+      fetchInitialHistory();
     }
   }, [address, node]);
+
+  useEffect(() => {
+    if (address && node && refreshTrigger !== undefined) {
+      fetchInitialHistory();
+    }
+  }, [refreshTrigger, address, node]);
 
   useEffect(() => {
     if (allHistory.length > 0 && onCountsUpdate) {
@@ -53,6 +60,59 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts }) => {
       });
     }
   }, [allHistory, onCountsUpdate]);
+
+  const fetchInitialHistory = async () => {
+    setLoading(true);
+    setError(null); // Clear previous error
+    console.log('Loading transaction history...');
+    try {
+      const nodeBaseParam = `nodeBase=${encodeURIComponent(node)}`;
+      const path = `account/${address}/history/4294967295`;
+      const response = await axios.get(`${API_URL}?nodePath=${path}&${nodeBaseParam}`, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const rawData = response.data.data || response.data;
+      if (rawData.perBlock && Array.isArray(rawData.perBlock)) {
+        // Fetch timestamps for each block
+        const blockPromises = rawData.perBlock.map(block =>
+          axios.get(`${API_URL}?nodePath=chain/block/${block.height}&${nodeBaseParam}`)
+        );
+        const blockResponses = await Promise.allSettled(blockPromises);
+        const timestampMap = {};
+        blockResponses.forEach((res, idx) => {
+          if (res.status === 'fulfilled') {
+            const blockData = res.value.data.data || res.value.data;
+            timestampMap[rawData.perBlock[idx].height] = blockData.timestamp;
+          }
+        });
+
+        const newItems = rawData.perBlock.flatMap(block => {
+          const txs = [
+            ...(block.transactions?.transfers || []),
+            ...(block.transactions?.rewards || [])
+          ];
+          return txs.map(tx => ({
+            ...tx,
+            confirmations: block.confirmations,
+            height: block.height,
+            txid: tx.txHash, // Use txHash as txid
+            timestamp: tx.timestamp || block.timestamp || timestampMap[block.height],
+          }));
+        });
+        setAllHistory(newItems);
+        setNextCursor(rawData.fromId > 0 ? rawData.fromId : null);
+        setHasMore(newItems.length > 0 && rawData.fromId > 0);
+        setCurrentPage(1);
+      } else {
+        throw new Error('Unexpected response format');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to fetch transaction history');
+    } finally {
+      setLoading(false);
+      console.log('Transaction history loaded.');
+    }
+  };
 
   const fetchMoreHistory = async () => {
     if (!hasMore || loading) return;
@@ -135,9 +195,28 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts }) => {
   const hasNext = (endIndex < allHistory.length) || hasMore;
 
   return (
-    <section style={{ fontFamily: 'Montserrat', color: '#FFECB3' }}>
+    <>
+      <style>{`
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+      `}</style>
+      <section style={{ fontFamily: 'Montserrat', color: '#FFECB3' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ color: '#caa21eff' }}>Transaction History (Page {currentPage})</h2>
+        <h2 style={{ color: '#caa21eff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          Transaction History (Page {currentPage})
+          <span
+            style={{
+              display: 'inline-block',
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              backgroundColor: loading ? '#facc15' : '#22c55e', // Yellow when loading, green when loaded
+              animation: loading ? 'blink 1s infinite' : 'none'
+            }}
+          ></span>
+        </h2>
         {blockCounts && (
           <div className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-sm font-medium" style={{ marginBottom: '8px' }}>
             blocks 24h <span className="relative cursor-pointer" onMouseEnter={() => { if (timeoutId24h) clearTimeout(timeoutId24h); setShowTooltip24h(true); }} onMouseLeave={() => { const id = setTimeout(() => setShowTooltip24h(false), 1000); setTimeoutId24h(id); }}>
@@ -174,7 +253,6 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts }) => {
           </div>
         )}
       </div>
-      {loading && <p>Loading...</p>}
       {error && <div className="error"><strong>Error:</strong> {error}</div>}
       {allHistory.length === 0 && !loading && <p>No transactions found.</p>}
       {currentHistory.length > 0 && (
@@ -255,6 +333,7 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts }) => {
         </button>
       </div>
     </section>
+    </>
   );
 };
 
