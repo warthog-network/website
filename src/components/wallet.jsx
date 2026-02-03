@@ -225,7 +225,7 @@ const handleUpdate = () => {
       const nodeBaseParam = `nodeBase=${encodeURIComponent(selectedNode)}`;
       console.log('Sending chain head request to:', `${API_URL}?nodePath=chain/head&${nodeBaseParam}`);
       const chainHeadResponse = await axios.get(`${API_URL}?nodePath=chain/head&${nodeBaseParam}`, {
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
       });
       console.log('Chain head response status:', chainHeadResponse.status);
       const chainHeadData = chainHeadResponse.data.data || chainHeadResponse.data;
