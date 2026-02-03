@@ -9,11 +9,13 @@ export async function GET({ request }) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
   try {
-    const response = await fetch(targetUrl, { signal: controller.signal });
+    const response = await fetch(targetUrl, { signal: controller.signal, headers: { 'Cache-Control': 'no-cache' } });
     clearTimeout(timeoutId);
+    const newHeaders = new Headers(response.headers);
+    newHeaders.set('Cache-Control', 'no-cache');
     return new Response(response.body, {
       status: response.status,
-      headers: response.headers
+      headers: newHeaders
     });
   } catch (error) {
     clearTimeout(timeoutId);
