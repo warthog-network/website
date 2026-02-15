@@ -5,13 +5,10 @@ import { ethers } from 'ethers';
 import TransactionHistory from './TransactionHistory';
 
 const API_URL = '/api/proxy';
-
 const defaultNodeList = [
   'http://217.182.64.43:3001',
   'https://warthognode.duckdns.org',
- 
-  
-  ];
+];
 
 const Wallet = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -30,7 +27,7 @@ const Wallet = () => {
   const [address, setAddress] = useState('');
   const [toAddr, setToAddr] = useState('');
   const [amount, setAmount] = useState('');
-  const [fee, setFee] = useState('');
+  const [fee, setFee] = useState('0.01');
   const [nonceInput, setNonceInput] = useState(''); // New: for manual nonce input
   const [wordCount, setWordCount] = useState('12');
   const [pathType, setPathType] = useState('hardened');
@@ -46,7 +43,6 @@ const Wallet = () => {
   const [showDownloadPrompt, setShowDownloadPrompt] = useState(false);
   const [sending, setSending] = useState(false); // New: to disable button during send
   const [failedTransactions, setFailedTransactions] = useState([]); // New: to log failed transactions
-
   const [sentTransactions, setSentTransactions] = useState([]);
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -60,16 +56,17 @@ const Wallet = () => {
   const [downloadPassword, setDownloadPassword] = useState('');
   const [confirmDownloadPassword, setConfirmDownloadPassword] = useState('');
   const [showConfirmDownloadPassword, setShowConfirmDownloadPassword] = useState(false);
-const [isSmallScreen767, setIsSmallScreen767] = useState(false);
-const [blockCounts, setBlockCounts] = useState({ '24h': 0, week: 0, month: 0, rewards24h: [], rewardsWeek: [], rewardsMonth: [] });
-const [showTooltip24h, setShowTooltip24h] = useState(false);
-const [showTooltipWeek, setShowTooltipWeek] = useState(false);
-const [showTooltipMonth, setShowTooltipMonth] = useState(false);
-const [scrollToTxid, setScrollToTxid] = useState(null);
-const [timeoutId24h, setTimeoutId24h] = useState(null);
-const [timeoutIdWeek, setTimeoutIdWeek] = useState(null);
-const [timeoutIdMonth, setTimeoutIdMonth] = useState(null);
-const [refreshHistory, setRefreshHistory] = useState(false);
+  const [isSmallScreen767, setIsSmallScreen767] = useState(false);
+  const [isSmallScreen795, setIsSmallScreen795] = useState(false);
+  const [blockCounts, setBlockCounts] = useState({ '24h': 0, week: 0, month: 0, rewards24h: [], rewardsWeek: [], rewardsMonth: [] });
+  const [showTooltip24h, setShowTooltip24h] = useState(false);
+  const [showTooltipWeek, setShowTooltipWeek] = useState(false);
+  const [showTooltipMonth, setShowTooltipMonth] = useState(false);
+  const [scrollToTxid, setScrollToTxid] = useState(null);
+  const [timeoutId24h, setTimeoutId24h] = useState(null);
+  const [timeoutIdWeek, setTimeoutIdWeek] = useState(null);
+  const [timeoutIdMonth, setTimeoutIdMonth] = useState(null);
+  const [refreshHistory, setRefreshHistory] = useState(false);
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [registration, setRegistration] = useState(null);
   const [usdBalance, setUsdBalance] = useState(null);
@@ -82,43 +79,39 @@ const [refreshHistory, setRefreshHistory] = useState(false);
     }
   }, []);
 
-const abbreviate = (str) => str ? `${str.slice(0,6)}...${str.slice(-4)}` : 'N/A';
+  const abbreviate = (str) => str ? `${str.slice(0,6)}...${str.slice(-4)}` : 'N/A';
 
-useEffect(() => {
-  const handleResize = () => {
-    setIsSmallScreen767(window.innerWidth < 767);
-  };
+  useEffect(() => {
+    const handleResize = () => {
+      setIsSmallScreen767(window.innerWidth < 767);
+      setIsSmallScreen795(window.innerWidth < 795);
+    };
+    handleResize(); // Set initial value on mount
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-  handleResize(); // Set initial value on mount
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
 
-  window.addEventListener('resize', handleResize);
-  return () => window.removeEventListener('resize', handleResize);
-}, []);
-  
-useEffect(() => {
-  const handleBeforeInstallPrompt = (e) => {
-    e.preventDefault();
-    setDeferredPrompt(e);
-  };
-
-  window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-  return () => {
-    window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-  };
-}, []);
-// Handle app installed event
-useEffect(() => {
-  const handleAppInstalled = () => {
-    setDeferredPrompt(null);
-  };
-
-  window.addEventListener('appinstalled', handleAppInstalled);
-
-  return () => {
-    window.removeEventListener('appinstalled', handleAppInstalled);
-  };
-}, []);
+  // Handle app installed event
+  useEffect(() => {
+    const handleAppInstalled = () => {
+      setDeferredPrompt(null);
+    };
+    window.addEventListener('appinstalled', handleAppInstalled);
+    return () => {
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
 
   useEffect(() => {
     const encryptedWallet = localStorage.getItem('warthogWallet');
@@ -141,9 +134,6 @@ useEffect(() => {
   useEffect(() => {
     if (wallet?.address) {
       const historyInterval = setInterval(() => {
-        // Trigger history refresh by resetting or refetching (via TransactionHistory component)
-        // Since TransactionHistory uses useEffect on address, we can force a re-render or add a refresh prop
-        // For simplicity, we'll add a refresh trigger
         setRefreshHistory(prev => !prev);
       }, 30000);
       return () => clearInterval(historyInterval);
@@ -156,58 +146,47 @@ useEffect(() => {
     }
   }, [showModal]);
 
-// Poll for pending tx status every 30 seconds if there are pending txs
-useEffect(() => {
-  if (sentTransactions.length > 0 && wallet?.address) {
-    const interval = setInterval(() => {
-      updateTxStatuses();
-    }, 30000); // 30 seconds
-    return () => clearInterval(interval);
-  }
-}, [sentTransactions, wallet, selectedNode]);
+  // Poll for pending tx status every 30 seconds if there are pending txs
+  useEffect(() => {
+    if (sentTransactions.length > 0 && wallet?.address) {
+      const interval = setInterval(() => {
+        updateTxStatuses();
+      }, 30000); // 30 seconds
+      return () => clearInterval(interval);
+    }
+  }, [sentTransactions, wallet, selectedNode]);
 
-useEffect(() => {
-  const handleResize = () => {
-    setIsSmallScreen767(window.innerWidth < 767);
-  };
+  // PWA Update Logic
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').then((reg) => {
+        setRegistration(reg);
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                setUpdateAvailable(true);
+              }
+            });
+          }
+        });
+      }).catch((error) => {
+        console.error('Service Worker registration failed:', error);
+      });
+    }
+  }, []);
 
-  window.addEventListener('resize', handleResize);
-  return () => window.removeEventListener('resize', handleResize);
-}, []);
-
-// PWA Update Logic
-useEffect(() => {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').then((reg) => {
-      setRegistration(reg);
-      reg.addEventListener('updatefound', () => {
-        const newWorker = reg.installing;
-        if (newWorker) {
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              setUpdateAvailable(true);
-            }
-          });
+  const handleUpdate = () => {
+    if (registration && registration.waiting) {
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      registration.waiting.addEventListener('statechange', (e) => {
+        if (e.target.state === 'activated') {
+          window.location.reload();
         }
       });
-    }).catch((error) => {
-      console.error('Service Worker registration failed:', error);
-    });
-  }
-}, []);
-
-const handleUpdate = () => {
-  if (registration && registration.waiting) {
-    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-    registration.waiting.addEventListener('statechange', (e) => {
-      if (e.target.state === 'activated') {
-        window.location.reload();
-      }
-    });
-  }
-};
-
-
+    }
+  };
 
   const wartToE8 = (wart) => {
     try {
@@ -219,8 +198,17 @@ const handleUpdate = () => {
     }
   };
 
+  // ==================== FIXED fetchBalanceAndNonce (only change) ====================
   const fetchBalanceAndNonce = async (address) => {
     setError(null);
+
+    // Read the latest optimistic nonce from localStorage (survives page reload / login)
+    let persistentNonce = 0;
+    if (address) {
+      const stored = localStorage.getItem(`warthogNextNonce_${address}`);
+      if (stored) persistentNonce = Number(stored);
+    }
+
     try {
       const nodeBaseParam = `nodeBase=${encodeURIComponent(selectedNode)}`;
       console.log('Sending chain head request to:', `${API_URL}?nodePath=chain/head&${nodeBaseParam}`);
@@ -240,7 +228,9 @@ const handleUpdate = () => {
       console.log('Balance response data:', balanceData);
 
       const fetchedNonce = Number(balanceData.nonceId) || 0;
-      const newNextNonce = Math.max(nextNonce || 0, fetchedNonce + 1);
+
+      // FIXED: always keep the highest value (persistent localStorage + on-chain + current React state)
+      const newNextNonce = Math.max(persistentNonce, fetchedNonce, nextNonce || 0);
 
       const balanceInWart = balanceData.balance !== undefined ? (balanceData.balance / 1).toFixed(8) : '0';
       setBalance(balanceInWart);
@@ -263,12 +253,11 @@ const handleUpdate = () => {
       setPinHeight(chainHeadData.pinHeight);
       setPinHash(chainHeadData.pinHash);
 
-      if (wallet?.address) {
-        localStorage.setItem(`warthogNextNonce_${wallet.address}`, newNextNonce);
+      if (address) {
+        localStorage.setItem(`warthogNextNonce_${address}`, newNextNonce);
       }
 
       console.log('Chain head data:', chainHeadData);
-
       return { balanceInWart, nextNonce: newNextNonce, pinHeight: chainHeadData.pinHeight, pinHash: chainHeadData.pinHash };
     } catch (err) {
       const errorMessage =
@@ -279,37 +268,32 @@ const handleUpdate = () => {
       console.error('Fetch error:', err);
     }
   };
+  // =================================================================================
 
-const updateTxStatuses = async () => {
-  const nodeBaseParam = `nodeBase=${encodeURIComponent(selectedNode)}`;
-  const updatedTxs = await Promise.all(
-    sentTransactions.map(async (tx) => {
-      if (tx.status === 'confirmed') return tx;
-      try {
-        const response = await axios.get(`${API_URL}?nodePath=transaction/lookup/${tx.txHash}&${nodeBaseParam}`);
-        const data = response.data.data?.transaction || response.data.data || response.data;
-        if (data.blockHeight !== undefined && data.confirmations > 0) {
-          return { ...tx, status: 'confirmed', confirmations: data.confirmations };
+  const updateTxStatuses = async () => {
+    const nodeBaseParam = `nodeBase=${encodeURIComponent(selectedNode)}`;
+    const updatedTxs = await Promise.all(
+      sentTransactions.map(async (tx) => {
+        if (tx.status === 'confirmed') return tx;
+        try {
+          const response = await axios.get(`${API_URL}?nodePath=transaction/lookup/${tx.txHash}&${nodeBaseParam}`);
+          const data = response.data.data?.transaction || response.data.data || response.data;
+          if (data.blockHeight !== undefined && data.confirmations > 0) {
+            return { ...tx, status: 'confirmed', confirmations: data.confirmations };
+          }
+          return tx;
+        } catch {
+          return tx;
         }
-        return tx;
-      } catch {
-        return tx;
-      }
-    })
-  );
-  // Check if any tx status changed to confirmed
-  const hadConfirmation = updatedTxs.some((tx, idx) => tx.status === 'confirmed' && sentTransactions[idx].status !== 'confirmed');
-  setSentTransactions(updatedTxs);
-  if (hadConfirmation) {
-    // Trigger balance and history refresh
-    fetchBalanceAndNonce(wallet.address);
-    setRefreshHistory(prev => !prev);
-  }
-};
-
-
-
-
+      })
+    );
+    const hadConfirmation = updatedTxs.some((tx, idx) => tx.status === 'confirmed' && sentTransactions[idx].status !== 'confirmed');
+    setSentTransactions(updatedTxs);
+    if (hadConfirmation) {
+      fetchBalanceAndNonce(wallet.address);
+      setRefreshHistory(prev => !prev);
+    }
+  };
 
   const encryptWallet = (walletData, password) => {
     const { privateKey, publicKey, address } = walletData;
@@ -495,9 +479,10 @@ const updateTxStatuses = async () => {
       throw new Error('Invalid mnemonic');
     }
   };
-const importFromPrivateKey = (privKey) => {
-    console.log('Input length:', privKey.length);  // Should be 64
-    console.log('Is hex:', /^[0-9a-fA-F]+$/.test(privKey));  // Should be true
+
+  const importFromPrivateKey = (privKey) => {
+    console.log('Input length:', privKey.length); // Should be 64
+    console.log('Is hex:', /^[0-9a-fA-F]+$/.test(privKey)); // Should be true
     try {
       if (privKey.length !== 64) {
         throw new Error('Private key must be exactly 64 characters long');
@@ -511,7 +496,7 @@ const importFromPrivateKey = (privKey) => {
       const ripemd = ethers.ripemd160('0x' + sha).slice(2);
       const checksum = ethers.sha256('0x' + ripemd).slice(2, 10);
       const address = ripemd + checksum;
-      console.log('Derived address:', address);  // For extra verification
+      console.log('Derived address:', address); // For extra verification
       return {
         privateKey: privKey,
         publicKey,
@@ -522,31 +507,26 @@ const importFromPrivateKey = (privKey) => {
       throw new Error(err.message || 'Invalid private key');
     }
   };
-  
+
   const handleWalletAction = async () => {
     setError(null);
     setIsWalletProcessed(false);
-
     if (walletAction === 'login' && !uploadedFile) {
       setError('Please upload the warthog_wallet.txt file');
       return;
     }
-
     if (walletAction === 'login') {
       loadWallet();
       return;
     }
-
     if (walletAction === 'derive' && !mnemonic) {
       setError('Please enter a seed phrase');
       return;
     }
-
     if (walletAction === 'import' && !privateKeyInput) {
       setError('Please enter a private key');
       return;
     }
-
     if (walletAction === 'derive') {
       const words = mnemonic.trim().split(/\s+/);
       const expectedWordCount = Number(wordCount);
@@ -555,7 +535,6 @@ const importFromPrivateKey = (privKey) => {
         return;
       }
     }
-
     try {
       let data;
       if (walletAction === 'create') {
@@ -613,6 +592,7 @@ const importFromPrivateKey = (privKey) => {
       throw new Error('Failed to round fee');
     }
   };
+
   const handleSendTransaction = async () => {
     if (sending) return; // Prevent multiple sends
     setSending(true);
@@ -645,16 +625,15 @@ const importFromPrivateKey = (privKey) => {
       setSending(false);
       return;
     }
-    if (nextNonce === null || pinHeight === null || pinHash === null) {
+    if (nextNonce === null || pinHeight === null || pinHash === null || nonceInput === '') {
       setError('Nonce or chain head not available. Fetching latest...');
-      await fetchBalanceAndNonce(wallet.address); // Fetch fresh if missing
+      await fetchBalanceAndNonce(wallet.address); // Fetch fresh if missing or auto-calculating
     }
     if (nextNonce === null || pinHeight === null || pinHash === null) {
       setError('Failed to fetch nonce or chain head. Please try again.');
       setSending(false);
       return;
     }
-
     let txNonce = nextNonce;
     if (nonceInput !== '') {
       const parsedNonce = Number(nonceInput);
@@ -665,7 +644,6 @@ const importFromPrivateKey = (privKey) => {
       }
       txNonce = parsedNonce;
     }
-
     // Capture transaction details for logging if failed
     const txDetails = {
       toAddr,
@@ -674,7 +652,6 @@ const importFromPrivateKey = (privKey) => {
       nonce: txNonce,
       timestamp: new Date().toISOString(),
     };
-
     try {
       // Use current state values
       const pinHashBytes = ethers.getBytes('0x' + pinHash);
@@ -688,7 +665,6 @@ const importFromPrivateKey = (privKey) => {
       const toRawBytes = ethers.getBytes('0x' + toAddr.slice(0, 40));
       const amountBytes = new Uint8Array(8);
       new DataView(amountBytes.buffer).setBigUint64(0, BigInt(amountE8), false);
-
       const messageBytes = ethers.concat([
         pinHashBytes,
         heightBytes,
@@ -698,19 +674,15 @@ const importFromPrivateKey = (privKey) => {
         toRawBytes,
         amountBytes,
       ]);
-
       const txHash = ethers.sha256(messageBytes);
       const txHashBytes = ethers.getBytes(txHash);
-
       const signer = new ethers.Wallet('0x' + txPrivateKey);
       const sig = signer.signingKey.sign(txHashBytes);
-
       const rHex = sig.r.slice(2);
       const sHex = sig.s.slice(2);
       const recid = sig.v - 27;
       const recidHex = recid.toString(16).padStart(2, '0');
       const signature65 = rHex + sHex + recidHex;
-
       const nodeBaseParam = `nodeBase=${encodeURIComponent(selectedNode)}`;
       console.log('Sending transaction request to:', `${API_URL}?nodePath=transaction/add&${nodeBaseParam}`);
       const response = await axios.post(
@@ -728,14 +700,10 @@ const importFromPrivateKey = (privKey) => {
       console.log('Send transaction response status:', response.status);
       const data = response.data;
       console.log('Send transaction response data:', data);
-
-      // Check for error in response data
       if (data.error || (data.code && data.code !== 0)) {
         throw new Error(data.error || `Transaction error code: ${data.code}`);
       }
-
       setSendResult(data);
-
       // Optimistic updates on success
       const newNextNonce = Math.max(nextNonce || 0, txNonce + 1);
       setNextNonce(newNextNonce);
@@ -743,19 +711,16 @@ const importFromPrivateKey = (privKey) => {
         localStorage.setItem(`warthogNextNonce_${wallet.address}`, newNextNonce);
       }
       setBalance((parseFloat(balance) - amountNum - feeNum).toFixed(8));
-
       // Step 2 insertion: Log successful sent transaction as pending
       setSentTransactions((prev) => [
         ...prev,
-        { ...txDetails, txHash: data.data.txHash, status: 'pending' }, // Adjust data.data if hash is elsewhere
+        { ...txDetails, txHash: data.data.txHash, status: 'pending' },
       ]);
-
       // Clear input fields
       setToAddr('');
       setAmount('');
       setFee('');
       setNonceInput('');
-
     } catch (err) {
       const errorMessage =
         err.response?.data?.message ||
@@ -763,7 +728,6 @@ const importFromPrivateKey = (privKey) => {
         'Failed to send transaction';
       setError(errorMessage);
       console.error('Fetch send transaction error:', err);
-
       // Log the failed transaction
       setFailedTransactions((prev) => [
         ...prev,
@@ -775,17 +739,17 @@ const importFromPrivateKey = (privKey) => {
   };
 
   const handleInstallClick = async () => {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
-    } else {
-      console.log('User dismissed the install prompt');
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+      } else {
+        console.log('User dismissed the install prompt');
+      }
+      setDeferredPrompt(null);
     }
-    setDeferredPrompt(null);
-  }
-};
+  };
 
   const copyToClipboard = (text, setter) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -801,16 +765,19 @@ const importFromPrivateKey = (privKey) => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Warthog Wallet</h1>
       </div>
-{deferredPrompt && (
-  <button onClick={handleInstallClick} className="mb-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-4 focus:outline-none focus:ring-green-300 transition-colors duration-200">
-    Install Wallet App
-  </button>
-)}
-{updateAvailable && (
-  <button onClick={handleUpdate} className="mb-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 transition-colors duration-200">
-    Update App Available
-  </button>
-)}
+
+      {deferredPrompt && (
+        <button onClick={handleInstallClick} className="mb-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-4 focus:outline-none focus:ring-green-300 transition-colors duration-200">
+          Install Wallet App
+        </button>
+      )}
+
+      {updateAvailable && (
+        <button onClick={handleUpdate} className="mb-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 transition-colors duration-200">
+          Update App Available
+        </button>
+      )}
+
       {!showModal && (
         <>
           {isLoggedIn && (
@@ -825,7 +792,7 @@ const importFromPrivateKey = (privKey) => {
                     localStorage.setItem('selectedNode', e.target.value);
                   }}
                   className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-               >
+                >
                   {defaultNodeList.map((node, index) => (
                     <option key={index} value={node}>
                       {node}
@@ -880,43 +847,43 @@ const importFromPrivateKey = (privKey) => {
           )}
 
           {wallet && (
-  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
-    <div className="flex justify-between items-center mb-4">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Wallet</h2>
-      <button
-        className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
-        onClick={() => setShowDownloadPrompt(true)}
-      >
-        Download Wallet File
-      </button>
-    </div>
-    <div className="mb-4">
-      <p className="text-sm font-medium text-gray-700 dark:text-gray-300"><strong>Address:</strong></p>
-      <p
-        className="text-gray-900 dark:text-white break-all cursor-pointer"
-        onClick={() => navigator.clipboard.writeText(wallet.address).then(() => alert('Address copied to clipboard!'))}
-        title="Click to copy address"
-      >
-        {wallet.address}
-      </p>
-    </div>
-    <div className="mb-4">
-      <p className="text-sm font-medium text-gray-700 dark:text-gray-300"><strong>Balance:</strong> {balance !== null ? `${balance}` : 'Loading...'} {usdBalance && usdBalance !== '$0.00' && usdBalance !== 'N/A' ? `(${usdBalance})` : ''}</p>
-    </div>
-    <div className="flex space-x-2 mb-4">
-      <button onClick={() => fetchBalanceAndNonce(wallet.address)} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800">
-        Refresh Balance
-      </button>
-      <button onClick={clearWallet} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200">
-        Clear Wallet
-      </button>
-    </div>
-    <p className="text-yellow-600 dark:text-yellow-400 text-sm mb-4">
-      Warning: Private key is encrypted in localStorage. Keep your password secure.
-    </p>
-    <TransactionHistory address={wallet.address} node={selectedNode} onCountsUpdate={setBlockCounts} blockCounts={blockCounts} refreshTrigger={refreshHistory} />
-  </div>
-)}
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Wallet</h2>
+                <button
+                  className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
+                  onClick={() => setShowDownloadPrompt(true)}
+                >
+                  Download Wallet File
+                </button>
+              </div>
+              <div className="mb-4">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300"><strong>Address:</strong></p>
+                <p
+                  className="text-gray-900 dark:text-white break-all cursor-pointer"
+                  onClick={() => navigator.clipboard.writeText(wallet.address).then(() => alert('Address copied to clipboard!'))}
+                  title="Click to copy address"
+                >
+                  {wallet.address}
+                </p>
+              </div>
+              <div className="mb-4">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300"><strong>Balance:</strong> {balance !== null ? `${balance}` : 'Loading...'} {usdBalance && usdBalance !== '$0.00' && usdBalance !== 'N/A' ? `(${usdBalance})` : ''}</p>
+              </div>
+              <div className="flex space-x-2 mb-4">
+                <button onClick={() => fetchBalanceAndNonce(wallet.address)} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800">
+                  Refresh Balance
+                </button>
+                <button onClick={clearWallet} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200">
+                  Clear Wallet
+                </button>
+              </div>
+              <p className="text-yellow-600 dark:text-yellow-400 text-sm mb-4">
+                Warning: Private key is encrypted in localStorage. Keep your password secure.
+              </p>
+              <TransactionHistory address={wallet.address} node={selectedNode} onCountsUpdate={setBlockCounts} blockCounts={blockCounts} refreshTrigger={refreshHistory} />
+            </div>
+          )}
 
           {showDownloadPrompt && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1027,7 +994,7 @@ const importFromPrivateKey = (privKey) => {
                   <input
                     type="text"
                     value={privateKeyInput}
-                   onChange={(e) => setPrivateKeyInput(e.target.value.replace(/\s/g, ''))}
+                    onChange={(e) => setPrivateKeyInput(e.target.value.replace(/\s/g, ''))}
                     placeholder="Enter 64-character hex private key"
                     className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   />
@@ -1154,7 +1121,7 @@ const importFromPrivateKey = (privKey) => {
                   type="text"
                   value={fee}
                   onChange={(e) => setFee(e.target.value.trim())}
-                  placeholder="Enter fee in WART (e.g., 0.0001)"
+                  placeholder="Enter fee in WART (minimum 0.01)"
                   className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 />
               </div>
@@ -1178,58 +1145,60 @@ const importFromPrivateKey = (privKey) => {
               )}
             </div>
           )}
-{isLoggedIn && sentTransactions.length > 0 && (
-  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
-    <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Sent Transactions Log</h2>
-    <button onClick={updateTxStatuses} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800 mb-4">Refresh Tx Status</button>
-    <ul className="space-y-4">
-      {sentTransactions.map((tx, index) => (
-        <li key={index} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md border border-gray-200 dark:border-gray-600">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-            <p><strong className="text-gray-700 dark:text-gray-300">Timestamp:</strong> {tx.timestamp}</p>
-            <p>
-              <strong className="text-gray-700 dark:text-gray-300">From:</strong>{' '}
-              <span
-                className="text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 break-all"
-                title={wallet.address}
-                onClick={() => copyToClipboard(wallet.address, setCopiedFromAddr)}
-              >
-                {isSmallScreen767 ? `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}` : wallet.address}
-                {copiedFromAddr === wallet.address ? ' (Copied!)' : ''}
-              </span>
-            </p>
-            <p>
-              <strong className="text-gray-700 dark:text-gray-300">To:</strong>{' '}
-              <span
-                className="text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 break-all"
-                title={tx.toAddr}
-                onClick={() => copyToClipboard(tx.toAddr, setCopiedToAddr)}
-              >
-                {isSmallScreen767 ? `${tx.toAddr.slice(0, 6)}...${tx.toAddr.slice(-4)}` : tx.toAddr}
-                {copiedToAddr === tx.toAddr ? ' (Copied!)' : ''}
-              </span>
-            </p>
-            <p><strong className="text-gray-700 dark:text-gray-300">Amount:</strong> {tx.amount} WART</p>
-            <p><strong className="text-gray-700 dark:text-gray-300">Fee:</strong> {tx.fee} WART</p>
-            <p><strong className="text-gray-700 dark:text-gray-300">Nonce:</strong> {tx.nonce}</p>
-            <p>
-              <strong className="text-gray-700 dark:text-gray-300">Tx Hash:</strong>{' '}
-              <span
-                className="text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 break-all"
-                title={tx.txHash}
-                onClick={() => copyToClipboard(tx.txHash, setCopiedTxId)}
-              >
-                {isSmallScreen767 ? `${tx.txHash.slice(0, 6)}...${tx.txHash.slice(-4)}` : tx.txHash}
-                {copiedTxId === tx.txHash ? ' (Copied!)' : ''}
-              </span>
-            </p>
-            <p><strong className="text-gray-700 dark:text-gray-300">Status:</strong> {tx.status} {tx.confirmations ? `(${tx.confirmations} confirmations)` : ''}</p>
-          </div>
-        </li>
-      ))}
-    </ul>
-  </div>
-)}
+
+          {isLoggedIn && sentTransactions.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
+              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Sent Transactions Log</h2>
+              <button onClick={updateTxStatuses} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800 mb-4">Refresh Tx Status</button>
+              <ul className="space-y-4">
+                {sentTransactions.map((tx, index) => (
+                  <li key={index} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md border border-gray-200 dark:border-gray-600">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                      <p><strong className="text-gray-700 dark:text-gray-300">Timestamp:</strong> {tx.timestamp}</p>
+                      <p>
+                        <strong className="text-gray-700 dark:text-gray-300">From:</strong>{' '}
+                        <span
+                          className="text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 break-all"
+                          title={wallet.address}
+                          onClick={() => copyToClipboard(wallet.address, setCopiedFromAddr)}
+                        >
+                          {isSmallScreen767 ? `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}` : wallet.address}
+                          {copiedFromAddr === wallet.address ? ' (Copied!)' : ''}
+                        </span>
+                      </p>
+                      <p>
+                        <strong className="text-gray-700 dark:text-gray-300">To:</strong>{' '}
+                        <span
+                          className="text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 break-all"
+                          title={tx.toAddr}
+                          onClick={() => copyToClipboard(tx.toAddr, setCopiedToAddr)}
+                        >
+                          {isSmallScreen767 ? `${tx.toAddr.slice(0, 6)}...${tx.toAddr.slice(-4)}` : tx.toAddr}
+                          {copiedToAddr === tx.toAddr ? ' (Copied!)' : ''}
+                        </span>
+                      </p>
+                      <p><strong className="text-gray-700 dark:text-gray-300">Amount:</strong> {tx.amount} WART</p>
+                      <p><strong className="text-gray-700 dark:text-gray-300">Fee:</strong> {tx.fee} WART</p>
+                      <p><strong className="text-gray-700 dark:text-gray-300">Nonce:</strong> {tx.nonce}</p>
+                      <p>
+                        <strong className="text-gray-700 dark:text-gray-300">Tx Hash:</strong>{' '}
+                        <span
+                          className="text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 break-all"
+                          title={tx.txHash}
+                          onClick={() => copyToClipboard(tx.txHash, setCopiedTxId)}
+                        >
+                          {isSmallScreen795 ? `${tx.txHash.slice(0, 6)}...${tx.txHash.slice(-4)}` : tx.txHash}
+                          {copiedTxId === tx.txHash ? ' (Copied!)' : ''}
+                        </span>
+                      </p>
+                      <p><strong className="text-gray-700 dark:text-gray-300">Status:</strong> {tx.status} {tx.confirmations ? `(${tx.confirmations} confirmations)` : ''}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {isLoggedIn && failedTransactions.length > 0 && (
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
               <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Failed Transactions Log</h2>
@@ -1279,186 +1248,185 @@ const importFromPrivateKey = (privKey) => {
         </>
       )}
 
-     {showModal && walletData && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-      <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Wallet Information</h2>
-      <p className="text-yellow-600 dark:text-yellow-400 mb-4">
-        Warning: Please write down your seed phrase (if available) and private key on a piece of paper and store them securely. Do not share them with anyone.
-      </p>
-      <p className="text-gray-700 dark:text-gray-300 mb-2">Options for securing your wallet:</p>
-      <ul className="text-gray-700 dark:text-gray-300 mb-4 list-disc list-inside">
-        <li>Save the wallet to localStorage (encrypted with your password). This allows easy access but is tied to this browser.</li>
-        <li>Download the wallet as an encrypted file (warthog_wallet.txt). You can store this file securely and upload it later to login.</li>
-      </ul>
-       {walletData.wordCount && (
-        <p className="mb-2">
-          <strong className="text-gray-700 dark:text-gray-300">Word Count:</strong> {walletData.wordCount}
-        </p>
-      )}
-      {walletData.mnemonic && (
-        <div className="mb-4">
-          <strong className="text-gray-700 dark:text-gray-300">Seed Phrase:</strong>
-          <p className="bg-yellow-50 dark:bg-yellow-900 p-4 rounded-md mt-2 border border-yellow-200 dark:border-yellow-700">
-            <span className="text-yellow-800 dark:text-yellow-200 font-mono text-lg font-bold">{walletData.mnemonic}</span>
-          </p>
+      {showModal && walletData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Wallet Information</h2>
+            <p className="text-yellow-600 dark:text-yellow-400 mb-4">
+              Warning: Please write down your seed phrase (if available) and private key on a piece of paper and store them securely. Do not share them with anyone.
+            </p>
+            <p className="text-gray-700 dark:text-gray-300 mb-2">Options for securing your wallet:</p>
+            <ul className="text-gray-700 dark:text-gray-300 mb-4 list-disc list-inside">
+              <li>Save the wallet to localStorage (encrypted with your password). This allows easy access but is tied to this browser.</li>
+              <li>Download the wallet as an encrypted file (warthog_wallet.txt). You can store this file securely and upload it later to login.</li>
+            </ul>
+            {walletData.wordCount && (
+              <p className="mb-2">
+                <strong className="text-gray-700 dark:text-gray-300">Word Count:</strong> {walletData.wordCount}
+              </p>
+            )}
+            {walletData.mnemonic && (
+              <div className="mb-4">
+                <strong className="text-gray-700 dark:text-gray-300">Seed Phrase:</strong>
+                <p className="bg-yellow-50 dark:bg-yellow-900 p-4 rounded-md mt-2 border border-yellow-200 dark:border-yellow-700">
+                  <span className="text-yellow-800 dark:text-yellow-200 font-mono text-lg font-bold">{walletData.mnemonic}</span>
+                </p>
+              </div>
+            )}
+            {walletData.pathType && (
+              <p className="mb-2">
+                <strong className="text-gray-700 dark:text-gray-300">Path Type:</strong> {walletData.pathType}
+              </p>
+            )}
+            <div className="mb-2">
+              <strong className="text-gray-700 dark:text-gray-300">Private Key:</strong><br />
+              <span className="text-gray-900 dark:text-white font-mono break-all">{walletData.privateKey}</span>
+            </div>
+            <div className="mb-2">
+              <strong className="text-gray-700 dark:text-gray-300">Public Key:</strong><br />
+              <span className="text-gray-900 dark:text-white font-mono break-all">{walletData.publicKey}</span>
+            </div>
+            <div className="mb-4">
+              <strong className="text-gray-700 dark:text-gray-300">Address:</strong><br />
+              <span className="text-gray-900 dark:text-white font-mono break-all">{walletData.address}</span>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password to Encrypt Wallet:</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter password to encrypt wallet"
+                  className="mt-1 block w-full px-3 py-2 pr-10 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  {showPassword ? "🙈" : "👁️"}
+                </button>
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirm Password:</label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm password"
+                  className="mt-1 block w-full px-3 py-2 pr-10 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  {showConfirmPassword ? "🙈" : "👁️"}
+                </button>
+              </div>
+            </div>
+            {error && (
+              <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 p-4 rounded-md mb-4">
+                <strong>Error:</strong> {error}
+              </div>
+            )}
+            <div className="mb-4">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={saveWalletConsent}
+                  onChange={(e) => setSaveWalletConsent(e.target.checked)}
+                  className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                />
+                <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Save wallet to localStorage (encrypted)</span>
+              </label>
+            </div>
+            <div className="flex space-x-2 mb-4">
+              <button
+                onClick={() => {
+                  if (!password) {
+                    setError('Please provide a password to encrypt and save the wallet.');
+                    return;
+                  }
+                  if (password !== confirmPassword) {
+                    setError('Passwords do not match.');
+                    return;
+                  }
+                  if (!saveWalletConsent) {
+                    setError('Please consent to save the wallet.');
+                    return;
+                  }
+                  setError(null);
+                  saveWallet(walletData);
+                  setShowModal(false);
+                  setWalletData(null);
+                  setPassword('');
+                  setConfirmPassword('');
+                  setShowPassword(false);
+                  setShowConfirmPassword(false);
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
+              >
+                Save Wallet
+              </button>
+              <button
+                onClick={() => {
+                  if (!password) {
+                    setError('Please provide a password to encrypt and download the wallet file.');
+                    return;
+                  }
+                  if (password !== confirmPassword) {
+                    setError('Passwords do not match.');
+                    return;
+                  }
+                  setError(null);
+                  downloadWallet(walletData);
+                  setShowModal(false);
+                  setWalletData(null);
+                  setPassword('');
+                  setConfirmPassword('');
+                  setShowPassword(false);
+                  setShowConfirmPassword(false);
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
+              >
+                Download Wallet File
+              </button>
+            </div>
+            <div className="flex items-center justify-end space-x-2">
+              <label className="flex items-center text-sm">
+                <input
+                  type="checkbox"
+                  checked={consentToClose}
+                  onChange={(e) => setConsentToClose(e.target.checked)}
+                  className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                />
+                <span className="ml-2 text-gray-700 dark:text-gray-300">I consent to close without saving to local storage or downloading the wallet file</span>
+              </label>
+              <button
+                disabled={!consentToClose}
+                onClick={() => {
+                  setShowModal(false);
+                  setWalletData(null);
+                  setPassword('');
+                  setConfirmPassword('');
+                  setSaveWalletConsent(false);
+                  setConsentToClose(false);
+                  setError(null);
+                  setShowPassword(false);
+                  setShowConfirmPassword(false);
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
-
-      {walletData.pathType && (
-        <p className="mb-2">
-          <strong className="text-gray-700 dark:text-gray-300">Path Type:</strong> {walletData.pathType}
-        </p>
-      )}
-      <div className="mb-2">
-        <strong className="text-gray-700 dark:text-gray-300">Private Key:</strong><br />
-        <span className="text-gray-900 dark:text-white font-mono break-all">{walletData.privateKey}</span>
-      </div>
-      <div className="mb-2">
-        <strong className="text-gray-700 dark:text-gray-300">Public Key:</strong><br />
-        <span className="text-gray-900 dark:text-white font-mono break-all">{walletData.publicKey}</span>
-      </div>
-      <div className="mb-4">
-        <strong className="text-gray-700 dark:text-gray-300">Address:</strong><br />
-        <span className="text-gray-900 dark:text-white font-mono break-all">{walletData.address}</span>
-      </div>
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password to Encrypt Wallet:</label>
-        <div className="relative">
-          <input
-            type={showPassword ? "text" : "password"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter password to encrypt wallet"
-            className="mt-1 block w-full px-3 py-2 pr-10 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-          >
-            {showPassword ? "🙈" : "👁️"}
-          </button>
-        </div>
-      </div>
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirm Password:</label>
-        <div className="relative">
-          <input
-            type={showConfirmPassword ? "text" : "password"}
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="Confirm password"
-            className="mt-1 block w-full px-3 py-2 pr-10 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          />
-          <button
-            type="button"
-            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-          >
-            {showConfirmPassword ? "🙈" : "👁️"}
-          </button>
-        </div>
-      </div>
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 p-4 rounded-md mb-4">
-          <strong>Error:</strong> {error}
-        </div>
-      )}
-      <div className="mb-4">
-        <label className="flex items-center">
-          <input
-            type="checkbox"
-            checked={saveWalletConsent}
-            onChange={(e) => setSaveWalletConsent(e.target.checked)}
-            className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-          />
-          <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Save wallet to localStorage (encrypted)</span>
-        </label>
-      </div>
-      <div className="flex space-x-2 mb-4">
-        <button
-          onClick={() => {
-            if (!password) {
-              setError('Please provide a password to encrypt and save the wallet.');
-              return;
-            }
-            if (password !== confirmPassword) {
-              setError('Passwords do not match.');
-              return;
-            }
-            if (!saveWalletConsent) {
-              setError('Please consent to save the wallet.');
-              return;
-            }
-            setError(null);
-            saveWallet(walletData);
-            setShowModal(false);
-            setWalletData(null);
-            setPassword('');
-            setConfirmPassword('');
-            setShowPassword(false);
-            setShowConfirmPassword(false);
-          }}
-          className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
-        >
-          Save Wallet
-        </button>
-        <button
-          onClick={() => {
-            if (!password) {
-              setError('Please provide a password to encrypt and download the wallet file.');
-              return;
-            }
-            if (password !== confirmPassword) {
-              setError('Passwords do not match.');
-              return;
-            }
-            setError(null);
-            downloadWallet(walletData);
-            setShowModal(false);
-            setWalletData(null);
-            setPassword('');
-            setConfirmPassword('');
-            setShowPassword(false);
-            setShowConfirmPassword(false);
-          }}
-          className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
-        >
-          Download Wallet File
-        </button>
-      </div>
-      <div className="flex items-center justify-end space-x-2">
-        <label className="flex items-center text-sm">
-          <input
-            type="checkbox"
-            checked={consentToClose}
-            onChange={(e) => setConsentToClose(e.target.checked)}
-            className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-          />
-          <span className="ml-2 text-gray-700 dark:text-gray-300">I consent to close without saving to local storage or downloading the wallet file</span>
-        </label>
-        <button
-          disabled={!consentToClose}
-          onClick={() => {
-            setShowModal(false);
-            setWalletData(null);
-            setPassword('');
-            setConfirmPassword('');
-            setSaveWalletConsent(false);
-            setConsentToClose(false);
-            setError(null);
-            setShowPassword(false);
-            setShowConfirmPassword(false);
-          }}
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Close
-        </button>
-      </div>
-    </div>
-  </div>
-)}
     </div>
   );
 };
