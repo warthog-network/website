@@ -6,8 +6,9 @@ import TransactionHistory from './TransactionHistory';
 
 const API_URL = '/api/proxy';
 const defaultNodeList = [
-  'http://217.182.64.43:3001',
   'https://warthognode.duckdns.org',
+  'http://217.182.64.43:3001',
+  
 ];
 
 const Wallet = () => {
@@ -16,7 +17,6 @@ const Wallet = () => {
   const [showModal, setShowModal] = useState(false);
   const [consentToClose, setConsentToClose] = useState(false);
   const [validateResult, setValidateResult] = useState(null);
-  const [sendResult, setSendResult] = useState(null);
   const [wallet, setWallet] = useState(null);
   const [balance, setBalance] = useState(null);
   const [nextNonce, setNextNonce] = useState(null); // Renamed from nonceId for clarity
@@ -384,6 +384,8 @@ const Wallet = () => {
       }
       const decryptedWallet = decryptWallet(encrypted, password);
       setWallet(decryptedWallet);
+      setNonceInput('');
+      fetchBalanceAndNonce(decryptedWallet.address);
       const storedNonce = localStorage.getItem(`warthogNextNonce_${decryptedWallet.address}`);
       if (storedNonce) {
         setNextNonce(Number(storedNonce));
@@ -597,7 +599,7 @@ const Wallet = () => {
     if (sending) return; // Prevent multiple sends
     setSending(true);
     setError(null);
-    setSendResult(null);
+   
     if (!toAddr || !amount || !fee) {
       setError('Please fill in all transaction fields');
       setSending(false);
@@ -703,7 +705,7 @@ const Wallet = () => {
       if (data.error || (data.code && data.code !== 0)) {
         throw new Error(data.error || `Transaction error code: ${data.code}`);
       }
-      setSendResult(data);
+      
       // Optimistic updates on success
       const newNextNonce = Math.max(nextNonce || 0, txNonce + 1);
       setNextNonce(newNextNonce);
@@ -1131,73 +1133,95 @@ const Wallet = () => {
                   type="text"
                   value={nonceInput}
                   onChange={(e) => setNonceInput(e.target.value.trim())}
-                  placeholder={`Auto: ${nextNonce || 'Loading'}`}
+                  placeholder={`Auto: ${nextNonce !== null ? nextNonce : 'Loading'}`}
                   className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 />
               </div>
               <button onClick={handleSendTransaction} disabled={sending} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed">
                 {sending ? 'Sending...' : 'Send Transaction'}
               </button>
-              {sendResult && (
-                <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-md">
-                  <pre className="text-sm text-gray-900 dark:text-white">{JSON.stringify(sendResult, null, 2)}</pre>
-                </div>
-              )}
+            
             </div>
           )}
 
-          {isLoggedIn && sentTransactions.length > 0 && (
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
-              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Sent Transactions Log</h2>
-              <button onClick={updateTxStatuses} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800 mb-4">Refresh Tx Status</button>
-              <ul className="space-y-4">
-                {sentTransactions.map((tx, index) => (
-                  <li key={index} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md border border-gray-200 dark:border-gray-600">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                      <p><strong className="text-gray-700 dark:text-gray-300">Timestamp:</strong> {tx.timestamp}</p>
-                      <p>
-                        <strong className="text-gray-700 dark:text-gray-300">From:</strong>{' '}
-                        <span
-                          className="text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 break-all"
-                          title={wallet.address}
-                          onClick={() => copyToClipboard(wallet.address, setCopiedFromAddr)}
-                        >
-                          {isSmallScreen767 ? `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}` : wallet.address}
-                          {copiedFromAddr === wallet.address ? ' (Copied!)' : ''}
-                        </span>
-                      </p>
-                      <p>
-                        <strong className="text-gray-700 dark:text-gray-300">To:</strong>{' '}
-                        <span
-                          className="text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 break-all"
-                          title={tx.toAddr}
-                          onClick={() => copyToClipboard(tx.toAddr, setCopiedToAddr)}
-                        >
-                          {isSmallScreen767 ? `${tx.toAddr.slice(0, 6)}...${tx.toAddr.slice(-4)}` : tx.toAddr}
-                          {copiedToAddr === tx.toAddr ? ' (Copied!)' : ''}
-                        </span>
-                      </p>
-                      <p><strong className="text-gray-700 dark:text-gray-300">Amount:</strong> {tx.amount} WART</p>
-                      <p><strong className="text-gray-700 dark:text-gray-300">Fee:</strong> {tx.fee} WART</p>
-                      <p><strong className="text-gray-700 dark:text-gray-300">Nonce:</strong> {tx.nonce}</p>
-                      <p>
-                        <strong className="text-gray-700 dark:text-gray-300">Tx Hash:</strong>{' '}
-                        <span
-                          className="text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 break-all"
-                          title={tx.txHash}
-                          onClick={() => copyToClipboard(tx.txHash, setCopiedTxId)}
-                        >
-                          {isSmallScreen795 ? `${tx.txHash.slice(0, 6)}...${tx.txHash.slice(-4)}` : tx.txHash}
-                          {copiedTxId === tx.txHash ? ' (Copied!)' : ''}
-                        </span>
-                      </p>
-                      <p><strong className="text-gray-700 dark:text-gray-300">Status:</strong> {tx.status} {tx.confirmations ? `(${tx.confirmations} confirmations)` : ''}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+         {isLoggedIn && sentTransactions.length > 0 && (
+  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
+    <div className="flex justify-between items-center mb-4">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Sent Transactions Log</h2>
+      
+      <div className="flex gap-3">
+        <button 
+          onClick={updateTxStatuses} 
+          className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
+        >
+          Refresh Status
+        </button>
+
+        {sentTransactions.some(tx => tx.status === 'confirmed') && (
+          <button 
+            onClick={() => setSentTransactions(prev => prev.filter(tx => tx.status === 'pending'))}
+            className="px-4 py-2 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 dark:text-red-400 dark:border-red-700 transition-colors"
+          >
+            Clear confirmed
+          </button>
+        )}
+      </div>
+    </div>
+
+    <ul className="space-y-4">
+      {sentTransactions.map((tx, index) => (
+        <li key={index} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md border border-gray-200 dark:border-gray-600">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+            <p><strong className="text-gray-700 dark:text-gray-300">Timestamp:</strong> {tx.timestamp}</p>
+            
+            <p>
+              <strong className="text-gray-700 dark:text-gray-300">From:</strong>{' '}
+              <span className="text-gray-900 dark:text-white break-all">
+                {isSmallScreen767 
+                  ? `${wallet.address.slice(0,6)}...${wallet.address.slice(-4)}` 
+                  : wallet.address}
+              </span>
+            </p>
+
+            <p>
+              <strong className="text-gray-700 dark:text-gray-300">To:</strong>{' '}
+              <span className="text-gray-900 dark:text-white break-all">
+                {isSmallScreen767 
+                  ? `${tx.toAddr.slice(0,6)}...${tx.toAddr.slice(-4)}` 
+                  : tx.toAddr}
+              </span>
+            </p>
+
+            <p><strong className="text-gray-700 dark:text-gray-300">Amount:</strong> {tx.amount} WART</p>
+            <p><strong className="text-gray-700 dark:text-gray-300">Fee:</strong> {tx.fee} WART</p>
+            <p><strong className="text-gray-700 dark:text-gray-300">Nonce:</strong> {tx.nonce}</p>
+
+            <p>
+              <strong className="text-gray-700 dark:text-gray-300">Tx Hash:</strong>{' '}
+              <span 
+                className="text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 break-all"
+                onClick={() => copyToClipboard(tx.txHash, setCopiedTxId)}
+                title={tx.txHash}
+              >
+                {isSmallScreen795 
+                  ? `${tx.txHash.slice(0,6)}...${tx.txHash.slice(-4)}` 
+                  : tx.txHash}
+                {copiedTxId === tx.txHash ? ' (Copied!)' : ''}
+              </span>
+            </p>
+
+            <p>
+              <strong className="text-gray-700 dark:text-gray-300">Status:</strong>{' '}
+              <span className={tx.status === 'confirmed' ? 'text-green-600 dark:text-green-400 font-medium' : 'text-amber-600 dark:text-amber-400'}>
+                {tx.status === 'confirmed' ? 'Confirmed (Block mined)' : 'Pending'}
+              </span>
+            </p>
+          </div>
+        </li>
+      ))}
+    </ul>
+  </div>
+)}
 
           {isLoggedIn && failedTransactions.length > 0 && (
             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
