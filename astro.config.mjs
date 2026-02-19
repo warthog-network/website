@@ -17,6 +17,7 @@ experimental: {
   csp: {
     directives: [
       "default-src 'self' https://api.coingecko.com",
+      "script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval' https://api.coingecko.com",
       "connect-src 'self' ws: wss: https://api.coingecko.com http://localhost:3000",
       "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com",
       "img-src 'self' data:",
