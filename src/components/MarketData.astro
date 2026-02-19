@@ -1,6 +1,5 @@
 ---
 import warthogShape from "../BalkyImages/warthogShape.svg"
-import ContentDiv from "../components/ContentDiv.jsx";
 ---
 <script>
 
@@ -96,35 +95,36 @@ import { createChart } from 'lightweight-charts';
           this.candlesOn = !this.candlesOn;
       }
 
-      async fetchChartData(days) {
+      async fetchChartData(countBack, dataResolutionInMinutes) {
         let data;
-        const keyName = this.CachedDataKey(days);
+        const keyName = this.CachedDataKey(countBack, dataResolutionInMinutes);
         //console.log(keyName);
 
-        if (this.cachedData.has(keyName) && this.CachedDataNotOld(this.cachedData.get(keyName), days)) {
+        if (this.cachedData.has(keyName) && this.CachedDataNotOld(this.cachedData.get(keyName), dataResolutionInMinutes)) {
           data = this.cachedData.get(keyName);
           //console.log("It was cached");
         }else{
-          const url = `https://api.coingecko.com/api/v3/coins/warthog/ohlc?vs_currency=usd&days=${days}`;
+          const url = 'https://api.xeggex.com/api/v2/market/candles?symbol=wart_usdt&resolution=' + dataResolutionInMinutes.toString() + '&countBack=' + countBack.toString() + '&firstDataRequest=1';
           try {
             const response = await fetch(url);
             if (!response.ok) {
               throw new Error('Network response was not ok');
             }
             data = await response.json();
+            //data.chartChange = this.CalculateChartDataChange(data);
             this.cachedData.set(keyName, data)
             this.SaveCachedDataToLocalStorage(this.cachedData);
             //console.log("Queried and saved to cache");
           } catch (error) {
             console.error('Error fetching market data:', error);
-            data = [[1642427876, 10, 10.63, 9.49, 9.55], [1642514276, 9.55, 10.30, 9.42, 9.94], [1642600676, 9.94, 10.17, 9.92, 9.78], [1642687076, 9.78, 10.59, 9.18, 9.51], [1642773476, 9.51, 10.46, 9.10, 10.17], [1642859876, 10.17, 10.96, 10.16, 10.47], [1642946276, 10.47, 11.39, 10.40, 10.81], [1643032676, 10.81, 11.60, 10.30, 10.75], [1643119076, 10.75, 11.60, 10.49, 10.93], [1643205476, 10.93, 11.53, 10.76, 10.96]];
+            data = [{ open: 10, high: 10.63, low: 9.49, close: 9.55, time: 1642427876 }, { open: 9.55, high: 10.30, low: 9.42, close: 9.94, time: 1642514276 }, { open: 9.94, high: 10.17, low: 9.92, close: 9.78, time: 1642600676 }, { open: 9.78, high: 10.59, low: 9.18, close: 9.51, time: 1642687076 }, { open: 9.51, high: 10.46, low: 9.10, close: 10.17, time: 1642773476 }, { open: 10.17, high: 10.96, low: 10.16, close: 10.47, time: 1642859876 }, { open: 10.47, high: 11.39, low: 10.40, close: 10.81, time: 1642946276 }, { open: 10.81, high: 11.60, low: 10.30, close: 10.75, time: 1643032676 }, { open: 10.75, high: 11.60, low: 10.49, close: 10.93, time: 1643119076 }, { open: 10.93, high: 11.53, low: 10.76, close: 10.96, time: 1643205476 }];
           }
         }
         
-        const remappedData = data.map(([time, open, high, low, close]) => ({open, high, low, close, time: time / 1000}));
-        const remappedAreaData = data.map(([time, open, high, low, close]) => ({
-            time: time / 1000,
-            value: (close + open) / 2,
+        const remappedData = data.bars.map(({ open, high, low, close, time}) => ({open, high, low, close, time: time / 1000}));
+        const remappedAreaData = data.bars.map(datapoint => ({
+            time: datapoint.time / 1000,
+            value: (datapoint.close + datapoint.open) / 2,
         }));
 
         console.log(remappedData);
@@ -136,21 +136,35 @@ import { createChart } from 'lightweight-charts';
         this.chart.timeScale().fitContent(); 
       }
 
-      CachedDataKey(days) {
-        return days.toString();
+      CachedDataKey(cb, drm) {
+        return cb.toString() + ":" + drm.toString();
       }
 
-      CachedDataNotOld(data, days) {
+      CachedDataNotOld(data, updateFrequencyInMin) {
         const dateNow = Date.now();
-        if (data.length > 0) {
-          const lastUpdate = data[data.length - 1][0];
-          const dateDiff = dateNow - lastUpdate; 
-          if (dateDiff < (1000 * 60 * days)) { // Buffer based on days
-            return true;
-          }
+        //console.log(data);
+        const lastUpdate = data.bars[data.bars.length - 1].time;
+        const dateDiff = dateNow - lastUpdate; 
+        if (dateDiff < (1000 * 60 * updateFrequencyInMin)) {
+          //console.log("Cached data is still new");
+          return true;
         }
+        //console.log("Cached data is old, time to replace it.")
         return false;
       }
+
+      //CalculateChartDataChange(data) {
+      //  if ("bars" in data && data.bars.length > 1) {
+      //    const firstValue = data.bars[0].open;
+      //    const lastValue = data.bars[data.bars.length - 1].close;
+      //    const percentageDiff = ((lastValue - firstValue) / firstValue) * 100;
+
+      //    return percentageDiff.toFixed(2);
+      // }
+      //  return 0.00;
+      //}
+
+      //Testing sync to new repo
 
       SaveCachedDataToLocalStorage(dataMap) {
         const obj = Object.fromEntries(dataMap);
@@ -160,6 +174,7 @@ import { createChart } from 'lightweight-charts';
         };
 
         localStorage.setItem("WarthogCharts", JSON.stringify(dataObj));
+        //console.log("Saved to localstorage");
       }
 
       LoadCachedDataFromLocalStorage() {
@@ -171,13 +186,22 @@ import { createChart } from 'lightweight-charts';
           if ("timestamp" in storedData && "mapData" in storedData) {
             if (currentTime - storedData.timestamp < oneDayMs) {
               this.cachedData = new Map(Object.entries(storedData.mapData));
+              //console.log("Loaded from localstorage");
             }
           }
         }
       }
 
       async GetSixMonthChartData(button = null) {
-        await this.fetchChartData(180);
+        const today = new Date();
+
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(today.getMonth() - 6);
+        const diffInMillisec = today - sixMonthsAgo;
+
+        const diffInDays = Math.floor(diffInMillisec / (1000 * 60 * 60 * 24));
+
+        await this.fetchChartData(diffInDays, 1440);
 
         if (button) {
           this.ClearButtonHighlights();
@@ -186,7 +210,15 @@ import { createChart } from 'lightweight-charts';
       }
 
       async GetOneMonthChartData(button = null) {
-        await this.fetchChartData(30);
+        const today = new Date();
+
+        const oneMonthsAgo = new Date();
+        oneMonthsAgo.setMonth(today.getMonth() - 1);
+        const diffInMillisec = today - oneMonthsAgo;
+
+        const diffInDays = Math.floor(diffInMillisec / (1000 * 60 * 60 * 24));
+
+        await this.fetchChartData(diffInDays, 1440);
 
         if (button) {
           this.ClearButtonHighlights();
@@ -195,7 +227,8 @@ import { createChart } from 'lightweight-charts';
       }
 
       async GetFiveDayChartData(button = null) {
-        await this.fetchChartData(5);
+        //with resolution of 60mins at 5 days we want 24hrs * 5 days = countBack 120 data points
+        await this.fetchChartData(120, 60);
 
         if (button) {
           this.ClearButtonHighlights();
@@ -204,7 +237,8 @@ import { createChart } from 'lightweight-charts';
       }
 
       async GetOneDayChartData(button = null) {
-        await this.fetchChartData(1);
+        //with resolution of 30mins at 1 day we want to countBack 48 data points
+        await this.fetchChartData(48, 30);
 
         if (button) {
           this.ClearButtonHighlights();
@@ -244,25 +278,22 @@ import { createChart } from 'lightweight-charts';
     }
 
     async fetchMarketData() {
-        const url = 'https://api.coingecko.com/api/v3/coins/warthog';
+        const url = 'https://api.xeggex.com/api/v2/market/getbysymbol/wart_usdt';
         try {
           const response = await fetch(url);
           if (!response.ok) {
             throw new Error('Network response was not ok');
           }
           const data = await response.json();
-          const marketData = data.market_data;
+          await this.BuildHalvingPointEstimates(data)
+          this.DisplayMinedInfo(data);
+
+          document.getElementById('symbol').textContent = data.symbol;
+          document.getElementById('price').textContent = '$' + data.lastPrice;
+          document.getElementById('updated').textContent = new Date().toLocaleTimeString();
+          document.getElementById('marketCap').textContent = '$' + data.marketcapNumber.toLocaleString();
+
           
-          const circulatingSupply = marketData.circulating_supply;
-          const maxSupply = marketData.max_supply || 18921600; // Fallback
-
-          await this.BuildHalvingPointEstimates({primaryCirculation: circulatingSupply});
-          this.DisplayMinedInfo({primaryCirculation: circulatingSupply});
-
-          document.getElementById('symbol').textContent = 'WART/USDT';
-          document.getElementById('price').textContent = '$' + marketData.current_price.usd.toFixed(8);
-          document.getElementById('updated').textContent = new Date(marketData.last_updated).toLocaleTimeString();
-          document.getElementById('marketCap').textContent = '$' + marketData.market_cap.usd.toLocaleString();
 
         } catch (error) {
           console.error('Error fetching market data:', error);
@@ -301,7 +332,7 @@ import { createChart } from 'lightweight-charts';
 
       progressBar.style.width = percentage + '%';
       progressLine.style.right = (100 - percentage) + '%'
-      nextHalvingLine.style.right = (100 - nextHalvingPercentage) + '%';
+      nextHalvingLine.style.right = nextHalvingPercentage + '%';
       totalSupply.textContent = maxSupply.toLocaleString();
       progressPercentage.textContent = percentage.toFixed(2).toString() + '%';
       progressCirculatingSupply.textContent = circulatingSupply.toLocaleString();
@@ -314,19 +345,21 @@ import { createChart } from 'lightweight-charts';
       let runningTotal = 0;
 
       //Build a list of amounts required to mine at each halving stage
-      if (this.estimatedHalvingPointsByMinedAmount.length === 0) {
+      if (this.estimatedHalvingPointsByMinedAmount.length <= 1) {
         const amountToMine = (blockHeightPerHalving * initialRewardInWart);
         runningTotal = amountToMine;
         this.estimatedHalvingPointsByMinedAmount.push({AmountMined: amountToMine, reward: initialRewardInWart, runningTotal: runningTotal });
-      } 
-      while (this.estimatedHalvingPointsByMinedAmount.length > 0 && this.estimatedHalvingPointsByMinedAmount[this.estimatedHalvingPointsByMinedAmount.length - 1].runningTotal <= circulatingSupply) {
+      } else {
+        do {
           const lastReward = this.estimatedHalvingPointsByMinedAmount[this.estimatedHalvingPointsByMinedAmount.length - 1].reward;
           const thisReward = lastReward / 2;
           const amountToMine = (blockHeightPerHalving * thisReward);
-          runningTotal = this.estimatedHalvingPointsByMinedAmount[this.estimatedHalvingPointsByMinedAmount.length - 1].runningTotal + amountToMine;
+          runningTotal += this.estimatedHalvingPointsByMinedAmount[this.estimatedHalvingPointsByMinedAmount.length - 1].runningTotal;
 
           this.estimatedHalvingPointsByMinedAmount.push({AmountMined: amountToMine, reward: thisReward, runningTotal: runningTotal });
-        }
+        }while(runningTotal <= circulatingSupply)
+
+      }
 
       console.log(this.estimatedHalvingPointsByMinedAmount);
     }
@@ -335,7 +368,7 @@ import { createChart } from 'lightweight-charts';
       let runningTotal = 0;
 
       for (let i = 0; i < estimateList.length; i++) {
-        runningTotal += estimateList[i].AmountMined;
+        runningTotal += estimateList[i].runningTotal;
 
         if (runningTotal > currentMined) {
           break;
@@ -394,7 +427,6 @@ import { createChart } from 'lightweight-charts';
 </style>
 
 <market-data class="sm:w-full md:w-9/12 h-128">
-
   <div class="">
     <wart-chart class="relative ">
       <button id="toggleChart" class="block ml-auto mb-4 mr-4 bg-black text-white text-xs border border-gray-300 rounded-lg px-4 py-2">Candle/Line</button> 
@@ -417,7 +449,7 @@ import { createChart } from 'lightweight-charts';
   
       <div class="mr-4 h-48 md:w-auto sm:w-full">
           <div class="text-white text-xl font-bold mb-4" id="symbol">Loading...</div>
-          <p class="text-white">CoinGecko: <span id="price">Loading...</span></p>
+          <p class="text-white">Xeggex.com: <span id="price">Loading...</span></p>
           <p class="text-white">MarketCap: <span id="marketCap">Not yet updated</span></p>
           <p class="text-white">Last updated: <span id="updated">Not yet updated</span></p>
           <span class="text-xs text-white pt-4">Next update in: </span><div class="inline-block text-xs text-black mt-4 ml-2 p-2 rounded-md bg-gray-200" id="countdown"></div>

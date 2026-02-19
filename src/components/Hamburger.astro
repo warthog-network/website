@@ -3,45 +3,27 @@
 
 <style>
 .hamburger {
-  z-index: 1100; /* Above mobile menu */
-  position: fixed; /* Change to fixed to stay in place on scroll */
-  top: 0; /* Position at the top */
-  right: 0; /* Position at the right; adjust if needed for padding/margins */
   cursor: pointer;
-  padding: 1.3rem;
+  padding: .5rem;
 }
 .hamburger .line {
   display: block;
   width: 40px;
   height: 5px;
   margin-bottom: 10px;
-  background-color: #000;
-  transition: transform 0.3s ease, opacity 0.3s ease; /* Add smooth transitions */
-}
-
-.hamburger.active .line:nth-child(1) {
-  transform: translateY(15px) rotate(45deg); /* Rotate top line for X */
-}
-
-.hamburger.active .line:nth-child(2) {
-  opacity: 0; /* Hide middle line */
-}
-
-.hamburger.active .line:nth-child(3) {
-  transform: translateY(-15px) rotate(-45deg); /* Rotate bottom line for X */
+  background-color: #352e2e;
 }
 
 @media screen and (min-width: 1024px) {
-  /* hamburger */
-  .hamburger {
-    display: none;
-  }
+ 
+ /*hamburger*/
+ .hamburger {
+   display: none;
+ }
 }
 </style>
-
 <div class="hamburger">
-  <span class="line"></span>
-  <span class="line"></span>
-  <span class="line"></span>
+    <span class="line"></span>
+    <span class="line"></span>
+    <span class="line"></span>
 </div>
-

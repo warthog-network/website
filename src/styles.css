@@ -4,6 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
+
 * {
   box-sizing: border-box;
 }
@@ -39,12 +40,12 @@ body {
 }
 
 .token::after{
-  color: #7c7774;
+  color: #f25c05;
   content: 'TOKEN';
 }
 
 .wart::after{
-  color: #000000;
+  color: #033298;
   content: 'WART';
 }
 

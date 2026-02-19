@@ -2,16 +2,10 @@
 import Planet from '../BalkyImages/upcomingFeatureimgs/Icon.svg'
 import Screen from '../BalkyImages/upcomingFeatureimgs/Icon (1).svg'
 import Burger from '../BalkyImages/upcomingFeatureimgs/Icon (2).svg'
-import ContentDiv from "../components/ContentDiv.jsx";
 ---
 
 <style>
-h2{
-    font-weight: bold;
-    padding-bottom: .5rem;
-}
     .center{
-        font-family: 'Montserrat';
         justify-content: center;
         align-items: center;
     }
@@ -95,25 +89,6 @@ border-style: solid;
     font-size: 5rem;
  }
  @media screen and (max-width: 824px){
-    .one{
-        max-width: 70rem;
-        margin-left: 0rem;
-  
-    }
-    .onediv{
-        opacity: 50%;
-        height: 1rem;
-        margin-left: 0rem;
-        margin-top: .1rem;
-        max-width: 70rem;
-        border-left-width: .1rem ;
-        border-right-width: .1rem ;
-        border-bottom-width: .1rem ;
-border-style: solid;
-border-bottom-left-radius: .5rem;
-border-bottom-right-radius: .5rem;
-    }
-
     section{
         
         display: block;
@@ -133,13 +108,13 @@ border-bottom-right-radius: .5rem;
     color: white;
 }
     .two{
-        margin-left: 0rem;
+        margin-left: 3rem;
         max-width: 70rem;
     }
     .twodiv{
         opacity: 50%;
         height: 1rem;
-        margin-left: 0rem;
+        margin-left: 3rem;
         margin-top: .1rem;
         max-width: 70rem;
         border-left-width: .1rem ;
@@ -150,13 +125,13 @@ border-bottom-left-radius: .5rem;
 border-bottom-right-radius: .5rem;
     }
     .three{
-        margin-left: 0rem;
+        margin-left: 3rem;
         max-width: 70rem;
     }
     .threediv{
         opacity: 50%;
         height: 1rem;
-        margin-left: 0rem;
+        margin-left: 3rem;
         margin-top: .1rem;
         max-width: 70rem;
         border-left-width: .1rem ;
@@ -204,14 +179,10 @@ border-bottom-right-radius: .5rem;
  
  }
  </style>
-<div class="center [text-shadow:_5px_1px_5px_rgb(0_0_0_)]"> 
+<div class="center"> 
 <div class="upcoming">
-    <ContentDiv >
-        
-            <p>upcoming</p>
-        
+    <p>upcoming</p>
     <h1>Revolutionary Features</h1>
-
     <div>
 <section class="flex one">
     <img src={Planet.src}/>
@@ -257,6 +228,5 @@ border-bottom-right-radius: .5rem;
 <div class="threediv"></div>
 </div>
 
-    </ContentDiv>
 </div>
 </div>

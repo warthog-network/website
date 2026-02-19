@@ -11,7 +11,6 @@ import UpcomingFeatures from "../components/UpcomingFeatures.astro";
 import RoadMap from "../components/RoadMap.astro";
 import ChainContributors from "../components/ChainContributors.astro";
 import WhereToBuy from "../components/WhereToBuy.astro";
-import ContentDiv from "../components/ContentDiv.jsx";
 
 
 const title ="Warthog Network"
@@ -32,7 +31,7 @@ const title ="Warthog Network"
 <BaseLayout title={title} >
     <ParallaxLayout
       inset="inset-x-0"
-      height="h-[735px] md:h-[545px] lg:h-[540px]"
+      height="h-[735px] md:h-[900px] lg:h-[520px]"
       backgroundTailwind="bg-[url('../Images/Parallax/WarthogParallaxBGwhite640.jpg')] md:bg-[url('../Images/Parallax/WarthogParallaxBGwhite768.jpg')] lg:bg-[url('../Images/Parallax/WarthogParallaxBGwhite.jpg')]"
       scrollSpeed="1">
 
@@ -57,12 +56,10 @@ const title ="Warthog Network"
 <UpcomingFeatures/>
 
 <section class="pl-10 pr-10 bg-black">
-    <ContentDiv>
-    <div class="wartSectionHeading text-white text-left w-9/12 ">Warthog Price</div>
+    <div class="wartSectionHeading text-white text-left w-9/12 ">WartHog Network Chart</div>
     <MarketData></MarketData>
-    </ContentDiv>
-</section>
-
+  </section>
+  
   <WhereToBuy/>
 
   <RoadMap/>

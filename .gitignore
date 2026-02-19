@@ -22,10 +22,3 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
-
-# Local Netlify folder
-.netlify
-
-*.log
-warthog_wallet.txt
-dist/

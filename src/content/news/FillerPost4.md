@@ -6,7 +6,6 @@ author: "Unknown"
 ---
 
 <h1>This is a temporary filler post</h1>
-
-<br/>
-<br/>
-<p>This is a test day</p>
+<br>
+<br>
+<p>This is a test paragraph</p>
