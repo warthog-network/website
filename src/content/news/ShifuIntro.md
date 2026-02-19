@@ -1,6 +1,6 @@
 ---
 category: "Developer Diary"
-title: "Who is the CoinFu MasterShifu?"
+title: "Who is CoinFu MasterShifu?"
 date: "2025-01-11"
 author: "CoinFuMasterShifu"
 ---

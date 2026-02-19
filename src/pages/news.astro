@@ -1,7 +1,7 @@
 ---
 import { generateArticalIdentity } from '../scripts/ArticleIdentityGenerator.js';
 import { getCollection } from "astro:content";
-import BaseLayout from '../layouts/BaseLayoutMaxWidth.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
 import WhereToBuy from '../components/WhereToBuy.astro';
 import NEWS1 from '../BalkyImages/NewsPost.png';
 import NEWS2 from '../BalkyImages/DevPost.png';
@@ -10,7 +10,7 @@ import NEWS3 from '../BalkyImages/BlogPost.png';
 const title = 'News Blog';
 const baseURL = 'https://warthog.network';
 
-import BannerTop from "../BalkyImages/highlight.svg";
+
 import BlogImage from '../BalkyImages/Warthog_2024_Full Logo.svg';
 import Littlewart from '../BalkyImages/littlewart.svg';
 import Arrow from '../BalkyImages/Arrow 1.png';
@@ -45,10 +45,10 @@ const latestNewsArticleRelativeLink = `/articles/${generateArticalIdentity(lates
         <script type="module" src="/scripts/WebShare.js"></script>
         <div class="BannerExpand">
             <section>
-                <div class="bannerBackgroundImage" style={`background-image: url(${BannerTop.src})`}>
+                <div class="bannerBackgroundImage">
                     <div class="bannerBackgroundContent" >
                         <div class="Latest flex">LATEST<img class="ms-2" src={Littlewart.src}/></div>
-                        <div class="Title uppercase">{latestNewsArticle.data.title}</div>
+                        <div class="Title uppercase"><a href={latestNewsArticleRelativeLink}>{latestNewsArticle.data.title}</a></div>
                         <div class="PreviewContent" set:html={`${latestNewsArticlePreviewContent}...`}></div>
                         <section class="flex">
                             <a href={latestNewsArticleRelativeLink} class="flex ButtonLong pr-4">READ FULL ARTICLE<img class="small" src={Arrow.src}/></a><button onclick={`shareContent("${latestNewsArticle.data.title}","${`Checkout the latest article from Warthog.Networt! : ${latestNewsArticle.data.title}`}","${baseURL}${latestNewsArticleRelativeLink}")`} class="flex Button ms-8">SHARE<img class="small" src={Arrow.src}/></button>
@@ -117,7 +117,7 @@ const latestNewsArticleRelativeLink = `/articles/${generateArticalIdentity(lates
         color: gray;
     }
     section {
-        max-width: 1440px;
+       
         margin: 0 auto;
         width:100%;
     }
@@ -125,6 +125,7 @@ const latestNewsArticleRelativeLink = `/articles/${generateArticalIdentity(lates
         border-radius: .5rem;
     }
     .bannerBackgroundImage {
+        background-image: url('../BalkyImages/highlight.svg');
         display: flex;
         flex-direction: column;
         background-size: auto 100%;
@@ -163,7 +164,7 @@ const latestNewsArticleRelativeLink = `/articles/${generateArticalIdentity(lates
    .Title{
         color: white;
         font-family: Montserrat;
-        font-size: 3.125rem;
+        font-size: 3rem;
         font-weight: 600;
         text-align: left;
         text-underline-position: from-font;

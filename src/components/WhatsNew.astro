@@ -32,58 +32,89 @@ const GetArticleImage = (category) => {
 };
 ---
 <style>
-    .NEWS{
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-  align-items: center;
-}
-@media screen and (min-width: 1024px) {
-
-    .NEWS{
-      padding-left: 5rem;
-      display: flex;
-      flex-direction: row;
-      justify-content: space-around;
-  }
-
-}
-.seeall{
-  font-size: .8rem;
+    .NEWS {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        align-items: center;
+    }
+    @media screen and (min-width: 1024px) {
+        .NEWS {
+            padding-left: 5rem;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
+        }
+    }
+    .seeall {
+        font-size: .8rem;
         align-items: center;
         padding: .1rem;
         margin-left: 1rem;
         border-radius: .3rem;
-  border-radius: 1rem;
-  border-color: black;
-  scroll-padding-right: .5rem;
-  padding-left: .5rem;
-  border-width: .1rem;
-  font-size: .8rem;
-}
-.blogpostbox{
+        border-radius: 1rem;
+        border-color: black;
+        scroll-padding-right: .5rem;
+        padding-left: .5rem;
+        border-width: .1rem;
+        font-size: .8rem;
+    }
+    .blogpostbox {
         border-radius: .5rem;
         margin-top: 1rem;
         width: 24.25rem;
     }
-.articles{
-padding-top: 1rem;
-  padding-left: 2rem;
-}
-@media screen and (min-width: 1024px) {
-
-  .articles{
-  padding-left: 12rem;
-}
-}
+    .articles {
+        padding-top: 1rem;
+        padding-left: 2rem;
+    }
+    @media screen and (min-width: 1024px) {
+        .articles {
+            padding-left: 12rem;
+        }
+    }
+    /* Slide-in animation styles */
+    .article-card {
+        opacity: 0;
+        transform: translateX(-50px);
+        transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    }
+    .article-card.visible {
+        opacity: 1;
+        transform: translateX(0);
+    }
 </style>
+
 <h1 class="articles flex"> Articles <a class="seeall flex" href="/news">see all<img class="small" src={Arrow.src}/></a></h1>
 <section class="NEWS">
-  {last3Articles.map((news) => (
-    <a class="p-10" href={`/articles/${generateArticalIdentity(news.data.title, news.data.date, news.data.author )}`}>
-        <img class='blogpostbox'  src={GetArticleImage(news.data.category)} alt="logo" />
-        <p>{news.data.category}</p>
-        <p class="font-semibold">{news.data.title}</p>
-    </a>
+    {last3Articles.map((news, index) => (
+        <a class={`p-10 article-card`} href={`/articles/${generateArticalIdentity(news.data.title, news.data.date, news.data.author )}`}>
+            <img class='blogpostbox' src={GetArticleImage(news.data.category)} alt="logo" />
+            <p>{news.data.category}</p>
+            <p class="font-semibold">{news.data.title}</p>
+        </a>
     ))}
 </section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const cards = document.querySelectorAll<HTMLElement>('.article-card');
+        cards.forEach((card, index) => {
+            card.style.transitionDelay = `${index * 0.3}s`;
+        });
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, {
+            threshold: 0.1
+        });
+
+        cards.forEach(card => {
+            observer.observe(card);
+        });
+    });
+</script>

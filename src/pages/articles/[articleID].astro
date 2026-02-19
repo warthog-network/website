@@ -1,8 +1,8 @@
 ---
-import BaseLayout from '../../layouts/BaseLayoutMaxWidth.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection } from "astro:content";
 import { generateArticalIdentity } from '../../scripts/ArticleIdentityGenerator.js';
-import BannerTop from "../../BalkyImages/WarthogTestBanner1.jpg";
+
 import Arrow from '../../BalkyImages/Arrow 1.png';
 import NEWS1 from '../../BalkyImages/NewsPost.png';
 import NEWS2 from '../../BalkyImages/DevPost.png';
@@ -55,7 +55,7 @@ if (!article) {
 
 <style is:global>
     article {
-        max-width: 1440px;
+       
         margin: 0 auto;
         width:100%;
     }
@@ -78,11 +78,12 @@ if (!article) {
         justify-self: end;
     }
     .bannerBackgroundImage {
+        background-image: url('../../BalkyImages/WarthogTestBanner1.jpg');
         position: relative;
         background-size: 100% auto;
         background-position: center 30%;
         background-repeat: no-repeat;
-        aspect-ratio: 12/5; 
+        aspect-ratio: 10/3; 
         width: 100%;
         filter: grayscale(20%) contrast(90%);
     }
@@ -182,7 +183,7 @@ if (!article) {
     }
     .postTitle {
         font-family: Montserrat;
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 600;
         line-height: 19px;
         text-align: left;
@@ -240,12 +241,12 @@ if (!article) {
 <BaseLayout title = {articleData.title}>
         <article>
             <script type="module" src="/scripts/WebShare.js"></script>
-            <div class="bannerBackgroundImage" style={`background-image: url(${BannerTop.src})`}></div>
+            <div class="bannerBackgroundImage" ></div>
             <div class="article-grid mt-8">
                 <div class="article-content">
                         <div class="category uppercase">{articleData.category} /</div>
                         <div class="title uppercase pt-[.05rem] pb-[1rem]">{articleData.title}</div>
-                        <div class="inline-block subTitle pb-[2rem]">Author:{articleData.author} </div><div class="ms-[1.5rem] inline-block subTitle pb-[2rem]">Released:{articleData.date}</div>
+                        <div class="inline-block subTitle pb-[2rem]">Author: {articleData.author} </div><div class="ms-[1.5rem] inline-block subTitle pb-[2rem]">Released: {articleData.date}</div>
                         <div class="">
                             <button onclick={`shareContent("${articleData.title}","${`Checkout the latest article from Warthog.Networt! : ${articleData.title}`}","${baseURL}${articleRelativeLink}")`} class="shareButton">SHARE<img class="smallArrow" src={Arrow.src}/></button>
                         </div>

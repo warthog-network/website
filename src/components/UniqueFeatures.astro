@@ -7,181 +7,37 @@ import Profile from '../BalkyImages/004-profile.svg';
 import Programming from '../BalkyImages/006-programming.svg';
 import Trolly from '../BalkyImages/005-trolley.svg';
 import Group from '../BalkyImages/Group 5.svg';
+import ContentDiv from "../components/ContentDiv.jsx";
 ---
 
 <style>
-    .UniqueFeatures {
-        text-shadow: 5px 1px 5px  rgb(0, 0, 0);
-        background: radial-gradient(
-            circle at 24.1% 68.8%,
-            rgb(50, 50, 50) 0%,
-            rgb(0, 0, 0) 99.4%
-        );
-        color: white;
+    .font{
+        font-family: 'Montserrat';
     }
-    header{
-        padding-left: 12rem;
+    /* Slide-in animation styles */
+    .animate-slide-in {
+        opacity: 0;
+        transform: translateX(-50px);
+        transition: opacity 0.5s ease-out, transform 1s ease-out;
     }
-    h1 {
-        font-size: 4rem;
-        margin-bottom: 3rem;
-        font-weight: 600;
+    .animate-slide-in.visible {
+        opacity: 1;
+        transform: translateX(0);
     }
-    .tinywart {
-        position: relative;
-        right: 1rem;
-        padding-left: 1rem;
-        max-width: 5rem;
-    }
-
-    h2 {
-        font-size: 1rem;
-        font-weight: bold;
-        display: flex;
-        padding-right: 2rem;
-    }
-    .UniqueFeatures-Grid {
-        font-family: "Montserrat";
-        line-height: 2rem;
-        padding: 1rem;
-       
-        padding-left: 15rem;
-        padding-right: 15rem;
-        display: grid;
-        grid-template-columns: 1fn 2fn;
-        grid-template-areas: "tokenomics features";
-    }
-    .tokenomics {
-       width: 20rem;
-        margin-top: 3rem;
-        grid-area: tokenomics;
-    }
-    .features {
-        grid-area: features;
-    }
-    .featuresGrid {
-      
-        padding: 2rem;
-        display: grid;
-        grid-template-columns: 1fn 1fn;
-        grid-template-areas: "list1 list2";
-    }
-    .list1 {
-        min-width: 17rem;
-        grid-area: list1;
-       
-    }
-    .list1 > p {
-       max-width: 25rem;
-       
-    }
-    .list2 {
-        min-width: 17rem;
-        grid-area: list2;
-       
-    }
-    img {
-        padding-left: 1rem;
-    }
-    .innovation {
-        font-weight: 600;
-        font-size: 1.5rem;
-    }
-    header {
-        padding-top: 2rem;
-        padding-left: 15rem;
-    }
-    p {
-        padding-right: 1rem;
-        font-size: 0.8rem;
-    }
-    .tokenp {
-        margin-bottom: 1rem;
-        line-height: 1.5rem;
-        max-width: 20rem;
-    }
-    @media screen and (max-width: 1224px) {
-        .UniqueFeatures-Grid {
-            font-family: "Montserrat";
-            line-height: 2rem;
-            padding: 2rem;
-            display: grid;
-            grid-template-columns: 1fn 2fn;
-            grid-template-areas:
-                "tokenomics"
-                "features";
-        }
-
-        header {
-        padding-top: 2rem;
-        padding-left: 2rem;
-    }
-    }
-    @media screen and (max-width: 1024px) {
-        .UniqueFeatures-Grid {
-            font-family: "Montserrat";
-            line-height: 3rem;
-            padding: 2rem;
-            display: grid;
-            grid-template-columns: 1fn 2fn;
-            grid-template-areas:
-                "tokenomics"
-                "features";
-        }
-        .list1 {
-            
-        grid-area: list1;
-        line-height: 2rem;
-    }
-    .list1 > h2 {
-        margin-top: .75rem;
-        font-size: 1rem;
-    }
-    .list1 > p {
-        line-height: 1rem;
-    }
-    .list2 {
-        grid-area: list2;
-        line-height: 2rem;
-    }
-    .list2 > h2 {
-        margin-top: .75rem;
-        font-size: 1rem;
-    }
-    .list2 > p {
-        line-height: 1rem;
-    }
-        .featuresGrid {
-        padding: .1rem;
-        display: grid;
-        grid-template-columns: 1fn 1fn;
-        grid-template-areas: 
-        "list1" 
-        "list2";
-    }
-    h1 {
-        
-        font-size: 1.6rem;
-        margin-bottom: 3rem;
-        font-weight: 600;
-    }
-    
-}
-
 </style>
-
-<div class="UniqueFeatures">
-    <header class="header">
-        <p class="innovation">INNOVATION</p>
-        <h1 class="flex">
+<div class="[text-shadow:_5px_1px_5px_rgb(0_0_0_)] bg-white text-white bg-[radial-gradient(circle_at_24.1%_68.8%,_rgb(50,50,50)_0%,_rgb(0,_0,_0)_99.4%)] pb-20">
+  <ContentDiv>
+    <header class="p-8">
+        <p class="animate-slide-in text-2xl font-semibold">INNOVATION</p>
+        <h1 class="animate-slide-in inline-flex mb-12 font-semibold text-3xl md:text-6xl">
             What makes us unique?
-            <img class="tinywart" src={TinyWart.src} />
+            <img class="relative right-4 pl-4 max-w-20" src={TinyWart.src} />
         </h1>
     </header>
-    <div class="UniqueFeatures-Grid">
-        <section class="tokenomics ">
-            <h2>TOKENOMICS<img src={Coin.src} /></h2>
-            <p class="tokenp ">
+    <div class="text-sm px-5 grid grid-cols-1 justify-center lg:grid-cols-3 mx-auto">
+        <section class=" mb-10 lg:max-w-72 max-w-96">
+            <h3 class="animate-slide-in my-2 flex font-bold text-base">TOKENOMICS<img class="pl-4" src={Coin.src} /></h3>
+            <p class="animate-slide-in text-sm pr-4">
                 This is not the default kind of project where you see a
                 disproportionately high allocation of the total supply unfairly
                 reserved for the team, the advisors and their pockets. 0% is
@@ -189,29 +45,51 @@ import Group from '../BalkyImages/Group 5.svg';
                 mineable.
             </p>
         </section>
+        <section class=" lg:col-span-2 grid sm:grid-cols-2 grid-cols-1 sm:mx-auto">
+            <div class="">
+                <h2 class="animate-slide-in flex font-bold text-base sm:pt-2 pt-12">No Pre-mine <img class="pl-4" src={Goal.src} /></h2>
+                <p class="animate-slide-in pb-2 pr-4">Project was fairly launched on Bitcointalk</p>
 
-        <section class="features featuresGrid">
-            <features-list class="list1">
-         
-                <h2>No Pre-mine <img src={Goal.src} /></h2>
-                <p >Project was fairly launched on Bitcointalk</p>
-
-                <h2>Written from scratch <img src={Sprout.src} /></h2>
-                <p>This project is NOT a fork/copy of anything else</p>
-                <h2>No reserved 'Team/Dev' fund <img src={Profile.src} /></h2>
-                <p>
+                <h2 class="animate-slide-in flex font-bold text-base sm:pt-2 pt-1">Written from scratch <img class="pl-4" src={Sprout.src} /></h2>
+                <p class="animate-slide-in pb-2 pr-4">This project is NOT a fork/copy of anything else</p>
+                <h2 class="animate-slide-in flex font-bold text-base sm:pt-2 pt-1">No reserved 'Team/Dev' fund <img class="pl-4" src={Profile.src} /></h2>
+                <p class="animate-slide-in pb-2 pr-4">
                     No unfair allocation to anybody aka "team" / "development"
                     funds
                 </p>
-            </features-list>
-            <features-list class="list2">
-                <h2>Modern Codebase <img src={Programming.src} /></h2>
-                <p>Using modern C++20 and tools like clanged, meson, ninja</p>
-                <h2>100% mineable <img src={Trolly.src} /></h2>
-                <p>100% of supply is publicly mineable, no coins were minted</p>
-                <h2>Open Source <img src={Group.src} /></h2>
-                <p>You are welcome to contribute</p>
-            </features-list>
+            </div>
+            <div class="">
+                <h2 class="animate-slide-in flex font-bold text-base sm:pt-2 pt-1">Modern Codebase <img class="pl-4" src={Programming.src} /></h2>
+                <p class="animate-slide-in pb-2 pr-4">Using modern C++20 and tools like clanged, meson, ninja</p>
+                <h2 class="animate-slide-in flex font-bold text-base sm:pt-2 pt-1">100% mineable <img class="pl-4" src={Trolly.src} /></h2>
+                <p class="animate-slide-in pb-2 pr-4">100% of supply is publicly mineable, no coins were minted</p>
+                <h2 class="animate-slide-in flex font-bold text-base sm:pt-2 pt-1">Open Source <img class="pl-4" src={Group.src} /></h2>
+                <p class="animate-slide-in pb-2 pr-4">You are welcome to contribute</p>
+            </div>
         </section>
     </div>
+  </ContentDiv>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const elements = document.querySelectorAll<HTMLElement>('.animate-slide-in');
+        elements.forEach((item, index) => {
+            item.style.transitionDelay = `${index * 0.2}s`;
+        });
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, {
+            threshold: 0.1
+        });
+
+        elements.forEach(item => {
+            observer.observe(item);
+        });
+    });
+</script>

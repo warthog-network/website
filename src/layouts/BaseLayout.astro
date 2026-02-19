@@ -3,7 +3,8 @@ import '../blogstyles.css';
 import '../styles.css';
 import BaseHead from '../components/BaseHead.astro';
 const {title} = Astro.props;
-import Footer from "../components/Footer.astro";
+// import Footer from "../components/Footer.astro";
+ import Footer from "../components/FooterTailwind.astro";
 ---
 
 <html lang="en">
@@ -13,12 +14,13 @@ import Footer from "../components/Footer.astro";
         <meta name="viewport" content="width=device-width" />
         <meta name="generator" content={Astro.generator} />
         <title>{title}</title>
-    </head>
+  </head>
 		
-      
 	<body>
-		<BaseHead />
-	
+    {/* above, make it possible to place footer at botton even if 
+    content is not big enough, it is useful for embedding PDF such that the embed height is just as much that the page height is exactly fitting in view port*/}
+		
+    <BaseHead class="navbarclass" />
         <main>
             <slot />
         </main>
