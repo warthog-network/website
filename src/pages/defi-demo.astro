@@ -44,9 +44,17 @@ import { getContainerRenderer } from "@astrojs/react";
       content: "This is pool input field specifying the WART amount of pool liquidity.",
     },
   ];
+  // === CSP OVERRIDE FOR THIS PAGE ONLY (fixes WebAssembly error) ===
+Astro.csp?.insertDirective(`script-src 'self' * data: blob: 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'`);
+Astro.csp?.insertDirective(`default-src * data: blob: 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'`);
+Astro.csp?.insertDirective(`connect-src * ws: wss: http: https:`);
+Astro.csp?.insertDirective(`style-src * 'unsafe-inline'`);
+Astro.csp?.insertDirective(`img-src * data: blob:`);
+Astro.csp?.insertDirective(`font-src * data:`);
+// ================================================================
 ---
 
-<BaseLayout title={title} csp="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; script-src * data: blob: 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; img-src * data:; font-src *; connect-src *; object-src *; frame-src *;">
+<BaseLayout title={title}>
   <style>
     @media screen and (max-width: 767px) {
       .mobileMenu {
