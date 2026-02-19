@@ -322,24 +322,16 @@ span::-webkit-scrollbar {
 
 .skip-link {
   position: absolute;
-  left: -9999px; /* Hide off-screen by default */
+  left: 50%;
+  transform: translate(-50%, -150%);
   padding: 0.4rem 1rem;
   background: var(--color-brand);
   color: #111;
   border-radius: var(--radius-full);
   font-weight: 600;
-  transition: left 0.2s ease; /* Smooth reveal */
 }
 
 .skip-link:focus-visible {
-  left: 50%;
-  top: 10px; /* Position below nav bar */
-  transform: translateX(-50%);
-  z-index: 9999; /* Ensure above other elements */
-}
-
-/* Optional: Mobile-specific tweak for site-main to prevent style clipping */
-@media (max-width: 767px) {
-  .site-main { min-height: 100vh; /* Ensure full height on short pages */ }
+  transform: translate(-50%, 10%);
 }
 

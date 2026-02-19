@@ -15,11 +15,11 @@ import DropDownMenu from '../components/Menu.astro';
     background: rgba(3, 6, 15, 0.95);
     backdrop-filter: blur(16px);
     transition: transform 0.3s ease-in-out;
-    z-index: 1000;
+    z-index: 20000;
     overflow-y: auto;
     overflow-x: hidden;
     box-sizing: border-box;
-    padding: 4rem 2rem 2rem;
+    
     border-left: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     flex-direction: column;
@@ -37,6 +37,7 @@ import DropDownMenu from '../components/Menu.astro';
     text-align: center;
     align-items: center;
     width: 100%;
+    padding: 0 1.5rem;
   }
 
   .mobileMenu .menuItem {
@@ -111,7 +112,7 @@ import DropDownMenu from '../components/Menu.astro';
   .navbarstyles {
     position: sticky;
     top: 0;
-    z-index: 1000;
+    z-index: 20000;
   }
 
   .close-button {
@@ -126,6 +127,7 @@ import DropDownMenu from '../components/Menu.astro';
     cursor: pointer;
     width: 2.5rem;
     height: 2.5rem;
+    z-index: 20001;           /* optional – make sure the × is on top */
   }
 </style>
 
