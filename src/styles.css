@@ -335,9 +335,3 @@ span::-webkit-scrollbar {
   transform: translate(-50%, 10%);
 }
 
-@media (max-width: 767px) {
-  .skip-link {
-    display: none;
-  }
-}
-

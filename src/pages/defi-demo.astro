@@ -56,38 +56,13 @@ const steps = [
   font-family: 'Montserrat';
 }
 
-/* Mobile-specific adjustments */
-@media (max-width: 767px) {
-  .fontfamily {
-    font-size: 0.875rem; /* Smaller text on mobile */
-  }
-  input {
-    font-size: 0.875rem; /* Scale down input text */
-  }
-  .step-4 {
-    padding: 1rem; /* Reduce padding */
-  }
-  /* Make fixed boxes smaller on mobile */
-  [id$="ArrowPoint"] {
-    width: 60px !important; /* Override w-[80px] */
-    height: 40px !important; /* Override h-[50px] */
-    min-width: 60px !important;
-  }
-  table th, table td {
-    padding: 0.5rem !important; /* Reduce cell padding */
-    font-size: 0.75rem; /* Smaller table text */
-  }
-  .max-w-[48px] {
-    max-width: 40px !important; /* Shrink scrollable spans */
-  }
-}
 </style>
 <BaseLayout title={title}>
   <Joyride
   client:only="react"
   steps={steps}
   continuous
-  showSkipButton={false}
+  showSkipButton
   styles={{
     options: {
       zIndex: 10000,
@@ -175,8 +150,8 @@ const steps = [
               </div>
             </div>
           </div>
-          <div class="p-4 overflow-x-auto">
-            <table class="w-full min-w-max text-left bg-red-300">
+          <div class="p-4">
+            <table class="w-full text-left bg-red-300">
               <thead>
                 <tr>
                   <td
@@ -283,8 +258,8 @@ const steps = [
               </div>
             </div>
           </div>
-          <div class="p-4 overflow-x-auto">
-            <table class="w-full min-w-max text-left bg-green-300 text-green-700">
+          <div class="p-4">
+            <table class="w-full text-left bg-green-300 text-green-700">
               <thead>
                 <tr>
                   <td
