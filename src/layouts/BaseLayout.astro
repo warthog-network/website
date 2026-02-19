@@ -2,7 +2,7 @@
 import "../blogstyles.css";
 import "../styles.css";
 import BaseHead from "../components/BaseHead.astro";
-const { title, csp } = Astro.props;
+const { title } = Astro.props;
 import Footer from "../components/FooterTailwind.astro";
 ---
 
@@ -13,7 +13,6 @@ import Footer from "../components/FooterTailwind.astro";
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
     <meta name="color-scheme" content="dark" />
-    {csp && <meta http-equiv="Content-Security-Policy" content={csp} />}
     <title>{title}</title>
   </head>
 

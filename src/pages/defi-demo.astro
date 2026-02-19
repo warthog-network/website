@@ -56,6 +56,17 @@ Astro.csp?.insertDirective(`font-src * data:`);
 
 <BaseLayout title={title}>
   <style>
+    .container {
+      margin: 0 auto;
+      max-width: 1440px;
+    }
+
+    @media (max-width: 767px) {
+      .container {
+        max-width: 100%;
+      }
+    }
+
     @media screen and (max-width: 767px) {
       .mobileMenu {
         width: 70vw !important;
@@ -75,19 +86,18 @@ Astro.csp?.insertDirective(`font-src * data:`);
   }},
   locale={{open: "This is tutorial dialog, click this to see that"}}
   />
-  <div class="mx-auto min-h-[550px]">
-    <!-- <h1 class="text-3xl text-center text-yellow-600 mb-8">DeFi Demo</h1> -->
+  <div class="container min-h-[550px]">
     <h1
-      class="my-10 text-3xl text-center font-extrabold text-yellow-500 dark:text-white md:text-5xl lg:text-6xl step-0"
+      class="my-8 md:my-14 text-3xl text-center font-extrabold text-yellow-500 dark:text-white md:text-5xl lg:text-6xl step-0"
     >
       <span
-        class="text-transparent bg-clip-text bg-gradient-to-r to-[#FDB913] from-[#F25C05]"
+        class="text-transparent bg-clip-text bg-yellow-600"
         >DeFi Demo</span
       >
     </h1>
 
     <div
-      class="flex md:flex-row md:p-6 p-3 flex-col mx-auto max-w-[1440px] gap-4 min-h-full justify-between overflow-auto"
+      class="flex md:flex-row md:p-6 p-3 flex-col gap-4 min-h-full justify-between overflow-auto"
     >
       <!-- Order Book -->
       <div
@@ -95,10 +105,10 @@ Astro.csp?.insertDirective(`font-src * data:`);
       >
         <!-- Sell Order Book -->
         <div
-          class="relative flex flex-col w-[100%] h-auto text-gray-700 bg-white rounded-xl border border-[#F9B13C]"
+          class="relative flex flex-col w-[100%] h-auto rounded-xl border border-[#F9B13C] text-gray-700 bg-white"
         >
           <div
-            class="relative mx-4 mt-4 overflow-hidden text-gray-700 bg-white rounded-none bg-clip-border"
+            class="relative mx-4 mt-4 overflow-hidden rounded-none bg-clip-border text-gray-700 bg-white"
           >
             <div class="flex flex-col gap-2">
               <h5
@@ -159,7 +169,7 @@ Astro.csp?.insertDirective(`font-src * data:`);
               <thead>
                 <tr>
                   <td
-                    class="px-4 py-2 transition-colors cursor-pointer bg-[#EF5831] hover:bg-blue-gray-50"
+                    class="px-4 py-2 transition-colors cursor-pointer bg-[gray] hover:bg-blue-gray-50"
                   >
                     <p
                       class="items-center justify-between gap-2 text-white text-sm antialiased font-semibold leading-4 font-montserrat"
@@ -168,7 +178,7 @@ Astro.csp?.insertDirective(`font-src * data:`);
                     </p>
                   </td>
                   <td
-                    class="px-4 py-2 transition-colors cursor-pointer bg-[#EF5831] hover:bg-blue-gray-50"
+                    class="px-4 py-2 transition-colors cursor-pointer bg-[gray] hover:bg-blue-gray-50"
                   >
                     <p
                       class="items-center justify-between gap-2 text-white text-sm antialiased font-semibold leading-4 font-montserrat"
@@ -177,7 +187,7 @@ Astro.csp?.insertDirective(`font-src * data:`);
                     </p>
                   </td>
                   <td
-                    class="px-4 py-2 transition-colors cursor-pointer bg-[#EF5831] hover:bg-blue-gray-50"
+                    class="px-4 py-2 transition-colors cursor-pointer bg-[gray] hover:bg-blue-gray-50"
                   >
                     <p
                       class="items-center justify-between gap-2 text-white text-sm antialiased font-semibold leading-4 font-montserrat"
@@ -194,10 +204,10 @@ Astro.csp?.insertDirective(`font-src * data:`);
 
         <!-- Buy Order Book -->
         <div
-          class="relative flex flex-col w-[100%] h-auto text-gray-700 bg-white rounded-xl border border-[#F9B13C]"
+          class="relative flex flex-col w-[100%] h-auto rounded-xl border border-[#F9B13C] text-gray-700 bg-white"
         >
           <div
-            class="relative mx-4 mt-4 overflow-hidden text-gray-700 bg-white rounded-none bg-clip-border"
+            class="relative mx-4 mt-4 overflow-hidden rounded-none bg-clip-border text-gray-700 bg-white"
           >
             <div class="flex flex-col gap-2">
               <h5
@@ -258,7 +268,7 @@ Astro.csp?.insertDirective(`font-src * data:`);
               <thead>
                 <tr>
                   <td
-                    class="px-4 py-2 transition-colors cursor-pointer bg-[#64bc3b] hover:bg-blue-gray-50"
+                    class="px-4 py-2 transition-colors cursor-pointer bg-[orange] hover:bg-blue-gray-50"
                   >
                     <p
                       class="items-center justify-between gap-2 text-white text-sm antialiased font-semibold leading-4 font-montserrat"
@@ -267,7 +277,7 @@ Astro.csp?.insertDirective(`font-src * data:`);
                     </p>
                   </td>
                   <td
-                    class="px-4 py-2 transition-colors cursor-pointer bg-[#64bc3b] hover:bg-blue-gray-50"
+                    class="px-4 py-2 transition-colors cursor-pointer bg-[orange] hover:bg-blue-gray-50"
                   >
                     <p
                       class="items-center justify-between gap-2 text-white text-sm antialiased font-semibold leading-4 font-montserrat"
@@ -276,7 +286,7 @@ Astro.csp?.insertDirective(`font-src * data:`);
                     </p>
                   </td>
                   <td
-                    class="px-4 py-2 transition-colors cursor-pointer bg-[#64bc3b] hover:bg-blue-gray-50"
+                    class="px-4 py-2 transition-colors cursor-pointer bg-[orange] hover:bg-blue-gray-50"
                   >
                     <p
                       class="items-center justify-between gap-2 text-white text-sm antialiased font-semibold leading-4 font-montserrat"
@@ -294,21 +304,21 @@ Astro.csp?.insertDirective(`font-src * data:`);
 
       <!-- Swap -->
       <div
-        class="flex md:flex-col gap-4 border-2 md:w-[20%] border-black border-dashed justify-between rounded-xl p-4 md:min-w-max bg-white step-4"
+        class="flex md:flex-col gap-4 border-2 md:w-[20%] border-black border-dashed justify-between rounded-xl p-4 md:min-w-max step-4 bg-white"
       >
         <div
           class="flex md:flex-row flex-col justify-between items-center gap-2 text-sm overflow-auto"
         >
           <div
             id="sellTokenArrowPoint"
-            class="bg-[#F25C05] text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden"
+            class="bg-[gray] text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden"
           >
             <span id="sellToken" class="block w-full overflow-auto">0</span> TOKEN
           </div>
           <img src={rightArrowSvg.src} class="w-8 h-8 md:rotate-0 rotate-90" />
           <div
             id="buyWartArrowPoint"
-            class="bg-[#033298] text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden"
+            class="bg-gray-900 text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden"
           >
             <span id="buyWart" class="block w-full overflow-auto">0</span> WART
           </div>
@@ -318,14 +328,14 @@ Astro.csp?.insertDirective(`font-src * data:`);
         >
           <div
             id="sellWartArrowPoint"
-            class="bg-[#033298] text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden"
+            class="bg-gray-900 text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden"
           >
             <span id="sellWart" class="block w-full overflow-auto">0</span> WART
           </div>
           <img src={rightArrowSvg.src} class="w-8 h-8 md:rotate-0 rotate-90" />
           <div
             id="buyTokenArrowPoint"
-            class="bg-[#F25C05] text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden"
+            class="bg-[gray] text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden"
           >
             <span id="buyToken" class="block w-full overflow-auto">0</span> TOKEN
           </div>
@@ -334,12 +344,12 @@ Astro.csp?.insertDirective(`font-src * data:`);
 
       <!-- Pool & Summary -->
       <div
-        class="flex flex-col gap-2 overflow-hidden text-gray-700 bg-white md:w-[40%] md:min-w-max"
+        class="flex flex-col gap-2 overflow-hidden md:w-[40%] md:min-w-max text-gray-700 bg-white"
       >
         <!-- pool table -->
         <div>
           <h5
-            class="block font-sans text-lg antialiased font-semibold leading-snug tracking-normal text-blue-gray-900"
+            class="block font-sans text-lg antialiased font-semibold leading-snug tracking-normal"
           >
             Pool
           </h5>
@@ -347,10 +357,10 @@ Astro.csp?.insertDirective(`font-src * data:`);
             class="flex md:flex-col w-full mt-1 border border-gray-600 rounded-md overflow-hidden"
           >
             <div
-              class="flex md:flex-row flex-col gap-0 text-center overflow-auto w-full"
+              class="flex md:flex-row flex-col gap-0 text-center overflow-auto w-full bg-gray-900"
             >
               <div
-                class="flex justify-center py-2 w-full transition-colors min-w-6 cursor-pointer bg-[#EF5831] text-white"
+                class="flex justify-center py-2 w-full transition-colors min-w-6 cursor-pointer text-white"
               >
                 <p
                   class="items-center justify-between gap-2 antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px]"
@@ -359,7 +369,7 @@ Astro.csp?.insertDirective(`font-src * data:`);
                 </p>
               </div>
               <div
-                class="flex justify-center py-2 w-full transition-colors cursor-pointer bg-[#EF5831] text-white"
+                class="flex justify-center py-2 w-full transition-colors cursor-pointer text-white"
               >
                 <p
                   class="items-center justify-between gap-2 antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px]"
@@ -368,7 +378,7 @@ Astro.csp?.insertDirective(`font-src * data:`);
                 </p>
               </div>
               <div
-                class="flex justify-center py-2 w-full transition-colors cursor-pointer bg-[#EF5831] text-white"
+                class="flex justify-center py-2 w-full transition-colors cursor-pointer text-white"
               >
                 <p
                   class="items-center justify-between gap-2 antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px]"
@@ -377,7 +387,7 @@ Astro.csp?.insertDirective(`font-src * data:`);
                 </p>
               </div>
               <div
-                class="flex justify-center py-2 w-full transition-colors cursor-pointer bg-[#EF5831] text-white"
+                class="flex justify-center py-2 w-full transition-colors cursor-pointer text-white"
               >
                 <p
                   class="items-center justify-between gap-2 antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px]"
@@ -394,7 +404,7 @@ Astro.csp?.insertDirective(`font-src * data:`);
               >
                 <div
                   id="poolInteractedTokenArrowPoint"
-                  class="bg-[#F25C05] m-w-[200px] text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center overflow-hidden"
+                  class="bg-[gray] m-w-[200px] text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center overflow-hidden"
                 >
                   <span
                     id="poolInteractedToken"
@@ -409,14 +419,14 @@ Astro.csp?.insertDirective(`font-src * data:`);
                 <input
                   id="beforeToken"
                   value="100"
-                  class="border-[#EF5831] border-2 rounded-md outline-none px-4 pt-2 pb-[26px] text-center text-sm leading-4 sm:w-[80px] w-full h-[50px] overflow-hidden"
+                  class="border-[gray] border-2 rounded-md outline-none px-4 pt-2 pb-[26px] text-center text-sm leading-4 sm:w-[80px] w-full h-[50px] overflow-hidden"
                 />
               </div>
               <div
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-[#F25C05] text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center overflow-hidden"
+                  class="bg-[gray] text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center overflow-hidden"
                 >
                   <span id="afterToken" class="block w-full overflow-auto"
                     >600</span
@@ -427,7 +437,7 @@ Astro.csp?.insertDirective(`font-src * data:`);
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-[#F25C05] text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] place-content-center text-center overflow-hidden"
+                  class="bg-[gray] text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] place-content-center text-center overflow-hidden"
                 >
                   <span id="afterToken" class="block w-full overflow-auto"
                     >TOKEN</span
@@ -443,7 +453,7 @@ Astro.csp?.insertDirective(`font-src * data:`);
               >
                 <div
                   id="poolInteractedWartArrowPoint"
-                  class="bg-[#033298] text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center overflow-hidden"
+                  class="bg-gray-900 text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center overflow-hidden"
                 >
                   <span
                     id="poolInteractedWart"
@@ -458,14 +468,14 @@ Astro.csp?.insertDirective(`font-src * data:`);
                 <input
                   id="beforeWart"
                   value="200"
-                  class="border-[#033298] border-2 rounded-md outline-none px-4 text-sm leading-4 sm:w-[80px] w-full h-[50px] text-center overflow-hidden pt-2 pb-[26px]"
+                  class="border-[black] border-2 rounded-md outline-none px-4 text-sm leading-4 sm:w-[80px] w-full h-[50px] text-center overflow-hidden pt-2 pb-[26px]"
                 />
               </div>
               <div
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-[#033298] text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center overflow-hidden"
+                  class="bg-gray-900 text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center overflow-hidden"
                 >
                   <span id="afterWart" class="block w-full overflow-auto"
                     >250</span
@@ -476,7 +486,7 @@ Astro.csp?.insertDirective(`font-src * data:`);
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-[#033298] text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center place-content-center overflow-hidden"
+                  class="bg-gray-900 text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center place-content-center overflow-hidden"
                 >
                   <span id="afterWart" class="block w-full overflow-auto"
                     >WART</span
@@ -491,7 +501,7 @@ Astro.csp?.insertDirective(`font-src * data:`);
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-yellow-400 text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center"
+                  class="bg-[orange] text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center"
                 >
                   <span
                     id="poolInteractedPrice"
@@ -503,7 +513,7 @@ Astro.csp?.insertDirective(`font-src * data:`);
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-yellow-400 text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center"
+                  class="bg-[orange] text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center"
                 >
                   <span id="beforePrice" class="block w-full overflow-auto"
                     >N/A</span
@@ -514,7 +524,7 @@ Astro.csp?.insertDirective(`font-src * data:`);
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-yellow-400 text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center"
+                  class="bg-[orange] text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center"
                 >
                   <span id="afterPrice" class="block w-full overflow-auto"
                     >N/A</span
@@ -525,7 +535,7 @@ Astro.csp?.insertDirective(`font-src * data:`);
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-yellow-400 text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center"
+                  class="bg-[orange] text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center"
                 >
                   <span id="afterPrice" class="block w-full overflow-auto"
                     >PRICE</span
@@ -540,17 +550,17 @@ Astro.csp?.insertDirective(`font-src * data:`);
         <div class="flex flex-col gap-2">
           <div>
             <h5
-            class="block font-sans text-lg antialiased font-semibold leading-snug tracking-normal text-blue-gray-900"
+            class="block font-sans text-lg antialiased font-semibold leading-snug tracking-normal"
             >
               Buyer Swaps
             </h5>
             <table class="w-full">
               <thead>
                 <tr>
-                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[#64bc3b]">*</th>
-                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[#64bc3b]">FROM (WART)</th>
-                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[#64bc3b]">TO (TOKEN)</th>
-                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[#64bc3b]">PRICE</th>
+                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[orange]">*</th>
+                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[orange]">FROM (WART)</th>
+                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[orange]">TO (TOKEN)</th>
+                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[orange]">PRICE</th>
                 </tr>
               </thead>
               <tbody id="tbodyBuyers"> </tbody>
@@ -558,17 +568,17 @@ Astro.csp?.insertDirective(`font-src * data:`);
           </div>
           <div>
             <h5
-            class="block font-sans text-lg antialiased font-semibold leading-snug tracking-normal text-blue-gray-900"
+            class="block font-sans text-lg antialiased font-semibold leading-snug tracking-normal"
             >
               Seller Swaps
             </h5>
             <table class="w-full text-start">
               <thead>
                 <tr>
-                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[#ef5831]">*</th>
-                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[#ef5831]">FROM (TOKEN)</th>
-                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[#ef5831]">TO (WART)</th>
-                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[#ef5831]">PRICE</th>
+                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[gray]">*</th>
+                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[gray]">FROM (TOKEN)</th>
+                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[gray]">TO (WART)</th>
+                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[gray]">PRICE</th>
                 </tr>
               </thead>
               <tbody id="tbodySellers"> </tbody>
@@ -577,7 +587,7 @@ Astro.csp?.insertDirective(`font-src * data:`);
         </div>
       </div>
     </div>
-    <div class="md:p-6 p-3 mx-auto max-w-[1440px]">
+    <div class="md:p-6 p-3 container">
       <h2>Questions and Answers</h2>
       <QA question="What is this?">
     Warthog is implementing a completely new DeFi model supporting a matching engine, which, in a one-of-a-kind way combines <em>two</em> sources of liquidity in a fair and sandwich-proof way: 
@@ -598,11 +608,11 @@ Astro.csp?.insertDirective(`font-src * data:`);
       <QA question="What are base and quote currencies?">
         In finance terms, when talking about trading a currency pair, the currency that you are trading, i.e. buying or selling, is called <em>base currency</em>, whereas the other, the one with respect to which you are expressing the price, is called <em>quote currency</em>. In this example TOKEN is the base currency since we are refering buy/sell terms to TOKEN, and WART is the quote currency since we are expressing the prices in WART.
       </QA>
-      <QA question="What are the orange, blue and yellow colors expressing?">
+      <QA question="What are the gray, black and yellow colors expressing?">
         For easier visualization we use the following color-codes:
         <ul>
-          <li>Orage: TOKEN amount</li>
-          <li>Blue: WART amount</li>
+          <li>Gray: TOKEN amount</li>
+          <li>Black: WART amount</li>
           <li>Yellow: Price</li>
         </ul>
       </QA>
@@ -784,10 +794,10 @@ Astro.csp?.insertDirective(`font-src * data:`);
         }
         function annotate_parse_errors({ poolToken, poolWart }) {
           document.getElementById("beforeToken").style.backgroundColor =
-            poolToken ? "red" : "white";
+            poolToken ? "red" : "transparent";
           document.getElementById("beforeWart").style.backgroundColor = poolWart
             ? "red"
-            : "white";
+            : "transparent";
           return !poolToken && !poolWart; // true if both don't have parse errors
         }
         function updateData(res) {
