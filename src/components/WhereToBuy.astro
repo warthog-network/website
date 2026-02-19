@@ -4,7 +4,6 @@ import BitCom from '../BalkyImages/wheretobuyimgs/bit.png';
 import Exibitron from '../BalkyImages/wheretobuyimgs/exibitron.png';
 
 import Bitcointry from '../BalkyImages/wheretobuyimgs/logo-full.webp'
-import Safetrade from '../BalkyImages/wheretobuyimgs/safetrade.png'
 import LinkBox from '../BalkyImages/LinkBox.svg';
 
 const icons = [
@@ -12,7 +11,6 @@ const icons = [
     {Visible: true, Name:"Bit.com exchange", ImgSrc: BitCom.src, Url:"https://www.bit.com/spot?pair=WART-USDT"},
     {Visible: true, Name:"Exbitron exchange", ImgSrc: Exibitron.src, Url:"https://app.exbitron.com/login/?returnUrl=%2Ftrade%2F%3Fmarket%3Dwart-usdt"},
     {Visible: true, Name:"Bitcointry exchange", ImgSrc: Bitcointry.src, Url:"https://bitcointry.com/en/exchange/WART_USDT"},
-    {Visible: true, Name:"Safetrade exchange", ImgSrc: Safetrade.src, Url:"https://safetrade.com/exchange/WART-USDT?type=basic"},
 ];
 
 
@@ -20,65 +18,103 @@ const icons = [
 
 
 <style>
-  .buy-section {
-    padding-block: clamp(3rem, 5vw, 4rem);
+
+  section {
+        max-width: 1440px;
+        margin: 0 auto;
+        width:100%;
+    }
+    .icon-box {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 3rem;
+    }
+
+    .icon-box-item{
+      text-align: center;
+      color: white;
+      display: block;
+      width: 9.375rem;
+      height: 12.8rem;
+    }
+  
+  .icon-shape{
+    padding-left: .8rem;
+    padding-right: .8rem;
+    border-radius: .5rem;
+    width: 9.375rem;
+    height: 9.375rem;
+    background-color: #1E1E1E;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  .buy-grid {
-    display: grid;
-    gap: clamp(1rem, 3vw, 1.5rem);
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  .icon-img{
+    max-height: 80px;
   }
 
-  .exchange-card {
-    border-radius: var(--radius-lg);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(8, 12, 24, 0.75);
-    padding: 1.5rem 1rem;
-    text-align: center;
-    color: var(--color-text);
+  .icon-txt{
+    margin-top: .4rem;
+    color:black;
+    font-family: Montserrat;
+    font-size: 1.25rem;
+    font-weight: 400;
+    line-height: 1.25rem;
+    text-align: left;
+    text-underline-position: from-font;
+    text-decoration-skip-ink: none;
+
+  }
+
+  .icon-linkbox{
+    width: 0.938rem;
+    height: 0.938rem;
+  }
+
+  .NEWS{
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    box-shadow: var(--shadow-card);
+    justify-content: center;
+    margin-top: 2rem;
+    margin-bottom: 4rem;
+  }
+  .title{
+      text-align: center;
+      margin-bottom: 3.5rem;
+      font-family: Montserrat;
+      font-size: 3.125rem;
+      font-weight: 700;
+      line-height: 3.809rem;
+      text-underline-position: from-font;
+      text-decoration-skip-ink: none;
+
   }
 
-  .exchange-card img {
-    max-height: 70px;
-    margin-inline: auto;
+@media screen and (max-width: 968px) {
+  .icon-box {
+    max-width: 700px;
+    margin: 0 auto;
   }
-
-  .exchange-card span {
-    font-weight: 600;
-  }
-  .exchangecard-bottom{
-    margin-top: auto;
-  }
+}
 </style>
 
-<section id="wheretobuy" class="buy-section site-shell">
-  <div class="section__header">
-    <p class="section__eyebrow">Exchanges</p>
-    <h2 class="section__title">Where to buy WART</h2>
-    <p class="section__lede">
-      Trade WART/USDT on trusted platforms. Each listing is verified and actively monitored by the community.
-    </p>
-  </div>
-
-  <div class="buy-grid">
-    {
-      icons
-        .filter((icon) => icon.Visible)
-        .map((icon) => (
-          <a class="exchange-card" href={icon.Url} target="_blank" rel="noreferrer noopener">
-            <img src={icon.ImgSrc} alt={icon.Name} loading="lazy" />
-            <div class="exchangecard-bottom ">
-            <span>{icon.Name}</span>
-
-            <img src={LinkBox.src} alt="" width="18" height="18" loading="lazy" class="mx-auto opacity-70" />
-            </div>
-          </a>
-        ))
-    }
-  </div>
+<section id="wheretobuy" class="NEWS">
+    <div class="title">Where to Buy?</div>
+    <div class="icon-box">
+      {icons.filter((icon) => icon.Visible)
+      .map((icon) => (
+        <a class="icon-box-item" href={icon.Url}>
+          <div class="icon-shape">
+            <img class="icon-img" src={icon.ImgSrc} alt="logo" />
+          </div>
+          <div class="flex relative">
+            <div class="icon-txt">{icon.Name}</div>
+            <img class="icon-linkbox absolute bottom-0 right-0 mb-[.07rem]" src={LinkBox.src}/>
+          </div>
+        </a>  
+      ))}
+      
+    </div>    
 </section>

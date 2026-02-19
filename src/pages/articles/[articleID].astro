@@ -58,9 +58,6 @@ if (!article) {
        
         margin: 0 auto;
         width:100%;
-        max-width: 100%;
-        overflow-x: hidden;
-        box-sizing: border-box;
     }
     .article-grid .article-grid > * {
         box-sizing: border-box;   
@@ -72,26 +69,13 @@ if (!article) {
         row-gap: 2rem;
         column-gap: 5rem;
         padding: 2rem 5rem;
-        width: 100%;
-        max-width: 100%;
-        box-sizing: border-box;
     }
-    .article-content {
-        width: 100%;
-        max-width: 100%;
-        overflow-x: hidden;
-        box-sizing: border-box;
-    }
-
     .article-latestStories {
         display: grid;
         grid-template-columns: 1fr;
         row-gap: 1.75rem;
         align-self: start;
         justify-self: end;
-        width: 100%;
-        max-width: 100%;
-        box-sizing: border-box;
     }
     .bannerBackgroundImage {
         background-image: url('../../BalkyImages/WarthogTestBanner1.jpg');
@@ -101,12 +85,10 @@ if (!article) {
         background-repeat: no-repeat;
         aspect-ratio: 10/3; 
         width: 100%;
-        max-width: 100%;
         filter: grayscale(20%) contrast(90%);
-        box-sizing: border-box;
     }
     .title{
-        color: var(--color-text);
+        color: black;
         font-family: Montserrat;
         font-size: clamp(2rem, 5.6vw, 3.11rem);
         font-weight: 600;
@@ -114,14 +96,6 @@ if (!article) {
         text-align: left;
         text-underline-position: from-font;
         text-decoration-skip-ink: none;
-        outline: none !important;
-        border: none !important;
-    }
-
-    .title:focus,
-    .title:focus-visible {
-        outline: none !important;
-        border: none !important;
     }
     .subTitle{
         font-family: Montserrat;
@@ -131,7 +105,6 @@ if (!article) {
         text-align: left;
         text-underline-position: from-font;
         text-decoration-skip-ink: none;
-        color: var(--color-text-muted);
     }
     .category{
         font-family: Montserrat;
@@ -141,15 +114,6 @@ if (!article) {
         text-align: left;
         text-underline-position: from-font;
         text-decoration-skip-ink: none;
-        color: var(--color-accent);
-        outline: none !important;
-        border: none !important;
-    }
-
-    .category:focus,
-    .category:focus-visible {
-        outline: none !important;
-        border: none !important;
     }   
     .shareButton{
         align-items: center;
@@ -176,7 +140,7 @@ if (!article) {
         margin-bottom: auto;
     }
     .content{
-        color: rgba(248, 250, 252, 0.9);
+        color: #1E1E1E;
         font-family: Montserrat;
         text-align: left;
         text-underline-position: from-font;
@@ -188,67 +152,12 @@ if (!article) {
         font-size: 1.05rem;
         font-weight: 600;
         line-height: 1.688rem;
-        color: var(--color-text);
-    }
-
-    .content h2,
-    .content h3,
-    .content h4 {
-        color: var(--color-text);
     }
 
     .content p {
         font-size: 0.938rem;
         font-weight: 400;
         line-height: 1.688rem;
-        color: rgba(248, 250, 252, 0.85);
-    }
-
-    .content a {
-        color: var(--color-accent);
-        text-decoration: underline;
-    }
-
-    .content a:hover {
-        color: var(--color-brand);
-    }
-
-    .content code {
-        background: rgba(56, 189, 248, 0.15);
-        color: var(--color-accent);
-        padding: 0.2rem 0.4rem;
-        border-radius: 0.25rem;
-        font-size: 0.9em;
-    }
-
-    .content pre {
-        background: rgba(8, 12, 24, 0.85);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        padding: 1rem;
-        border-radius: var(--radius-md);
-        overflow-x: auto;
-    }
-
-    .content pre code {
-        background: transparent;
-        padding: 0;
-    }
-
-    .content blockquote {
-        border-left: 3px solid var(--color-accent);
-        padding-left: 1rem;
-        margin-left: 0;
-        color: var(--color-text-muted);
-        font-style: italic;
-    }
-
-    .content ul,
-    .content ol {
-        color: rgba(248, 250, 252, 0.85);
-    }
-
-    .content li {
-        margin-bottom: 0.5rem;
     }
 
     .blogpost {
@@ -270,7 +179,7 @@ if (!article) {
         text-align: left;
         text-underline-position: from-font;
         text-decoration-skip-ink: none;
-        color: var(--color-accent);
+        color: #1E1E1E;
     }
     .postTitle {
         font-family: Montserrat;
@@ -280,7 +189,7 @@ if (!article) {
         text-align: left;
         text-underline-position: from-font;
         text-decoration-skip-ink: none;
-        color: var(--color-text);
+        color: #1E1E1E;
     }
 
     @media (max-width:1050px) {
@@ -292,9 +201,7 @@ if (!article) {
             "article-latestStories";
             row-gap: 2rem;
             padding: 2rem 1rem;
-            width: 100%;
-            max-width: 100%;
-            box-sizing: border-box;
+            
         }
         .blogpost {
             max-width: 300px;
@@ -316,9 +223,6 @@ if (!article) {
         "article-latestStories";
         row-gap: 2rem;
         padding: 2rem 1rem;
-        width: 100%;
-        max-width: 100%;
-        box-sizing: border-box;
     }
     .blogpost {
         max-width: 400px;

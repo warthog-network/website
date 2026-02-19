@@ -21,21 +21,16 @@ width:10rem;
   border-collapse: collapse;
   width: 100%;
   empty-cells: hide;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(8, 12, 24, 0.5);
+  border: 1px solid black;  /* Your black outer outline */
 }
 
 .article-content th {
   padding: 0.5rem;
-  background: rgba(56, 189, 248, 0.15);
-  color: var(--color-text);
-  border: 0.5px solid rgba(255, 255, 255, 0.1);
 }
 
 .article-content td {
   padding: 0.5rem;
-  outline: 0.5px solid rgba(255, 255, 255, 0.1);
-  color: rgba(248, 250, 252, 0.85);
+  outline: 0.5px solid rgb(126, 124, 124);
 }
 
 /* Scope the scrollable/scale logic to articles only */
@@ -50,7 +45,7 @@ width:10rem;
 
   .article-content th, .article-content td {
     padding: 0.5rem;
-    outline: 0.5px solid rgba(255, 255, 255, 0.1);
+    outline: 0.5px solid rgb(126, 124, 124);
     white-space: nowrap;
   }
 }

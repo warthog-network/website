@@ -1,188 +1,86 @@
 ---
-import BaseLayout from "../layouts/BaseLayout.astro";
-const title = "FAQs";
-import "../styles.css";
+import WhereToBuy from '../components/WhereToBuy.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+const title = 'FAQs'
+import '../styles.css';
+
 ---
-
 <style>
-  h1 {
-    text-align: center;
-    color: white;
-    margin: 2rem 1rem 0rem 1rem;
-    font-weight: bold;
-    font-size: larger;
-  }
+	.title{
+		font-size: 3rem;
+		text-align: center;
+	}
+	section{
+		padding: 1rem;
+		display: flex;
+	}
+	a{
+		font-weight: bold;
+		color: orange;
+	}
+	h1{
+		padding-right: .5rem;
+		font-weight: bold;
+	}
 
-  .faq-container {
-    max-width: 900px;
-    margin: 3rem auto;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .faq-item {
-    background: whitesmoke;
-    border-left: 6px solid orange;
-    padding: 1rem 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-    transition: transform 0.2s;
-  }
-
-  .faq-item:hover {
-    transform: translateY(-2px);
-  }
-
-  .faq-question {
-    font-weight: bold;
-    cursor: pointer;
-    color: black;
-    position: relative;
-  }
-
-  .faq-question::after {
-    content: "+";
-    position: absolute;
-    right: 0;
-    transition: transform 0.3s;
-    color: orange;
-  }
-
-  .faq-item.open .faq-question::after {
-    content: "-";
-  }
-
-  .faq-answer {
-    margin-top: 0.5rem;
-    display: none;
-    color: black;
-    line-height: 1.5;
-  }
-
-  .faq-item.open .faq-answer {
-    display: block;
-  }
-
-  a {
-    color: orange;
-    text-decoration: none;
-  }
-
-  a:hover {
-    text-decoration: underline;
-  }
 </style>
-
-<BaseLayout title={title}>
-  <h1 class="title">Frequently Asked Questions</h1>
-
-  <div class="faq-container">
-    <div class="faq-item">
-      <div class="faq-question">
-        What is the algorithm used in this project?
-      </div>
-      <div class="faq-answer">
-        The new algorithm is called "Janushash". More detailed information can
-        be found <a href="https://docs.warthog.network/janushash/">here</a>.
-      </div>
-    </div>
-
-    <div class="faq-item">
-      <div class="faq-question">Can I run mining on a GPU or CPU only?</div>
-      <div class="faq-answer">
-        No, you can't. The Miner uses both GPU and CPU.
-      </div>
-    </div>
-
-    <div class="faq-item">
-      <div class="faq-question">
-        Where can I find the latest releases of the node, wallet, and miner?
-      </div>
-      <div class="faq-answer">
-        You can find precompiled binaries of Node and Wallet: <a
-          href="https://docs.warthog.network/guides/node/">here</a
-        >.<br />
-        Miner (Linux and HiveOS builds): <a
-          href="https://docs.warthog.network/guides/mining/mining-quickstart/"
-          >here</a
-        >.<br />
-        See README.md in these repos for usage information.
-      </div>
-    </div>
-
-    <div class="faq-item">
-      <div class="faq-question">
-        I'm getting this error in the miner output:<br />[error] API request
-        failed. Are you running the node with RPC endpoint enabled? [warning]
-        Could not get mining information, retrying in 100 milliseconds...
-      </div>
-      <div class="faq-answer">
-        You should run the node with <code>--rpc=0.0.0.0:3000</code> to accept remote
-        connections from your rigs and prevent this error. Keep in mind that you can
-        only run one node per public IP.
-      </div>
-    </div>
-
-    <div class="faq-item">
-      <div class="faq-question">
-        The Miner exits with error <code
-          >custom exiter (exitcode=0), waiting to cooldown a bit</code
-        >
-      </div>
-      <div class="faq-answer">
-        Most likely your CPU is too old. The CPU must support these
-        instructions: <code
-          >'-mpclmul', '-msse4', '-msse4.1', '-msse4.2', '-mssse3', '-mavx',
-          '-maes'</code
-        >
-      </div>
-    </div>
-
-    <div class="faq-item">
-      <div class="faq-question">
-        What does <code>CPU queue full</code> and <code>CPU queue drained</code> mean?
-      </div>
-      <div class="faq-answer">
-        It means that there is an imbalance between CPU and GPU, this can happen
-        sometimes but should not occur often. CPU queue drained can happen more
-        often and is normal on each new block height. It should rebalance itself
-        independent of how many threads you choose. Just look at the CPU load.
-        If it is as specified everything is good. For example if you specify two
-        threads two processor threads should be in use close to 100% . If that
-        happens most of the time, everything is good.
-      </div>
-    </div>
-
-    <div class="faq-item">
-      <div class="faq-question">
-        What does <code>CPU outruns GPU</code> mean?
-      </div>
-      <div class="faq-answer">
-        GPU and CPU compute different hash functions so it can happen if the GPU
-        is slow and the CPU fast.
-      </div>
-    </div>
-
-    <div class="faq-item">
-      <div class="faq-question">My node is stuck and won't sync?</div>
-      <div class="faq-answer">
-        Make sure you are running the latest version <code
-          >wart-node-linux --version</code
-        >. Delete folder with node db files and start the node again. (It
-        locates in home directory <code>~/.warthog</code> if you are using Linux and
-        <code>%AppData%\Local\Warthog</code> in Windows)
-      </div>
-    </div>
-  </div>
+<BaseLayout title = {title}>
+	<h1 class="title">FAQs</h1>
+	<section>
+		<h1>Q:</h1><p>What is the algorithm used in this project?</p>
+	</section>
+	<section>
+		<h1>A:</h1><p>The new algorithm is called "Janushash". More detailed information can be found <a href="https://docs.warthog.network/janushash/">here.</a> </p>
+	</section>	
+	<section>
+		<h1>Q:</h1><p>Can I run mining on a GPU or CPU only?</p>
+	</section>
+	<section>
+		<h1>A:</h1><p>No, you can't. The Miner uses both GPU and CPU.</p>
+	</section>	
+	<section>
+		<h1>Q:</h1><p>Where can I find the latest releases of the node, wallet, and miner?</p>
+	</section>
+	<section>
+		<h1>A:</h1><p>You can find precompiled binaries of Node and Wallet: <a href="https://github.com/warthog-network/Warthog/releases">here.</a> <br/><br/>
+			Miner (Linux and HiveOS builds): <a href=" https://github.com/CoinFuMasterShifu/janusminer/releases">here.</a><br/><br/>
+			See README.md in these repos for usage information.</p>
+	</section>
+	<section>
+		<h1>Q:</h1><p>I'm getting this error in the miner output:<br/>
+			[error] API request failed. Are you running the node with RPC endpoint enabled?
+			[warning] Could not get mining information, retrying in 100 milliseconds...</p>
+	</section>
+	<section>
+		<h1>A:</h1><p>You should run the node with `--rpc=0.0.0.0:3000` to accept remote connections from your rigs and prevent this error.
+			Keep in mind that you can only run one node per public IP.</p>
+	</section>
+	<section>
+		<h1>Q:</h1><p>The Miner exits with error `custom exiter (exitcode=0), waiting to cooldown a bit`</p>
+	</section>
+	<section>
+		<h1>A:</h1><p>Most likely your CPU is too old. The CPU must support these instructions: `'-mpclmul', '-msse4', '-msse4.1', '-msse4.2', '-mssse3', '-mavx', '-maes'`</p>
+	</section>
+	<section>
+		<h1>Q:</h1><p> What does `CPU queue full` and `CPU queue drained` mean?</p>
+	</section>
+	<section>
+		<h1>A:</h1><p>It means that there is an imbalance between CPU and GPU, this can happen sometimes but should not occur often. CPU queue drained can happen more often and is normal on each new block height. It should rebalance itself independent of how many threads you choose. Just look at the CPU load. If it is as specified everything is good. For example if you specify two threads two processor threads should be in use close to 100% . If that happens most of the time, everything is good.</p>
+	</section>
+	<section>
+		<h1>Q:</h1><p> What does `CPU outruns GPU` mean?</p>
+	</section>
+	<section>
+		<h1>A:</h1><p>GPU and CPU compute different hash functions so it can happen if the GPU is slow and the CPU fast.</p>
+	</section>
+	<section>
+		<h1>Q:</h1><p> My node is stuck and won't sync?</p>
+	</section>
+	<section>
+		<h1>A:</h1><p>Make sure you are running the latest version `wart-node-linux --version`. Delete folder with node db files and start the node again. (It locates in home directory `~/.warthog` if you are using Linux and `%AppData%\Local\Warthog` in Windows)</p>
+	</section>
+	
+	
+	
+		<WhereToBuy/>
 </BaseLayout>
-
-<script>
-  const items = document.querySelectorAll(".faq-item");
-  items.forEach((item) => {
-    const question = item.querySelector(".faq-question");
-    question?.addEventListener("click", () => {
-      item.classList.toggle("open");
-    });
-  });
-</script>

@@ -32,105 +32,89 @@ const GetArticleImage = (category) => {
 };
 ---
 <style>
-  .news-section {
-    padding: clamp(2rem, 4vw, 3rem) 0;
-  }
-
-  .news-header {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    flex-wrap: wrap;
-    align-items: center;
-    padding-inline: clamp(1rem, 4vw, 2rem);
-  }
-
-  .news-grid {
-    display: grid;
-    gap: clamp(1rem, 3vw, 1.5rem);
-    padding-inline: clamp(1rem, 4vw, 2rem);
-  }
-
-  @media (min-width: 768px) {
-    .news-grid {
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    .NEWS {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        align-items: center;
     }
-  }
-
-  .article-card {
-    border-radius: var(--radius-lg);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    padding: clamp(1rem, 2vw, 1.5rem);
-    background: rgba(8, 12, 24, 0.8);
-    display: flex;
-    flex-direction: column;
-    gap: 0.65rem;
-    box-shadow: var(--shadow-card);
-    opacity: 0;
-    transform: translateY(20px);
-    animation: fadeUp 0.6s ease forwards;
-  }
-
-  .article-card img {
-    width: 100%;
-    border-radius: var(--radius-md);
-    object-fit: cover;
-  }
-
-  .article-card h3 {
-    margin: 0;
-    font-size: 1rem;
-  }
-
-  .article-card p {
-      border-radius: var(--radius-sm);
-    border: 0px solid rgba(255, 255, 255, 0.08);
-     box-shadow: var(--shadow-card);
-    margin: 0;
-    color: var(--color-text-muted);
-  }
-
-  .see-all {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-weight: 600;
-  }
-
-  @keyframes fadeUp {
-    to {
-      opacity: 1;
-      transform: translateY(0);
+    @media screen and (min-width: 1024px) {
+        .NEWS {
+            padding-left: 5rem;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
+        }
     }
-  }
+    .seeall {
+        font-size: .8rem;
+        align-items: center;
+        padding: .1rem;
+        margin-left: 1rem;
+        border-radius: .3rem;
+        border-radius: 1rem;
+        border-color: black;
+        scroll-padding-right: .5rem;
+        padding-left: .5rem;
+        border-width: .1rem;
+        font-size: .8rem;
+    }
+    .blogpostbox {
+        border-radius: .5rem;
+        margin-top: 1rem;
+        width: 24.25rem;
+    }
+    .articles {
+        padding-top: 1rem;
+        padding-left: 2rem;
+    }
+    @media screen and (min-width: 1024px) {
+        .articles {
+            padding-left: 12rem;
+        }
+    }
+    /* Slide-in animation styles */
+    .article-card {
+        opacity: 0;
+        transform: translateX(-50px);
+        transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    }
+    .article-card.visible {
+        opacity: 1;
+        transform: translateX(0);
+    }
 </style>
 
-<section class="news-section section--surface">
-  <div class="news-header">
-    <div>
-      <p class="section__eyebrow">Articles</p>
-      <h2 class="section__title">Latest from the blog & dev diary</h2>
-    </div>
-    <a class="see-all" href="/news">
-      See all
-      <img src={Arrow.src} alt="" width="20" height="20" loading="lazy" />
-    </a>
-  </div>
-
-  <div class="news-grid">
-    {
-      last3Articles.map((news, index) => (
-        <a
-          class="article-card"
-          style={`animation-delay:${index * 0.1}s`}
-          href={`/articles/${generateArticalIdentity(news.data.title, news.data.date, news.data.author)}`}
-        >
-          <img src={GetArticleImage(news.data.category)} alt="" loading="lazy" />
-          <p class="pill">{news.data.category}</p>
-          <h3>{news.data.title}</h3>
-          <p class="muted">{new Date(news.data.date).toLocaleDateString()}</p>
+<h1 class="articles flex"> Articles <a class="seeall flex" href="/news">see all<img class="small" src={Arrow.src}/></a></h1>
+<section class="NEWS">
+    {last3Articles.map((news, index) => (
+        <a class={`p-10 article-card`} href={`/articles/${generateArticalIdentity(news.data.title, news.data.date, news.data.author )}`}>
+            <img class='blogpostbox' src={GetArticleImage(news.data.category)} alt="logo" />
+            <p>{news.data.category}</p>
+            <p class="font-semibold">{news.data.title}</p>
         </a>
-      ))
-    }
-  </div>
+    ))}
 </section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const cards = document.querySelectorAll<HTMLElement>('.article-card');
+        cards.forEach((card, index) => {
+            card.style.transitionDelay = `${index * 0.3}s`;
+        });
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, {
+            threshold: 0.1
+        });
+
+        cards.forEach(card => {
+            observer.observe(card);
+        });
+    });
+</script>

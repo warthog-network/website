@@ -130,40 +130,6 @@ import DunesMobile from '../BalkyImages/dune-colorful-abstract-digital-art-4k-wa
     display: none; /* Hidden by default */
   }
 
-  /* Media query for 768px-1024px: Prevent overlap with proper spacing */
-  @media (min-width: 768px) and (max-width: 1024px) {
-    .hero-grid {
-      grid-template-columns: 1fr;
-      grid-template-areas: 'hero-img';
-      margin-bottom: 2rem;
-      min-height: 0;
-    }
-
-    .hero-grid-text {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 2;
-      max-width: 85%;
-      width: 100%;
-      text-align: center;
-      text-shadow: 50px 10px 20px rgba(46, 46, 46, 0.8);
-      padding: 1.5rem;
-      color: white;
-      box-sizing: border-box;
-      overflow: hidden;
-    }
-
-    .hero-grid-img {
-      max-width: 100%;
-      justify-self: center;
-      padding: 0;
-      box-sizing: border-box;
-      margin-bottom: 0;
-    }
-  }
-
   /* Media query for <1250px: Center text, overlay on image, switch to mobile image */
   @media (max-width: 1248px) {
     .hero-grid {
