@@ -46,7 +46,14 @@ import { getContainerRenderer } from "@astrojs/react";
   ];
 ---
 
-<BaseLayout title={title}>
+<BaseLayout title={title} csp="default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; script-src * data: blob: 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; img-src * data:; font-src *; connect-src *; object-src *; frame-src *;">
+  <style>
+    @media screen and (max-width: 767px) {
+      .mobileMenu {
+        width: 70vw !important;
+      }
+    }
+  </style>
   <Joyride
   client:only="react"
   steps={steps}
