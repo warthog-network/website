@@ -1,7 +1,7 @@
 ---
 import '../styles.css';
 import Menu from '../components/Menu.astro';
-import Hamburger from './Hamburger.astro';
+
 
 ---
 
@@ -27,7 +27,7 @@ import Hamburger from './Hamburger.astro';
 }
 
 .logo{
- 
+
     width: 16.25rem;
   }
 
@@ -61,20 +61,13 @@ import Hamburger from './Hamburger.astro';
       justify-content: center;
     }
 }
-
-/* Hamburger styles*/
-.navbartop{
-  background-color: white;
-}
-
 </style>
 
 
-<nav class="lg:flex w-full navbartop" >
-    <a  class="logo animate-fadeIn " href="/"><img class=" logo animate-fadeIn" src="/Images/Warthog_2024_Full Logo.svg" alt="logo"/></a>
+<nav class="lg:flex w-full" >
+    <a  class="logo animate-fadeIn" href="/"><img class="logo animate-fadeIn" src="/Images/Warthog_2024_Full Logo.svg" alt="logo"/></a>
     <section class="lg:flex w-full justify-between items-center desktopMenu">
         <Menu />
         
     </section>
-    <Hamburger />
 </nav>

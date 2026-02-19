@@ -1,28 +1,15 @@
 ---
 import Astrobar from '../components/AstroBar.astro';
-
+import Hamburger from './Hamburger.astro';
 import DropDownMenu from '../components/Menu.astro';
-
 ---
 
 <style is:global>
     .mobileMenu {
-        position: fixed;
-        top: 0;
-        right: 0; /* Base position aligned to right */
-        transform: translateX(100%); /* Initially off-screen to the right */
-        height: 100vh; /* Full height always */
-        background-color: #fff; /* Adjust to your theme */
-        transition: transform 0.3s ease-in-out; /* Smooth slide animation on transform */
-        z-index: 1000; /* Ensure it's on top */
-        overflow-y: auto; /* Scroll if content is too long */
-        box-sizing: border-box; /* Include padding in width */
+            display: none;
+            width: 100%;
     }
-
-    .mobileMenu.show {
-        transform: translateX(0); /* Slide into view */
-    }
-  
+    
     .mobileMenu .menu {
         display: inline-block;
         width: 100%;
@@ -32,55 +19,19 @@ import DropDownMenu from '../components/Menu.astro';
 
     .mobileMenu .menuItem {
         font-size: 14px;
-        
     }
     
-    /* Mobile: full screen (assuming mobile < 768px) */
-    @media screen and (max-width: 767px) {
-        .mobileMenu {
-            width: 100vw; /* Full width */
-            padding: 60px 20px 20px; /* Padding; adjust top for navbar height if needed */
+    @media screen and (max-width: 1023px) {
+        .show {
+            display: inline-block;
         }
-    }
-
-    /* Between mobile and 1024px (e.g., tablet: 768px - 1023px): 1/5th width */
-    @media screen and (min-width: 768px) and (max-width: 1023px) {
-        .mobileMenu {
-            width: 40vw; /* 1/5th of viewport width */
-            padding: 60px 10px 20px; /* Adjust padding for narrower menu */
-        }
-    }
-
-    /* Above 1024px: hide the mobile menu (assuming desktop nav takes over) */
-    @media screen and (min-width: 1024px) {
-        .mobileMenu {
-            display: none !important; /* Force hide, even if .show is added */
-        }
-    }
-    .navbarstyles{
-  position: sticky;
-  top: 0;
-  z-index: 1000; /* Ensure it's above other content */
-}
-.close-button {
-        position: absolute;
-        top: 1rem;
-        right: 1rem;
-        background: none;
-        border: none;
-        font-size: 1.5rem;
-        cursor: pointer;
-        z-index: 1100; /* Above menu content */
     }
 </style>
 
-
-<div class="w-full flex justify-between items-center navbarstyles">
-    
+<div class="w-full flex justify-between items-center">
     <Astrobar />
-  
+    <Hamburger />
 </div>
 <div class="mobileMenu">
-    <button class="close-button">×</button>
     <DropDownMenu  />
 </div>
