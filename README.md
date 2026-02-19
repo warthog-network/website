@@ -1,3 +1,8 @@
+# Warthog's Website
+This is the repository for the Warthog Network website:
+ - `prod` branch is live on https://warthog.network/
+- `dev` branch is live on  https://astohogdev.netlify.app/
+
 # Astro Starter Kit: Minimal
 
 ```sh

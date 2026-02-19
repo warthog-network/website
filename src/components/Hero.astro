@@ -4,227 +4,385 @@ import DunesMobile from '../BalkyImages/dune-colorful-abstract-digital-art-4k-wa
 ---
 
 <style>
+  .article-link {
+    width: 293px;
+    height: 28px;
+    background: #F0F0EF;
+    border-radius: 13px;
+    padding-left: 10px;
+  }
 
+  .article-link .bold {
+    font-family: 'Montserrat';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 10px;
+    color: black;
+  }
 
-.article-link {
-  width: 293px;
-  height: 28px;
-  background: #F0F0EF;
-  border-radius: 13px;
-  padding-left: 10px;
-}
+  .article-link .thin {
+    margin-left: .5rem;
+    font-family: 'Montserrat';
+    font-style: normal;
+    font-size: 10px;
+    font-weight: 300;
+    color: gray;
+  }
 
-.article-link .bold {
-  font-family: 'Montserrat';
-  font-style: normal;
-  font-weight: 700;
-  font-size: 10px;
-  color: black;
-}
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    grid-template-areas: 'hero-text hero-img';
+    position: relative; /* For overlay positioning */
+    transition: all 0.3s ease; /* Smooth layout changes */
+    padding-top: 2rem; /* Increased top padding by 1rem (from original pt-4 ~1rem to 2rem total) */
+    box-sizing: border-box; /* Include padding in width */
+  }
 
-.article-link .thin {
-  margin-left: .5rem;
-  font-family: 'Montserrat';
-  font-style: normal;
-  font-size: 10px;
-  font-weight: 300;
-  color: gray;
-}
+  .hero-grid-text {
+    padding-left: 1rem;
+    max-width: 25rem;
+    grid-area: hero-text;
+    transition: all 0.3s ease;
+    box-sizing: border-box; /* Include padding in width */
+  }
 
-.hero-grid {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  grid-template-areas: 
-  'hero-text hero-img';
-}
-.hero-grid-text {
-  max-width: 25rem;
-  grid-area: hero-text;
-}
-.hero-text-title-bold {
-  font-family: 'Montserrat';
-  font-style: italic;
-  font-weight: 700;
-  font-size: 3.3rem;
-  line-height: 53px;
-  color: #1E1E1E;
-}
-.hero-text-title {
-  font-family: 'Montserrat';
-  font-size: 3rem;
-  line-height: 53px;
-  color: #1E1E1E;
-}
-.hero-text-paragraph {
-  font-family: 'Montserrat';
-  font-size: 20px;
-  line-height: 27px;
-  color: #1E1E1E;
-}
-.hero-grid-img {
-  max-width: 50rem;
-  justify-self: end;
-  grid-area: hero-img;
-}
-.hero-img-btn {
-  position: absolute;
-  bottom: 1rem;
-  right: 1.2rem;
-  background-color: gold;
-  color: rgb(0, 0, 0);
-  font-size: 16px;
-  padding: 15px 50px;
-  border: none; 
-  cursor: pointer;
-  border-radius: 5px;
-  box-shadow: 10px 17px 10px -10px;
-}
-.dunes2{
-  display: none;
-}
- 
-@media (max-width: 1248px) {
+  .hero-text-title-bold {
+    font-family: 'Montserrat';
+    font-style: italic;
+    font-weight: 700;
+    font-size: 3.3rem;
+    line-height: 53px;
+    color: #1E1E1E;
+    transition: font-size 0.3s ease, transform 0.5s ease; /* For animation */
+  }
+
+  .hero-text-title {
+    font-family: 'Montserrat';
+    font-size: 3rem;
+    line-height: 53px;
+    color: #1E1E1E;
+    transition: font-size 0.3s ease, transform 0.5s ease;
+  }
+
+  .hero-text-paragraph {
+    font-family: 'Montserrat';
+    font-size: 20px;
+    line-height: 27px;
+    color: #1E1E1E;
+    transition: font-size 0.3s ease, transform 0.5s ease;
+  }
+
+  .hero-grid-img {
+    max-width: 50rem;
+    justify-self: end;
+    grid-area: hero-img;
+    position: relative; /* For button and text overlay */
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box; /* Include padding in width */
+  }
+
   .hero-img-btn {
     position: absolute;
-    bottom: 1rem;
-    right: 1.2rem;
+    bottom: 1.4rem;
+    right: 0.5rem;
     background-color: gold;
     color: rgb(0, 0, 0);
     font-size: 16px;
     padding: 15px 50px;
-    border: none; 
+    border: none;
     cursor: pointer;
     border-radius: 5px;
-  }
-  .dunes2{
-    padding: .5rem;
-    margin-top: 2rem;
-    border-radius: 2rem;
-  display: flex;
-}
-  .heroCutoutNew {
-display: none;
-  }
-}
-
-
-@media screen and (max-width: 1024px){
-  .heroCutoutNew {
-    margin-top: 1rem;
-    padding: 1rem;
+    box-shadow: 10px 17px 10px -10px;
+    z-index: 3; /* Ensure above overlay */
+    transition: position 0.3s ease, bottom 0.3s ease;
   }
 
-  .hero-grid {
-    position: relative;
-    display: grid;
-    grid-template-columns: 1fr ;
-    grid-template-areas: 
-    'hero-text' 
-    'hero-img';
-  }
-  .hero-img-btn {
-    position: absolute;
-    bottom: 30%;
-    right: 27%;
-    background-color: gold;
-    color: rgb(0, 0, 0);
-    font-size: 16px;
-    width: 13rem;
-    padding: 10px 40px;
-    border: none; 
-    cursor: pointer;
-    border-radius: 5px;
-  }
-
-};
-  
-
-@media (max-width: 850px) {
+  /* Image styles */
   .hero-grid-img img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    border-radius: 10px; /* Rectangular with soft edges */
+    transition: border-radius 0.3s ease;
+    box-sizing: border-box; /* Ensure padding/margins are included in width */
+  }
+
+  .dunes2 {
+    
+    padding-left: 10px;
+    padding-right: 10px;
+    display: none; /* Hidden by default */
+  }
+
+  /* New: Overlay for readability (semi-transparent scrim), moved to hero-grid-img */
+  .hero-grid-img::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(228, 188, 186, 0.2); /* Reduced opacity for more visible image */
     border-radius: 10px;
-  }
-  
-
-  .hero-img-btn {
-    position: absolute;
-    bottom: 30%;
-    right: 20%;
-    background-color: gold;
-    color: rgb(0, 0, 0);
-    font-size: 16px;
-    width: 13rem;
-    padding: 10px 40px;
-    border: none; 
-    cursor: pointer;
-    border-radius: 5px;
+    z-index: 1;
+    display: none; /* Hidden by default */
   }
 
- 
+  /* Media query for 768px-1024px: Prevent overlap with proper spacing */
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .hero-grid {
+      grid-template-columns: 1fr;
+      grid-template-areas: 'hero-img';
+      margin-bottom: 2rem;
+      min-height: 0;
+    }
 
-}
+    .hero-grid-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2;
+      max-width: 85%;
+      width: 100%;
+      text-align: center;
+      text-shadow: 50px 10px 20px rgba(46, 46, 46, 0.8);
+      padding: 1.5rem;
+      color: white;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
 
-.hero-grid-img {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    justify-self: end;
-    grid-area: hero-img;
+    .hero-grid-img {
+      max-width: 100%;
+      justify-self: center;
+      padding: 0;
+      box-sizing: border-box;
+      margin-bottom: 0;
+    }
   }
 
-@media (max-width:433px) {
-  .hero-grid-img {
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    grid-area: hero-img;
-  }
-  
-  .hero-grid-img img {
-    width: 100%;            /* Make sure the image scales properly */
-                            /* Maintain aspect ratio */
-  }
-  
-  .hero-img-btn {
-   position: absolute;
-    bottom: 30%;
-    right: 20%;
-    background-color: gold;
-    color: rgb(0, 0, 0);
-    font-size: 16px;
-    width: 13rem;
-    padding: 10px 40px;
-    border: none; 
-    cursor: pointer;
-    border-radius: 5px;
-  }
-}
+  /* Media query for <1250px: Center text, overlay on image, switch to mobile image */
+  @media (max-width: 1248px) {
+    .hero-grid {
+      grid-template-columns: 1fr;
+      grid-template-areas: 'hero-img'; /* Image full, text overlays */
+    }
 
+    .hero-grid-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2; /* Above image and scrim */
+      max-width: 90%; /* Match image width effectively */
+      width: 100%; /* Constrain to parent (image) width */
+      text-align: center; /* Center text */
+      text-shadow: 50px 10px 20px rgba(46, 46, 46, 0.8); /* Enhanced shadow for readability */
+      padding: 2rem;
+      color: white; /* High contrast on dark overlay */
+      box-sizing: border-box;
+    }
+
+    .hero-text-title-bold,
+    .hero-text-title,
+    .hero-text-paragraph {
+      color: inherit; /* Inherit white */
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); /* Shadow for extra readability */
+    }
+
+    .article-link {
+      background: rgba(240, 240, 239, 0.8); /* Semi-transparent for overlay */
+      margin: 0 auto; /* Center the link */
+    }
+
+    .hero-grid-img {
+      max-width: 100%; /* Full width */
+      justify-self: center;
+      padding: 0; /* Remove padding to prevent overflow */
+      box-sizing: border-box;
+    }
+
+    .heroCutoutNew {
+      display: none; /* Hide desktop image */
+    }
+
+    .dunes2 {
+      display: block; /* Show mobile image */
+      width: 100%;
+      border-radius: 10px;
+      margin-top: 1rem; /* Reduced optional spacing */
+    }
+
+    .hero-grid-img::before {
+      display: block; /* Show scrim covering full image */
+      top: -1rem; /* Adjusted top to -1.5rem to balance the small difference */
+      left: 0;
+      width: 100%; /* Full width, no extra */
+      height: calc(100% + 3rem); /* Adjusted height to compensate for top difference */
+     
+      border-radius: 10px; /* Adjusted radius for smaller extension */
+    }
+
+    .hero-img-btn {
+      bottom: 1rem;
+      right: 50%;
+      transform: translateX(50%); /* Center button horizontally */
+      width: auto;
+      padding: 10px 40px;
+      z-index: 3; /* Above scrim */
+    }
+  }
+
+  /* Updated media query for <900px: Switch to portrait/vertical stack with animation */
+  @media (max-width: 765px) {
+    .hero-grid {
+      display: flex;
+      flex-direction: column; /* Stack vertically for portrait */
+      align-items: center; /* Center everything */
+      padding-top: 4rem; /* Extra top padding to avoid menu overlap */
+      gap: 1rem; /* Space between elements */
+    }
+
+    .hero-grid-text {
+      position: static; /* Remove absolute, stack normally */
+      transform: none; /* Reset transform */
+      max-width: 100%;
+      padding: 1rem;
+      text-align: center;
+      color: #1E1E1E; /* Revert to original color if no overlay */
+      animation: slideDown 0.5s ease-in-out; /* Animation for transition */
+    }
+
+    .hero-text-title-bold,
+    .hero-text-title,
+    .hero-text-paragraph {
+      text-shadow: none; /* Remove shadow if not on overlay */
+      transform: translateY(0); /* Ensure settled position */
+    }
+
+    .hero-grid-img {
+      position: relative;
+      width: 100%;
+      padding: 0;
+    }
+
+    .hero-grid-img::before {
+      display: none; /* Optional: Remove scrim for stacked layout; adjust if needed */
+    }
+
+    .hero-img-btn {
+      position: absolute;
+      top: 65%; /* Moved up slightly towards the center */
+      left: 50%;
+      transform: translate(-50%, -50%);
+      max-width: 12rem;
+      
+      background-color: gold;
+      color: rgb(0, 0, 0);
+      text-align: center;
+      font-size: 16px;
+      width: 13rem;
+      max-height: 3rem;
+      padding: 10px 40px;
+      border: none; 
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    /* Keyframes for slide-down animation on text */
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20%);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  }
+
+  /* Existing <820px query, merged/adjusted if needed */
+  @media (max-width: 820px) {
+    .hero-grid-text {
+      padding: 1.5rem;
+      max-width: 95%;
+    }
+
+    .hero-text-title-bold {
+      font-size: 2.5rem;
+      line-height: 2.8rem;
+    }
+
+    .hero-text-title {
+      font-size: 2.2rem;
+      line-height: 2.5rem;
+    }
+
+    .hero-text-paragraph {
+      font-size: 16px;
+      line-height: 1.4;
+    }
+
+    .hero-img-btn {
+      padding: 0.75rem 2rem;
+      font-size: 14px;
+    }
+  }
+
+  /* Other media queries */
+  @media (max-width: 1024px) {
+    .hero-text-title-bold {
+      font-size: 2.8rem;
+    }
+    .hero-text-title {
+      font-size: 2.5rem;
+    }
+    .hero-text-paragraph {
+      font-size: 18px;
+    }
+  }
+
+  @media (max-width: 850px) {
+    .hero-img-btn {
+      bottom: 5%;
+    }
+  }
+
+  @media (max-width: 433px) {
+    .hero-grid-text {
+      padding: 1rem;
+    }
+    .hero-img-btn {
+      font-size: 14px;
+      padding: 8px 30px;
+    }
+  }
 </style>
 
-
-<div class="hero-grid pt-4">
-    <div class="hero-grid-text pl-2">
-        <div class="article-link">
-            <span class="bold">How our tech is better?</span><a href='/news'class="thin">Read our article</a>
-        </div>  
-        <div class="pt-2">
-            <div class="hero-text-title-bold">Rethinking</div> 
-            <div class="hero-text-title">The Blockchain</div>
-        </div>
-        <p class="hero-text-paragraph">
-        Warthog's decentralized network empowers individuals with fair, balanced, and synergized CPU/GPU work. 
-        It secures hardcoded DeFi and token technologies, 
-        eliminating the risks of smart contracts. Our goal is a safer, more efficient blockchain, 
-        aligned with the original vision of cryptocurrency: "one CPU, one vote."
-        </p>
+<div class="hero-grid pt-4"> <!-- Note: pt-4 kept, but CSS overrides with padding-top: 2rem; remove pt-4 if using pure CSS -->
+  <div class="hero-grid-text pl-2">
+    <div class="article-link">
+      <span class="bold">How our tech is better?</span><a href='/news' class="thin">Read our article</a>
+    </div>  
+    <div class="pt-2">
+      <div class="hero-text-title-bold">Rethinking</div> 
+      <div class="hero-text-title">The Blockchain</div>
     </div>
- 
-    <div class="hero-grid-img">
-       <img class="heroCutoutNew" src ={Dunes.src}  />  
-       <img class="dunes2" src={DunesMobile.src}/>  
-      <a href='/#wheretobuy' class="hero-img-btn">where to buy</a>
-    </div>
-   
-
+    <p class="hero-text-paragraph">
+      Warthog's decentralized network empowers individuals with fair, balanced, and synergized CPU/GPU work. 
+      It secures hardcoded DeFi and token technologies, 
+      eliminating the risks of smart contracts. Our goal is a safer, more efficient blockchain, 
+      aligned with the original vision of cryptocurrency: "one CPU, one vote."
+    </p>
   </div>
+
+  <div class="hero-grid-img">
+    <img class="heroCutoutNew" src={Dunes.src} alt="Abstract dunes landscape for Warthog blockchain hero section">
+    <img class="dunes2" src={DunesMobile.src} alt="Abstract dunes landscape for Warthog blockchain hero section (mobile)">
+    <a href='/#wheretobuy' class="hero-img-btn">Where To Buy</a>
+  </div>
+</div>

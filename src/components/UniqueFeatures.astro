@@ -2,216 +2,185 @@
 import TinyWart from "../BalkyImages/Isolation_Mode.svg";
 import Coin from "../BalkyImages/001-coin.svg";
 import Goal from "../BalkyImages/goal 1.svg";
-import Sprout from '../BalkyImages/002-sprout.svg';
-import Profile from '../BalkyImages/004-profile.svg';
-import Programming from '../BalkyImages/006-programming.svg';
-import Trolly from '../BalkyImages/005-trolley.svg';
-import Group from '../BalkyImages/Group 5.svg';
+import Sprout from "../BalkyImages/002-sprout.svg";
+import Profile from "../BalkyImages/004-profile.svg";
+import Programming from "../BalkyImages/006-programming.svg";
+import Trolly from "../BalkyImages/005-trolley.svg";
+import Group from "../BalkyImages/Group 5.svg";
+import ContentDiv from "./ContentDiv.jsx";
+
+const highlights = [
+  {
+    title: "No pre-mine",
+    copy: "Fair launch on Bitcointalk with verifiable PoBW distribution.",
+    icon: Goal.src,
+  },
+  {
+    title: "Written from scratch",
+    copy: "No forks. Purpose-built stack designed for browser-native miners.",
+    icon: Sprout.src,
+  },
+  {
+    title: "No reserved team fund",
+    copy: "Zero hidden allocations or advisor carve-outs. Everyone mines.",
+    icon: Profile.src,
+  },
+  {
+    title: "Modern codebase",
+    copy: "C++20, clangd, Meson, and Ninja keep the stack auditable & fast.",
+    icon: Programming.src,
+  },
+  {
+    title: "100% mineable",
+    copy: "Every token is accessible to the community—no premint, no unlocks.",
+    icon: Trolly.src,
+  },
+  {
+    title: "Open source",
+    copy: "Welcoming contributors across C++, Rust, TypeScript, and design.",
+    icon: Group.src,
+  },
+];
 ---
 
 <style>
-    .UniqueFeatures {
-        text-shadow: 5px 1px 5px  rgb(0, 0, 0);
-        background: radial-gradient(
-            circle at 24.1% 68.8%,
-            rgb(50, 50, 50) 0%,
-            rgb(0, 0, 0) 99.4%
-        );
-        color: white;
-    }
-    header{
-        padding-left: 12rem;
-    }
-    h1 {
-        font-size: 4rem;
-        margin-bottom: 3rem;
-        font-weight: 600;
-    }
-    .tinywart {
-        position: relative;
-        right: 1rem;
-        padding-left: 1rem;
-        max-width: 5rem;
-    }
+  .unique-section {
+    background: linear-gradient(145deg, rgba(15, 17, 34, 0.95), rgba(3, 6, 17, 0.95));
+    overflow: hidden;
+    padding: clamp(2rem, 5vw, 4rem) 0; /* Added: Vertical padding for section separation */
+  }
 
-    h2 {
-        font-size: 1rem;
-        font-weight: bold;
-        display: flex;
-        padding-right: 2rem;
-    }
-    .UniqueFeatures-Grid {
-        font-family: "Montserrat";
-        line-height: 2rem;
-        padding: 1rem;
-       
-        padding-left: 15rem;
-        padding-right: 15rem;
-        display: grid;
-        grid-template-columns: 1fn 2fn;
-        grid-template-areas: "tokenomics features";
-    }
-    .tokenomics {
-       width: 20rem;
-        margin-top: 3rem;
-        grid-area: tokenomics;
-    }
-    .features {
-        grid-area: features;
-    }
-    .featuresGrid {
-      
-        padding: 2rem;
-        display: grid;
-        grid-template-columns: 1fn 1fn;
-        grid-template-areas: "list1 list2";
-    }
-    .list1 {
-        min-width: 17rem;
-        grid-area: list1;
-       
-    }
-    .list1 > p {
-       max-width: 25rem;
-       
-    }
-    .list2 {
-        min-width: 17rem;
-        grid-area: list2;
-       
-    }
-    img {
-        padding-left: 1rem;
-    }
-    .innovation {
-        font-weight: 600;
-        font-size: 1.5rem;
-    }
-    header {
-        padding-top: 2rem;
-        padding-left: 15rem;
-    }
-    p {
-        padding-right: 1rem;
-        font-size: 0.8rem;
-    }
-    .tokenp {
-        margin-bottom: 1rem;
-        line-height: 1.5rem;
-        max-width: 20rem;
-    }
-    @media screen and (max-width: 1224px) {
-        .UniqueFeatures-Grid {
-            font-family: "Montserrat";
-            line-height: 2rem;
-            padding: 2rem;
-            display: grid;
-            grid-template-columns: 1fn 2fn;
-            grid-template-areas:
-                "tokenomics"
-                "features";
-        }
+  .unique-grid {
+    display: grid;
+    gap: clamp(1.5rem, 4vw, 3rem);
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    align-items: start;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
 
-        header {
-        padding-top: 2rem;
-        padding-left: 2rem;
+  @media (min-width: 768px) and (max-width: 1024px) {
+    /* Removed: grid-template-columns: 1fr; — let auto-fit handle it */
+    .unique-features {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
     }
-    }
-    @media screen and (max-width: 1024px) {
-        .UniqueFeatures-Grid {
-            font-family: "Montserrat";
-            line-height: 3rem;
-            padding: 2rem;
-            display: grid;
-            grid-template-columns: 1fn 2fn;
-            grid-template-areas:
-                "tokenomics"
-                "features";
-        }
-        .list1 {
-            
-        grid-area: list1;
-        line-height: 2rem;
-    }
-    .list1 > h2 {
-        margin-top: .75rem;
-        font-size: 1rem;
-    }
-    .list1 > p {
-        line-height: 1rem;
-    }
-    .list2 {
-        grid-area: list2;
-        line-height: 2rem;
-    }
-    .list2 > h2 {
-        margin-top: .75rem;
-        font-size: 1rem;
-    }
-    .list2 > p {
-        line-height: 1rem;
-    }
-        .featuresGrid {
-        padding: .1rem;
-        display: grid;
-        grid-template-columns: 1fn 1fn;
-        grid-template-areas: 
-        "list1" 
-        "list2";
-    }
-    h1 {
-        
-        font-size: 1.6rem;
-        margin-bottom: 3rem;
-        font-weight: 600;
-    }
-    
-}
+  }
 
+  /* Add mobile-specific adjustments */
+  @media (max-width: 767px) {
+    .unique-grid {
+      gap: clamp(2rem, 5vw, 3rem); /* Larger gap on mobile */
+    }
+    .unique-features {
+      gap: 1.5rem;
+    }
+  }
+
+  .unique-card {
+    border-radius: var(--radius-lg);
+    background: rgba(5, 8, 18, 0.8);
+    padding: clamp(1.5rem, 3vw, 2.25rem);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 35px 60px rgba(2, 6, 23, 0.5);
+  }
+
+  .unique-card__list {
+    margin-top: 1.5rem;
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .unique-card__list li {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: var(--color-text-muted);
+  }
+
+  .unique-card__list li::before {
+    content: "";
+    width: 0.85rem;
+    height: 0.85rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #facc15, #f97316);
+  }
+
+  .unique-features {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+
+  .unique-item {
+    padding: 1.2rem;
+    border-radius: 1.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(10, 15, 28, 0.85);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+  }
+
+  .unique-item__title {
+    margin: 0;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .unique-item__copy {
+    margin: 0.5rem 0 0;
+    color: var(--color-text-muted);
+  }
+
+  .unique-item img {
+    width: 1.85rem;
+  }
 </style>
 
-<div class="UniqueFeatures">
-    <header class="header">
-        <p class="innovation">INNOVATION</p>
-        <h1 class="flex">
-            What makes us unique?
-            <img class="tinywart" src={TinyWart.src} />
-        </h1>
-    </header>
-    <div class="UniqueFeatures-Grid">
-        <section class="tokenomics ">
-            <h2>TOKENOMICS<img src={Coin.src} /></h2>
-            <p class="tokenp ">
-                This is not the default kind of project where you see a
-                disproportionately high allocation of the total supply unfairly
-                reserved for the team, the advisors and their pockets. 0% is
-                minted, premined, reserved for anyone, 100% is publicly
-                mineable.
-            </p>
-        </section>
+<section class="section unique-section">
+  <ContentDiv>
+    <div class="unique-grid">
+      <div class="unique-card">
+        <span class="unique-pill">Innovation</span>
+        <h2 class="section__title mt-3 mb-4 inline-flex items-center gap-3">
+          What makes us unique?
+          <img src={TinyWart.src} alt="" width="44" height="44" loading="lazy" />
+        </h2>
+        <p class="muted">
+          We engineered Warthog as a fair-launch blockchain with no shortcuts: no premine,
+          no hidden team wallets, and a modern PoBW engine that anyone with a browser can join.
+        </p>
+        <div class="stat-card mt-6">
+          <p class="stat-card__label">Tokenomics</p>
+          <p class="stat-card__value text-3xl flex items-center gap-3">
+            0%<img src={Coin.src} alt="" width="28" height="28" loading="lazy" />
+          </p>
+          <p class="muted mt-2">
+            Nothing minted or reserved for insiders—100% of WART is discoverable through public mining.
+          </p>
+        </div>
+        <ul class="unique-card__list">
+          <li>Zero pre-mine and no hidden allocations</li>
+          <li>Proof of Balanced Work rewards real contribution</li>
+          <li>Contributor-friendly stack across C++, Rust, and TS</li>
+        </ul>
+      </div>
 
-        <section class="features featuresGrid">
-            <features-list class="list1">
-         
-                <h2>No Pre-mine <img src={Goal.src} /></h2>
-                <p >Project was fairly launched on Bitcointalk</p>
-
-                <h2>Written from scratch <img src={Sprout.src} /></h2>
-                <p>This project is NOT a fork/copy of anything else</p>
-                <h2>No reserved 'Team/Dev' fund <img src={Profile.src} /></h2>
-                <p>
-                    No unfair allocation to anybody aka "team" / "development"
-                    funds
-                </p>
-            </features-list>
-            <features-list class="list2">
-                <h2>Modern Codebase <img src={Programming.src} /></h2>
-                <p>Using modern C++20 and tools like clanged, meson, ninja</p>
-                <h2>100% mineable <img src={Trolly.src} /></h2>
-                <p>100% of supply is publicly mineable, no coins were minted</p>
-                <h2>Open Source <img src={Group.src} /></h2>
-                <p>You are welcome to contribute</p>
-            </features-list>
-        </section>
+      <div class="unique-features">
+        {
+          highlights.map((feature) => (
+            <article class="unique-item">
+              <h3 class="unique-item__title">
+                <img src={feature.icon} alt="" loading="lazy" />
+                {feature.title}
+              </h3>
+              <p class="unique-item__copy">{feature.copy}</p>
+            </article>
+          ))
+        }
+      </div>
     </div>
-</div>
+  </ContentDiv>
+</section>

@@ -1,110 +1,132 @@
 ---
+import ContentDiv from "../components/ContentDiv.jsx";
 
+const specs = [
+  { label: "Coin unit", value: "1 WART" },
+  { label: "Block time", value: "20 seconds" },
+  { label: "Reward", value: "1.5 WART" },
+  { label: "Precision", value: "0.00000001 WART (8 digits)" },
+  { label: "Halving", value: "≈ every 2 years" },
+  { label: "Supply", value: "18,921,599.68464 (~19M)" },
+  { label: "Difficulty adjust", value: "Every 8,640 blocks (~2 days)" },
+];
+
+const contributorGroups = [
+  ["Pumbaa & Rafiki (formerly Timon)", "CoinFuMasterShifu", "Polaire", "Luk"],
+  ["M0sh1M0sh1y", "Andrew", "Open-source contributors"],
+    ["Losthymns", "Thefunvampire","Captain Pirate", "Balky Bot" ],
+];
 ---
 
 <style>
-    .ChainContributorsGrid {
-        flex-wrap: wrap;
-        display: flex;
-        justify-content: space-around;
-        padding: 1rem;
-        padding-left: 9rem;
-    }
-    @media (max-width: 1024px) {
-        .ChainContributorsGrid {
-            flex-wrap: wrap;
-            display: flex;
-            justify-content: space-around;
-            padding: 1rem;
-            padding-left: 1rem;
-        }
-        .contributorsT {
-            padding-top: 2rem;
-        }
-    }
-    @media (max-width: 1324px) {
-        .contributorsT {
-            padding-top: 2rem;
-        }
-    }
-    p {
-        font-weight: 200;
-        font-style: bold;
-        padding-left: 0.5rem;
-    }
-    ul {
-        padding: 0.5rem;
-        display: flex;
-    }
-    h1 {
-        padding: 0.5rem;
-        font-size: 2.3rem;
-    }
-    .contributors {
-        flex-wrap: wrap;
-        font-weight: 250;
-        font-style: italic;
-        padding-top: 1rem;
-        display: flex;
-    }
+  .chain-grid {
+    display: grid;
+    gap: clamp(1.5rem, 3vw, 2.5rem);
+  }
 
-    .youcanhelp {
-        max-width: 21rem;
-        font-size: 0.8rem;
+  @media (min-width: 900px) {
+    .chain-grid {
+      grid-template-columns: 0.85fr 1fr;
+      align-items: start;
     }
-    p {
-        margin-left: 2rem;
-    }
-    th {
-        padding: 0.5rem;
-    }
-    td {
-        padding: 0.5rem;
-        outline: 0.5px solid black;
-    }
-    .tableTitle {
-        font-size: 2rem;
-        padding: 1rem;
-    }
+  }
+
+  .spec-card {
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(8, 12, 24, 0.85);
+    padding: clamp(1.25rem, 3vw, 1.75rem);
+    box-shadow: var(--shadow-card);
+  }
+
+  .spec-list {
+    display: grid;
+    gap: 0.85rem;
+  }
+
+  .spec-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+    padding-bottom: 0.65rem;
+  }
+
+  .spec-item:last-child {
+    border-bottom: none;
+  }
+
+  .spec-item span:first-child {
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    color: var(--color-text-muted);
+  }
+
+  .contributors-card {
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: clamp(1.25rem, 3vw, 1.75rem);
+    background: linear-gradient(135deg, rgba(3, 8, 20, 0.9), rgba(20, 7, 28, 0.8));
+    box-shadow: var(--shadow-card);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .contributors-card ul {
+    margin: 0;
+    padding-left: 1.1rem;
+    color: var(--color-text);
+  }
+
+  .contributors-card li {
+    margin-bottom: 0.35rem;
+  }
+
+  .contributors-card p {
+    margin: 0;
+    color: var(--color-text-muted);
+  }
 </style>
 
-<div class="ChainContributorsGrid">
-    <section>
-        <h1>Chain Specs</h1>
-
-        <table>
-            <tr><td>COIN UNIT</td><td>1 WART</td></tr>
-            <tr><td>BLOCK TIME</td><td>20 SECONDS</td></tr>
-            <tr><td>REWARD</td><td>3 WART</td></tr>
-            <tr><td>PRECISION</td><td>.00000001 WART (8 digits)</td></tr>
-            <tr><td>HALVING</td><td>~ EVERY 2 YEARS</td></tr>
-            <tr><td>SUPPLY</td><td>18921599.68464 (~19M)</td></tr>
-            <tr
-                ><td>WART DIF. ADJUSTMENT</td><td>EVERY 8640 BLOCKS (2 days)</td
-                ></tr
-            >
-        </table>
-    </section>
-    <section>
-        <h1 class="contributorsT">Contributors</h1>
-        <div class="contributors">
-            <div>
-                <ul>Pumbaa, Rafiki (and formerly Timon)</ul>
-                <ul>CoinFuMasterShifu</ul>
-                <ul>Polaire</ul>
-                <ul>Luk</ul>
-            </div>
-            <div>
-                <ul>M0sh1M0sh1y</ul>
-                <ul>Andrew</ul>
-                <ul>YOU CAN HELP!</ul>
-                <p class="youcanhelp">
-                    This is an open source project and everyone  is encouraged
-                    to contribute. You could help for example with C++ coding on
-                    the core project, web design, marketing and other tasks.
-                    Please contact us on Discord!
-                </p>
-            </div>
+<section class="section section--surface">
+  <ContentDiv>
+    <div class="chain-grid">
+      <article class="spec-card">
+        <p class="section__eyebrow">Network</p>
+        <h2 class="section__title">Chain specs</h2>
+        <div class="spec-list">
+          {
+            specs.map((spec) => (
+              <div class="spec-item">
+                <span>{spec.label}</span>
+                <span>{spec.value}</span>
+              </div>
+            ))
+          }
         </div>
-    </section>
-</div>
+      </article>
+
+      <article class="contributors-card">
+        <p class="section__eyebrow">Contributors</p>
+        <h2 class="section__title">Builders behind Warthog</h2>
+        <div class="content-grid">
+          {
+            contributorGroups.map((group) => (
+              <ul>
+                {group.map((name) => (
+                  <li>{name}</li>
+                ))}
+              </ul>
+            ))
+          }
+        </div>
+        <p>
+          This is an open-source effort. Help with C++, Rust, TypeScript, docs, design, or community work.
+          Connect with us on Discord if you want to ship something with impact.
+        </p>
+      </article>
+    </div>
+  </ContentDiv>
+</section>

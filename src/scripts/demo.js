@@ -28,7 +28,7 @@ var readyPromise = new Promise((resolve, reject) => {
   readyPromiseResolve = resolve;
   readyPromiseReject = reject;
 });
-["getExceptionMessage","incrementExceptionRefcount","decrementExceptionRefcount","_memory","_addBuy","_addSell","_editPool","___indirect_function_table","onRuntimeInitialized"].forEach((prop) => {
+["getExceptionMessage","incrementExceptionRefcount","decrementExceptionRefcount","_memory","_addBuy","_addSell","_editPool","_deleteOrder","___indirect_function_table","onRuntimeInitialized"].forEach((prop) => {
   if (!Object.getOwnPropertyDescriptor(readyPromise, prop)) {
     Object.defineProperty(readyPromise, prop, {
       get: () => abort('You are getting ' + prop + ' on the Promise object, instead of the instance. Use .then() to get called back with the instance, see the MODULARIZE docs in src/settings.js'),
@@ -1682,6 +1682,7 @@ var ___cxa_free_exception = createExportWrapper('__cxa_free_exception', 1);
 var _addBuy = Module['_addBuy'] = createExportWrapper('addBuy', 1);
 var _addSell = Module['_addSell'] = createExportWrapper('addSell', 1);
 var _editPool = Module['_editPool'] = createExportWrapper('editPool', 1);
+var _deleteOrder = Module['_deleteOrder'] = createExportWrapper('deleteOrder', 1);
 var _fflush = createExportWrapper('fflush', 1);
 var _strerror = createExportWrapper('strerror', 1);
 var _malloc = createExportWrapper('malloc', 1);

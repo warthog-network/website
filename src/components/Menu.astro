@@ -1,34 +1,214 @@
 ---
 const links = [
-    { name: 'GET STARTED', href: '/get-started'},
-    { name: 'NEWS', href: '/news' },
-    { name: 'DOCS', href: 'https://docs.warthog.network/', target: '_blank'},
-    { name: 'WHITEPAPER', href: '/whitepaper'},
-    { name: 'FAQS', href: '/faqs'},
-    { name: 'EXPLORER', href: 'https://wartscan.io/', target: '_blank'},
-    { name: 'DEFI DEMO', href: '/defi-demo' },
+  { name: 'GET\u00A0\STARTED', href: '/get-started' },
+  { name: 'NEWS', href: '/news' },
+  { name: 'DOCS', href: 'https://docs.warthog.network/', target: '_blank' },
+  { name: 'WHITEPAPER', href: '/whitepaper' },
+  { name: 'FAQS', href: '/faqs' },
+  { name: 'EXPLORER', href: '/explorer', target: '_blank' },
+  { name: 'DEFI\u00A0\DEMO', href: '/defi-demo' },
+];
+
+const wallet = [{ name: 'WALLET', href: '/webwallet' }];
+
+const publiNodes = [
+  { name: 'Rafiki', href: 'http://65.87.7.86:3001', id: 'myInput' },
+  { name: 'Polaire', href: 'http://217.182.64.43:3001', id: 'myInput2' },
+  { name: 'Losthymns', href: 'https://warthognode.duckdns.org', id: 'myInput3' },
+  
 ];
 
 const networks = [
-    { imgSrc: 'github_gray.svg', href: 'https://github.com/warthog-network'},    
-    { imgSrc: 'discord_gray.svg', href: 'https://discord.com/invite/QMDV8bGTdQ'},
-    { imgSrc: 'telegram_gray.svg', href: 'https://t.me/warthognetwork'},
-    { imgSrc: 'twitter_gray.svg', href: 'https://x.com/warthognetwork'},    
+  { imgSrc: 'github_gray.svg', href: 'https://github.com/warthog-network' },
+  { imgSrc: 'discord_gray.svg', href: 'https://discord.com/invite/QMDV8bGTdQ' },
+  { imgSrc: 'telegram_gray.svg', href: 'https://t.me/warthognetwork' },
+  { imgSrc: 'twitter_gray.svg', href: 'https://x.com/warthognetwork' },
 ];
 ---
 
-    <style>
-      .menu{
-          
-          height: 2.5rem;
+<script>
+  // Single handler for all copy buttons
+  function copyToClipboard(event) {
+    const button = event.currentTarget;
+    const inputId = button.dataset.inputId;
+    const copyText = document.getElementById(inputId);
+
+    if (copyText instanceof HTMLInputElement) {
+      copyText.select();
+      copyText.setSelectionRange(0, 99999);
+      navigator.clipboard.writeText(copyText.value);
+      alert("Copied the text: " + copyText.value);
+    }
+  }
+
+  // Attach listeners to all copy buttons
+  document.querySelectorAll('.copy-button').forEach(button => {
+    button.addEventListener('click', copyToClipboard);
+  });
+
+  const closeMenu = document.querySelector('.close-menu');
+  if (closeMenu) {
+    closeMenu.addEventListener('click', () => {
+      const mobileMenu = closeMenu.closest('.mobileMenu');
+      if (mobileMenu) {
+        mobileMenu.classList.remove('show');
+      }
+    });
+  }
+
+  // Dropdown toggle functionality
+  function closeAllDropdowns() {
+    document.querySelectorAll('.dropdown').forEach(dd => {
+      dd.classList.remove('active');
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.dropdown')) {
+      closeAllDropdowns();
+    }
+  });
+
+  document.querySelectorAll('.dropbtn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const dropdown = btn.parentElement;
+      const isActive = dropdown.classList.contains('active');
+      closeAllDropdowns();
+      if (!isActive) {
+        dropdown.classList.add('active');
+      }
+    });
+  });
+
+  // Cycling social icon functionality
+  function initCyclingSocialIcon() {
+    const cyclingLink = document.getElementById('cycling-social-link');
+    const cyclingImg = document.getElementById('cycling-social-img');
+    
+    if (!cyclingLink || !cyclingImg) return;
+
+    const networks = [
+      { imgSrc: 'github_gray.svg', href: 'https://github.com/warthog-network' },
+      { imgSrc: 'discord_gray.svg', href: 'https://discord.com/invite/QMDV8bGTdQ' },
+      { imgSrc: 'telegram_gray.svg', href: 'https://t.me/warthognetwork' },
+      { imgSrc: 'twitter_gray.svg', href: 'https://x.com/warthognetwork' },
+    ];
+
+    let currentIndex = 0;
+
+    function cycleSocialIcon() {
+      currentIndex = (currentIndex + 1) % networks.length;
+      const network = networks[currentIndex];
+      cyclingLink.href = network.href;
+      cyclingImg.src = '/Images/' + network.imgSrc;
+      cyclingImg.alt = network.imgSrc.replace('_gray.svg', '').replace('.svg', '');
+    }
+
+    // Cycle every 3 seconds
+    setInterval(cycleSocialIcon, 3000);
+  }
+
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCyclingSocialIcon);
+  } else {
+    initCyclingSocialIcon();
+  }
+</script>
+
+<style>
+  .menu{
+       
+          display: flex;
           align-items: center;
+          height: 2.5rem;
       }
 
       .icon{
           height: 1.875rem;
           margin: 4px;
         }
+      .social-links {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
 
+      @media screen and (min-width: 1101px) {
+        .desktop-social-links,
+        .desktop-cycling-social {
+          display: inline-flex;
+          align-items: center;
+          margin-left: 0.5rem;
+          vertical-align: middle;
+        }
+      }
+
+      .cycling-social-icon {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .cycling-social-icon img {
+        transition: opacity 0.3s ease;
+      }
+
+      /* Desktop: Show all 4 social links when there's space */
+      @media screen and (min-width: 1400px) {
+        .desktop-social-links {
+          display: inline-flex;
+        }
+        .desktop-cycling-social {
+          display: none !important;
+        }
+        .mobile-social-links {
+          display: none !important;
+        }
+      }
+
+      /* Desktop: Show cycling icon when space gets tight (before hamburger) */
+      @media screen and (min-width: 1101px) and (max-width: 1399px) {
+        .desktop-social-links {
+          display: none !important;
+        }
+        .desktop-cycling-social {
+          display: inline-flex;
+        }
+        .mobile-social-links {
+          display: none !important;
+        }
+      }
+
+      /* Mobile menu: Show all 4 social links only in mobile menu */
+      @media screen and (max-width: 1100px) {
+        .desktop-social-links {
+          display: none !important;
+        }
+        .desktop-cycling-social {
+          display: none !important;
+        }
+        /* Hide mobile-social-links by default on mobile (will be shown by BaseHead in mobileMenu) */
+        .mobile-social-links {
+          display: none !important;
+        }
+        /* Also hide any social-links that might be showing */
+        .social-links:not(.desktop-social-links) {
+          display: none !important;
+        }
+      }
+        .menuspace{
+         font-family: Montserrat;
+        font-size: clamp(0.727rem, 1.079vw, 0.875rem);        
+        font-weight: 400;
+        line-height: 2.5rem;
+        text-underline-position: from-font;
+        text-decoration-skip-ink: none;
+        }
       .menuItem {
         font-family: Montserrat;
         font-size: clamp(0.727rem, 1.079vw, 0.875rem);
@@ -37,12 +217,36 @@ const networks = [
         text-underline-position: from-font;
         text-decoration-skip-ink: none;
       }
-
+      .node{
+        cursor: pointer;
+        visibility: hidden;
+      }
+      .Nodes{
+        margin-bottom: .75rem;
+        padding-left:.5rem ;
+        padding-right: 2rem;
+        cursor: pointer;
+      }
+      .Nodes:hover ~ .node {
+        visibility: visible;
+      }
       .underlineText{
         position: relative;
         text-decoration: none;
       }
+a{
 
+  cursor: pointer;
+}
+label{
+  cursor: pointer;
+}
+input{
+  cursor: pointer;
+}
+.wallet{
+  padding-left: .5rem;
+  padding-bottom: .5rem;}
         .underlineText::after {
           content: '';
           position: absolute;
@@ -60,12 +264,19 @@ const networks = [
 
       @media screen and (min-width: 1024px) {
         .menu {
+          
           min-width: 493px;
           margin-left: auto;
           margin-right: auto;
         }
 
         .menu a {
+         
+          display: inline-block;
+          padding: .5rem;
+        }
+
+        .menu button {
           display: inline-block;
           padding: .5rem;
         }
@@ -76,18 +287,164 @@ const networks = [
           margin-left: 2rem;
         }
       }
-    </style>
-    <div class='menu'>
-    {links.map((link) => (
-            <a class="menuItem"  target={link.target} href={link.href}>
-                <p class="underlineText">{link.name}</p>
-            </a>
-    ))}
-    </div>
-    <div class='lg:flex flex justify-center '>
-      {networks.map((network) => (
-          <a href={network.href}>
-              <p><img class='icon'  src={'/Images/' + network.imgSrc} alt="logo" /></p>
-          </a>
+
+      /* Dropdown Button */
+.dropbtn {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  font: inherit;
+  border: none;
+  cursor: pointer;
+}
+
+/* The container <div> - needed to position the dropdown content */
+.dropdown { 
+  font-family: Montserrat;
+  font-size: clamp(0.727rem, 1.079vw, 0.875rem);
+  font-weight: 400;
+  line-height: 1.067rem;
+  text-underline-position: from-font;
+  text-decoration-skip-ink: none;
+  padding-top: .8rem;
+  z-index: 1000;
+  position: relative;
+  display: inline-block;
+}
+
+/* Dropdown Content (Hidden by Default) */
+
+.dropdown-content {
+  margin-bottom: 10rem;
+  display: none;
+  position: absolute;
+  background-color: #2a2a2a;
+  min-width: 300px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5);
+  z-index: 1;
+  border-radius: 4px;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.ghost{
+    display: none;
+}
+@media screen and (max-width: 1100px) {
+  .dropdown-content {
+    position: relative;
+    transform: none;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5);
+    border-radius: 4px;
+    margin-top: 0.5rem;
+    width: 100%;
+    max-width: 100%;
+    left: auto;
+    top: auto;
+    min-width: auto;
+    box-sizing: border-box;
+  }
+  .dropdown{
+    display: none;
+  }
+  .ghost{
+    display: block;
+    width: 100%;
+  }
+  .ghost.dropdown {
+    width: 100%;
+    display: block;
+  }
+  .mobileMenu .dropdown-content {
+    position: relative;
+    display: none;
+  }
+  .mobileMenu .dropdown.active .dropdown-content {
+    display: block;
+  }
+}
+/* Links inside the dropdown */
+.dropdown-content a {
+  color: rgb(255, 255, 255);
+  padding: 12px 50px;
+  text-decoration: none;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+input {
+  background: none;
+  border: none;
+}
+/* Change color of dropdown links on hover */
+.dropdown-content a:hover {background-color: rgb(245, 208, 0);}
+
+/* Show the dropdown menu on active class */
+.dropdown.active .dropdown-content {display: block;}
+
+/* Change the background color of the dropdown button when the dropdown content is shown */
+.dropdown.active .dropbtn {background-color: transparent;}
+</style>
+
+<div class='menu'>
+  {links.map((link) => (
+    <a class=" flex-wrap menuspace" target={link.target} href={link.href}>
+      <p class="underlineText">{link.name}</p>
+    </a>
+  ))}
+
+  {wallet.map((link) => (
+    <a class="menuspace" href={link.href}>
+      <p class="underlineText">{link.name}</p>
+    </a>
+  ))}
+
+  <div class="dropdown">
+    <button class="menuItem Nodes underlineText dropbtn">PUBLIC NODES</button>
+    <div class="dropdown-content menuItem">
+      {publiNodes.map((node) => (
+        <a class="copy-button" data-input-id={node.id}>
+          <label>{node.name}</label>
+          <input id={node.id} value={node.href} readonly />
+        </a>
       ))}
+    </div>
   </div>
+  
+  <div class="dropdown ghost menu">
+    <button class="menuItem Nodes underlineText dropbtn">PUBLIC NODES</button>
+    <div class="dropdown-content menuItem">
+      {publiNodes.map((node) => (
+        <a class="copy-button" data-input-id={node.id}>
+          <label>{node.name}</label>
+          <input id={node.id} value={node.href} readonly />
+        </a>
+      ))}
+    </div>
+  </div>
+
+  <div class='mobile-social-links'>
+    {networks.map((network) => (
+      <a href={network.href} target="_blank">
+        <img class='icon' src={'/Images/' + network.imgSrc} alt="logo" />
+      </a>
+    ))}
+  </div>
+</div>
+
+<span class='social-links desktop-social-links'>
+  {networks.map((network) => (
+    <a href={network.href} target="_blank">
+      <img class='icon' src={'/Images/' + network.imgSrc} alt="logo" />
+    </a>
+  ))}
+</span>
+
+<span class="cycling-social-icon desktop-cycling-social">
+  <a id="cycling-social-link" href={networks[0].href} target="_blank">
+    <img id="cycling-social-img" class='icon' src={'/Images/' + networks[0].imgSrc} alt="social" />
+  </a>
+</span>

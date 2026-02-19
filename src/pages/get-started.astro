@@ -123,6 +123,39 @@ import WhereToBuy from "../components/WhereToBuy.astro";
     }
     .bggrey {
         background-color: rgb(209, 209, 209);
+        color: #000000;
+    }
+
+    .bggrey h2,
+    .bggrey h1,
+    .bggrey p,
+    .bggrey li,
+    .bggrey a {
+        color: #000000;
+    }
+
+    .bggrey a {
+        color: #000000;
+    }
+
+    .bggrey a:hover {
+        color: #333333;
+    }
+
+    /* Improve image contrast on grey backgrounds */
+    .bggrey .headers > img {
+        filter: brightness(0) contrast(1.2);
+        opacity: 0.9;
+    }
+
+    /* Improve image contrast on dark backgrounds */
+    .section-grids:not(.bggrey) .headers > img {
+        filter: brightness(1.2) contrast(1.1);
+    }
+
+    /* Make NODE icon brighter with higher contrast */
+    .section-grids .descriptions .headers h2#node + img {
+        filter: brightness(2.5) contrast(1.8) !important;
     }
 </style>
 
@@ -162,7 +195,7 @@ import WhereToBuy from "../components/WhereToBuy.astro";
                         >Download</a>
                 </li>
                 <li>
-                    <a href="https://docs.warthog.network/guides/wart-dapp/"
+                    <a href="https://docs.warthog.network/guides/wallet/wart-dapp/"
                         >Guide</a>
                 </li>
             </div>
@@ -216,7 +249,7 @@ import WhereToBuy from "../components/WhereToBuy.astro";
                 </li>
                 <li>
                     <a
-                        href="https://docs.warthog.network/guides/wart-wallet-cli/"
+                        href="https://docs.warthog.network/guides/wallet/wart-wallet-cli/"
                         >Guide</a>
                 </li>
             </div>
@@ -243,7 +276,7 @@ import WhereToBuy from "../components/WhereToBuy.astro";
                 </li>
                 <li>
                     <a
-                        href="https://docs.warthog.network/guides/browser-extension-wallet/"
+                        href="https://docs.warthog.network/guides/wallet/browser-extension-wallet/"
                         >Guide</a>
                 </li>
             </div>
@@ -288,11 +321,11 @@ import WhereToBuy from "../components/WhereToBuy.astro";
                 <div class="headers">
                     <a
                         class="MiningPool-text"
-                        href="https://docs.warthog.network/guides/mining-quickstart/"
+                        href="https://docs.warthog.network/guides/mining/mining-quickstart/"
                         >ENGLISH</a>
                     <a
                         class="MiningPool-text"
-                        href="https://docs.warthog.network/guides/mining-quickstart_fr/"
+                        href="https://docs.warthog.network/guides/mining/mining-quickstart_fr/"
                         >FRENCH</a>
                 </div>
             </div>

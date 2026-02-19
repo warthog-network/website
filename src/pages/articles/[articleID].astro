@@ -1,8 +1,8 @@
 ---
-import BaseLayout from '../../layouts/BaseLayoutMaxWidth.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection } from "astro:content";
 import { generateArticalIdentity } from '../../scripts/ArticleIdentityGenerator.js';
-import BannerTop from "../../BalkyImages/WarthogTestBanner1.jpg";
+
 import Arrow from '../../BalkyImages/Arrow 1.png';
 import NEWS1 from '../../BalkyImages/NewsPost.png';
 import NEWS2 from '../../BalkyImages/DevPost.png';
@@ -55,9 +55,12 @@ if (!article) {
 
 <style is:global>
     article {
-        max-width: 1440px;
+       
         margin: 0 auto;
         width:100%;
+        max-width: 100%;
+        overflow-x: hidden;
+        box-sizing: border-box;
     }
     .article-grid .article-grid > * {
         box-sizing: border-box;   
@@ -69,25 +72,41 @@ if (!article) {
         row-gap: 2rem;
         column-gap: 5rem;
         padding: 2rem 5rem;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
     }
+    .article-content {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+        box-sizing: border-box;
+    }
+
     .article-latestStories {
         display: grid;
         grid-template-columns: 1fr;
         row-gap: 1.75rem;
         align-self: start;
         justify-self: end;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
     }
     .bannerBackgroundImage {
+        background-image: url('../../BalkyImages/WarthogTestBanner1.jpg');
         position: relative;
         background-size: 100% auto;
         background-position: center 30%;
         background-repeat: no-repeat;
-        aspect-ratio: 12/5; 
+        aspect-ratio: 10/3; 
         width: 100%;
+        max-width: 100%;
         filter: grayscale(20%) contrast(90%);
+        box-sizing: border-box;
     }
     .title{
-        color: black;
+        color: var(--color-text);
         font-family: Montserrat;
         font-size: clamp(2rem, 5.6vw, 3.11rem);
         font-weight: 600;
@@ -95,6 +114,14 @@ if (!article) {
         text-align: left;
         text-underline-position: from-font;
         text-decoration-skip-ink: none;
+        outline: none !important;
+        border: none !important;
+    }
+
+    .title:focus,
+    .title:focus-visible {
+        outline: none !important;
+        border: none !important;
     }
     .subTitle{
         font-family: Montserrat;
@@ -104,6 +131,7 @@ if (!article) {
         text-align: left;
         text-underline-position: from-font;
         text-decoration-skip-ink: none;
+        color: var(--color-text-muted);
     }
     .category{
         font-family: Montserrat;
@@ -113,6 +141,15 @@ if (!article) {
         text-align: left;
         text-underline-position: from-font;
         text-decoration-skip-ink: none;
+        color: var(--color-accent);
+        outline: none !important;
+        border: none !important;
+    }
+
+    .category:focus,
+    .category:focus-visible {
+        outline: none !important;
+        border: none !important;
     }   
     .shareButton{
         align-items: center;
@@ -139,7 +176,7 @@ if (!article) {
         margin-bottom: auto;
     }
     .content{
-        color: #1E1E1E;
+        color: rgba(248, 250, 252, 0.9);
         font-family: Montserrat;
         text-align: left;
         text-underline-position: from-font;
@@ -151,12 +188,67 @@ if (!article) {
         font-size: 1.05rem;
         font-weight: 600;
         line-height: 1.688rem;
+        color: var(--color-text);
+    }
+
+    .content h2,
+    .content h3,
+    .content h4 {
+        color: var(--color-text);
     }
 
     .content p {
         font-size: 0.938rem;
         font-weight: 400;
         line-height: 1.688rem;
+        color: rgba(248, 250, 252, 0.85);
+    }
+
+    .content a {
+        color: var(--color-accent);
+        text-decoration: underline;
+    }
+
+    .content a:hover {
+        color: var(--color-brand);
+    }
+
+    .content code {
+        background: rgba(56, 189, 248, 0.15);
+        color: var(--color-accent);
+        padding: 0.2rem 0.4rem;
+        border-radius: 0.25rem;
+        font-size: 0.9em;
+    }
+
+    .content pre {
+        background: rgba(8, 12, 24, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 1rem;
+        border-radius: var(--radius-md);
+        overflow-x: auto;
+    }
+
+    .content pre code {
+        background: transparent;
+        padding: 0;
+    }
+
+    .content blockquote {
+        border-left: 3px solid var(--color-accent);
+        padding-left: 1rem;
+        margin-left: 0;
+        color: var(--color-text-muted);
+        font-style: italic;
+    }
+
+    .content ul,
+    .content ol {
+        color: rgba(248, 250, 252, 0.85);
+    }
+
+    .content li {
+        margin-bottom: 0.5rem;
     }
 
     .blogpost {
@@ -178,17 +270,17 @@ if (!article) {
         text-align: left;
         text-underline-position: from-font;
         text-decoration-skip-ink: none;
-        color: #1E1E1E;
+        color: var(--color-accent);
     }
     .postTitle {
         font-family: Montserrat;
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 600;
         line-height: 19px;
         text-align: left;
         text-underline-position: from-font;
         text-decoration-skip-ink: none;
-        color: #1E1E1E;
+        color: var(--color-text);
     }
 
     @media (max-width:1050px) {
@@ -200,7 +292,9 @@ if (!article) {
             "article-latestStories";
             row-gap: 2rem;
             padding: 2rem 1rem;
-            
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
         }
         .blogpost {
             max-width: 300px;
@@ -222,6 +316,9 @@ if (!article) {
         "article-latestStories";
         row-gap: 2rem;
         padding: 2rem 1rem;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
     }
     .blogpost {
         max-width: 400px;
@@ -240,12 +337,12 @@ if (!article) {
 <BaseLayout title = {articleData.title}>
         <article>
             <script type="module" src="/scripts/WebShare.js"></script>
-            <div class="bannerBackgroundImage" style={`background-image: url(${BannerTop.src})`}></div>
+            <div class="bannerBackgroundImage" ></div>
             <div class="article-grid mt-8">
                 <div class="article-content">
                         <div class="category uppercase">{articleData.category} /</div>
                         <div class="title uppercase pt-[.05rem] pb-[1rem]">{articleData.title}</div>
-                        <div class="inline-block subTitle pb-[2rem]">Author:{articleData.author} </div><div class="ms-[1.5rem] inline-block subTitle pb-[2rem]">Released:{articleData.date}</div>
+                        <div class="inline-block subTitle pb-[2rem]">Author: {articleData.author} </div><div class="ms-[1.5rem] inline-block subTitle pb-[2rem]">Released: {articleData.date}</div>
                         <div class="">
                             <button onclick={`shareContent("${articleData.title}","${`Checkout the latest article from Warthog.Networt! : ${articleData.title}`}","${baseURL}${articleRelativeLink}")`} class="shareButton">SHARE<img class="smallArrow" src={Arrow.src}/></button>
                         </div>

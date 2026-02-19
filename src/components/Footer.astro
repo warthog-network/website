@@ -7,6 +7,7 @@ import Github from '../BalkyImages/footerimgs/github.svg';
 ---
 <style>
     .footer{
+        
         margin-top: 1rem;
         height: 20rem;
         background: radial-gradient(
@@ -44,30 +45,35 @@ socials > a {
 .thedottedline{
     border-bottom-style: dotted;
     border-bottom-width: .1rem;
-    max-width: 38rem;
+    max-width: 34rem;
     margin-left: 2rem;
+    
 }
 
 .footernav{
-  
     align-items: center;
-    max-width: 45rem;
+    max-width: 55rem;
     justify-content: space-between;
 }
-@media (max-width:40rem) {
+.footernav > a{
+    padding-left: 1rem;
+}
+@media (max-width:60rem) {
     .thedottedline{
+        text-align: center;
+        align-items: center;
+        justify-content: center;
     border-bottom-style: dotted;
     border-bottom-width: .1rem;
     max-width: 25rem;
     margin-left: 2rem;
 }
     .footernav{
-        display: block;
+        display: flex;
+        flex-direction: column;
         justify-content: space-between;
 }
-.footernav > a{
-    padding-left: 1rem;
-}
+
 }
 .socials{ 
     
@@ -86,9 +92,10 @@ socials > a {
         <a href='/get-started' >Get started</a>
         <a href='/news' >News</a>
         <a href='https://docs.warthog.network/' target='_blank'> Tech-stuff </a>
-        <a href='/whitepaper'>WHITEPAPER</a>
+        <a href='/whitepaper'>Whitepaper</a>
         <a href='/faqs'>FAQs</a>
         <a href='https://wartscan.io/' target='_blank'>Explorer</a>
+        <a href='/defi-demo'>Defi Demo</a>
     </section>
     <div class="thedottedline"></div>
     <section class="socials">
@@ -102,7 +109,7 @@ socials > a {
     </section>
     <section>
         <small>
-            <p>Copyright © Warthog 2024 Website Design by Losthymns TheFunVampire Logo by BalkyBot.</p>
+            <p>Copyright © Warthog 2025 Website Design by Losthymns TheFunVampire Logo by BalkyBot.</p>
 
     </section>
 </div>
