@@ -1,12 +1,12 @@
 ---
+import dollarSvg from "../BalkyImages/deFiDemo/dollar-minimalistic.svg";
 import priceTagSvg from "../BalkyImages/deFiDemo/price-tag.svg";
-import coinStackSvg from "../BalkyImages/deFiDemo/coin-stack-svgrepo-com.svg";
 import QA from "../components/QA.jsx"
 import swapVirticalCircleSvg from "../BalkyImages/deFiDemo/swap-vertical-circle.svg";
-import rightArrowSvg from "../BalkyImages/deFiDemo/rightarrow.jpg";
+import rightArrowSvg from "../BalkyImages/deFiDemo/right-arrow.svg";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Joyride from "react-joyride";
-const title = "Fair Batch Matching Demo";
+const title = "DeFi Demo";
 import "../styles.css";
 import { getContainerRenderer } from "@astrojs/react";
 
@@ -14,75 +14,65 @@ import { getContainerRenderer } from "@astrojs/react";
 // have more tutorials we will be confused. So I inserted it into this file and 
 // deleted the Tutorial.jsx file.
 
-// Set the full CSP as a single header string
-const csp = "default-src *; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; img-src * data: blob:; connect-src *; font-src * data:; object-src *; media-src *; frame-src *;";
-Astro.response.headers.set('Content-Security-Policy', csp);
-
-const steps = [
-  {
-    target: ".step-0",
-    content: "This a demonstration of Warthog's sandwich-proof DeFi matching engine between a generic TOKEN and WART.",
-  },
-  {
-    target: ".step-1",
-    content: "In the order book you can insert multiple swap orders between TOKEN and WART. The limit price is the cost of a single TOKEN in WART.",
-  },
-  {
-    target: ".step-2",
-    content: "The sellers order book can be filled with custom limit swaps from TOKEN to WART.",
-  },
-  {
-    target: ".step-3",
-    content: "The buyers order book can be filled with custom limit swaps from WART to TOKEN. Note that in contrast to traditional order books, you specify the input WART quantity (quote currency) for the swap and not in TOKEN quantity (base currency) you want to buy.",
-  },
-  {
-    target: ".step-4",
-    content: "The token fill flow between between buyers, sellers and the pool is visualized here.",
-  },
-  {
-    target: ".step-5",
-    content: "You can control the pool TOKEN liquidity here.",
-  },
-  {
-    target: ".step-6",
-    content: "You can control the pool WART liquidity here.",
-  },
-];
-
+  const steps = [
+    {
+      target: ".step-0",
+      content: "This is a DeFi demonstration. Please follow this guide to get started.",
+    },
+    {
+      target: ".step-1",
+      content: "This is order book. You can install multiple swap orders between TOKEN and WART.",
+    },
+    {
+      target: ".step-2",
+      content: "This is the sellers' part of the order book. You can fill the order book with custom limit swaps from TOKEN to WART here.",
+    },
+    {
+      target: ".step-3",
+      content: "This is the buyers' part of the order book. You can fill the order book with custom limit swaps from WART to TOKEN here. An important difference to traditional order books is that the quantity for buying is specified in WART (quote currency) and not in TOKEN (base currency).",
+    },
+    {
+      target: ".step-4",
+      content: "This is swap section, where the TOKEN and WART flow between buyers, sellers and the pool is visualized.",
+    },
+    {
+      target: ".step-5",
+      content: "This is pool input field specifying the TOKEN amount of pool liquidity.",
+    },
+    {
+      target: ".step-6",
+      content: "This is pool input field specifying the WART amount of pool liquidity.",
+    },
+  ];
+  // === CSP OVERRIDE FOR THIS PAGE ONLY (fixes WebAssembly error) ===
+Astro.csp?.insertDirective(`script-src 'self' * data: blob: 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'`);
+Astro.csp?.insertDirective(`default-src * data: blob: 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'`);
+Astro.csp?.insertDirective(`connect-src * ws: wss: http: https:`);
+Astro.csp?.insertDirective(`style-src * 'unsafe-inline'`);
+Astro.csp?.insertDirective(`img-src * data: blob:`);
+Astro.csp?.insertDirective(`font-src * data:`);
+// ================================================================
 ---
 
-<style>
-.fontfamily{
-  font-family: 'Montserrat';
-}
-
-/* Mobile-specific adjustments */
-@media (max-width: 767px) {
-  .fontfamily {
-    font-size: 0.875rem; /* Smaller text on mobile */
-  }
-  input {
-    font-size: 0.875rem; /* Scale down input text */
-  }
-  .step-4 {
-    padding: 1rem; /* Reduce padding */
-  }
-  /* Make fixed boxes smaller on mobile */
-  [id$="ArrowPoint"] {
-    width: 60px !important; /* Override w-[80px] */
-    height: 40px !important; /* Override h-[50px] */
-    min-width: 60px !important;
-  }
-  table th, table td {
-    padding: 0.5rem !important; /* Reduce cell padding */
-    font-size: 0.75rem; /* Smaller table text */
-  }
-  .max-w-[48px] {
-    max-width: 40px !important; /* Shrink scrollable spans */
-  }
-}
-</style>
 <BaseLayout title={title}>
+  <style>
+    .container {
+      margin: 0 auto;
+      max-width: 1440px;
+    }
+
+    @media (max-width: 767px) {
+      .container {
+        max-width: 100%;
+      }
+    }
+
+    @media screen and (max-width: 767px) {
+      .mobileMenu {
+        width: 70vw !important;
+      }
+    }
+  </style>
   <Joyride
   client:only="react"
   steps={steps}
@@ -92,36 +82,33 @@ const steps = [
     options: {
       zIndex: 10000,
       beaconSize: 70,
-      width: '90%', /* Limit tooltip width on mobile */
-      maxWidth: '300px',
     },
   }},
   locale={{open: "This is tutorial dialog, click this to see that"}}
   />
-  <div class="mx-auto">
-    <!-- <h1 class="text-3xl text-center text-yellow-600 mb-8">{title}</h1> -->
+  <div class="container min-h-[550px]">
     <h1
-      class="my-14 text-3xl text-center font-extrabold text-yellow-500 dark:text-white md:text-5xl lg:text-6xl step-0"
+      class="my-8 md:my-14 text-3xl text-center font-extrabold text-yellow-500 dark:text-white md:text-5xl lg:text-6xl step-0"
     >
       <span
-        class="text-transparent bg-clip-text bg-gray-900"
-      >{title}</span
+        class="text-transparent bg-clip-text bg-yellow-600"
+        >DeFi Demo</span
       >
     </h1>
 
     <div
-      class="flex md:flex-row md:p-6 p-3 flex-col mx-auto max-w-[1440px] gap-4 justify-between overflow-hidden" <!-- Changed to overflow-hidden to prevent side-scroll -->
+      class="flex md:flex-row md:p-6 p-3 flex-col gap-4 min-h-full justify-between overflow-auto"
     >
       <!-- Order Book -->
       <div
-        class="flex flex-col gap-4 md:w-[40%] md:max-w-[450px] w-full min-w-0 flex-shrink my-first-step step-1" <!-- Added w-full min-w-0 flex-shrink for mobile shrink -->
+        class="flex flex-col gap-4 md:w-[40%] md:max-w-[450px] my-first-step step-1"
       >
         <!-- Sell Order Book -->
         <div
-          class="relative flex flex-col w-full h-auto text-gray-700 bg-white rounded-xl border border-[#F9B13C]" <!-- w-full instead of w-[100%] -->
+          class="relative flex flex-col w-[100%] h-auto rounded-xl border border-[#F9B13C] text-gray-700 bg-white"
         >
           <div
-            class="relative mx-4 mt-4 overflow-hidden text-gray-700 bg-white rounded-none bg-clip-border"
+            class="relative mx-4 mt-4 overflow-hidden rounded-none bg-clip-border text-gray-700 bg-white"
           >
             <div class="flex flex-col gap-2">
               <h5
@@ -130,12 +117,12 @@ const steps = [
                 Sell Order Book
               </h5>
               <div class="flex flex-col gap-2 step-2">
-                <div class="flex justify-between gap-2 flex-wrap"> <!-- Added flex-wrap for mobile -->
-                  <div class="relative h-10 w-full min-w-[70px] my-second-step flex-shrink"> <!-- flex-shrink -->
+                <div class="flex justify-between gap-2">
+                  <div class="relative h-10 w-full min-w-[70px] my-second-step">
                     <div
                       class="absolute grid w-8 h-8 top-2/4 right-3 -translate-y-2/4 place-items-center text-blue-gray-500"
                     >
-                      <img src={priceTagSvg.src} class="w-6 h-6" />
+                      <img src={dollarSvg.src} class="w-8 h-8" />
                     </div>
                     <input
                       class="peer h-full w-full rounded-[7px] border border-blue-gray-200 bg-transparent px-3 py-2.5 !pr-9 font-sans text-sm font-normal text-blue-gray-700 outline outline-0 transition-all placeholder-shown:border placeholder-shown:border-blue-gray-200 placeholder-shown:border-t-blue-gray-200 focus:border-2 focus:border-gray-900 focus:border-t-transparent focus:outline-0 disabled:border-0 disabled:bg-blue-gray-50"
@@ -148,11 +135,11 @@ const steps = [
                       Limited Price
                     </label>
                   </div>
-                  <div class="relative h-10 w-full min-w-[70px] flex-shrink"> <!-- flex-shrink -->
+                  <div class="relative h-10 w-full min-w-[70px]">
                     <div
                       class="absolute grid w-6 h-6 top-2/4 right-3 -translate-y-2/4 place-items-center text-blue-gray-500"
                     >
-                      <img src={coinStackSvg.src} class="w-6 h-6" />
+                      <img src={priceTagSvg.src} class="w-6 h-6" />
                     </div>
                     <input
                       class="peer h-full w-full rounded-[7px] border border-blue-gray-200 bg-transparent px-3 py-2.5 !pr-9 font-sans text-sm font-normal text-blue-gray-700 outline outline-0 transition-all placeholder-shown:border placeholder-shown:border-blue-gray-200 placeholder-shown:border-t-blue-gray-200 focus:border-2 focus:border-gray-900 focus:border-t-transparent focus:outline-0 disabled:border-0 disabled:bg-blue-gray-50"
@@ -177,12 +164,12 @@ const steps = [
               </div>
             </div>
           </div>
-          <div class="p-4 overflow-x-auto"> <!-- Added overflow-x-auto for table horizontal scroll on mobile -->
-            <table class="w-full min-w-max text-left bg-red-300"> <!-- min-w-max to allow scroll if needed -->
+          <div class="p-4">
+            <table class="w-full text-left bg-red-300">
               <thead>
                 <tr>
                   <td
-                    class="px-2 py-2 transition-colors cursor-pointer bg-[gray] hover:bg-blue-gray-50"
+                    class="px-4 py-2 transition-colors cursor-pointer bg-[gray] hover:bg-blue-gray-50"
                   >
                     <p
                       class="items-center justify-between gap-2 text-white text-sm antialiased font-semibold leading-4 font-montserrat"
@@ -191,7 +178,7 @@ const steps = [
                     </p>
                   </td>
                   <td
-                    class="px-2 py-2 transition-colors cursor-pointer bg-[gray] hover:bg-blue-gray-50"
+                    class="px-4 py-2 transition-colors cursor-pointer bg-[gray] hover:bg-blue-gray-50"
                   >
                     <p
                       class="items-center justify-between gap-2 text-white text-sm antialiased font-semibold leading-4 font-montserrat"
@@ -200,21 +187,12 @@ const steps = [
                     </p>
                   </td>
                   <td
-                    class="px-2 py-2 transition-colors cursor-pointer bg-[gray] hover:bg-blue-gray-50"
+                    class="px-4 py-2 transition-colors cursor-pointer bg-[gray] hover:bg-blue-gray-50"
                   >
                     <p
                       class="items-center justify-between gap-2 text-white text-sm antialiased font-semibold leading-4 font-montserrat"
                     >
                       Filled (<span id="filledAmountToken">0</span>)
-                    </p>
-                  </td>
-                  <td
-                    class="px-2 py-2 transition-colors cursor-pointer bg-[gray] hover:bg-blue-gray-50"
-                  >
-                    <p
-                      class="items-center justify-between gap-2 text-white text-sm antialiased font-semibold leading-4 font-montserrat"
-                    >
-                      *
                     </p>
                   </td>
                 </tr>
@@ -226,10 +204,10 @@ const steps = [
 
         <!-- Buy Order Book -->
         <div
-          class="relative flex flex-col w-full h-auto text-gray-700 bg-white rounded-xl border border-[#F9B13C]" <!-- w-full -->
+          class="relative flex flex-col w-[100%] h-auto rounded-xl border border-[#F9B13C] text-gray-700 bg-white"
         >
           <div
-            class="relative mx-4 mt-4 overflow-hidden text-gray-700 bg-white rounded-none bg-clip-border"
+            class="relative mx-4 mt-4 overflow-hidden rounded-none bg-clip-border text-gray-700 bg-white"
           >
             <div class="flex flex-col gap-2">
               <h5
@@ -238,12 +216,12 @@ const steps = [
                 Buy Order Book
               </h5>
               <div class="flex flex-col gap-2 step-3">
-                <div class="flex justify-between gap-2 flex-wrap"> <!-- Added flex-wrap -->
-                  <div class="relative h-10 w-full min-w-[70px] flex-shrink"> <!-- flex-shrink -->
+                <div class="flex justify-between gap-2">
+                  <div class="relative h-10 w-full min-w-[70px]">
                     <div
                       class="absolute grid w-8 h-8 top-2/4 right-3 -translate-y-2/4 place-items-center text-blue-gray-500"
                     >
-                      <img src={priceTagSvg.src} class="w-6 h-6" />
+                      <img src={dollarSvg.src} class="w-8 h-8" />
                     </div>
                     <input
                       class="peer h-full w-full rounded-[7px] border border-blue-gray-200 bg-transparent px-3 py-2.5 !pr-9 font-sans text-sm font-normal text-blue-gray-700 outline outline-0 transition-all placeholder-shown:border placeholder-shown:border-blue-gray-200 placeholder-shown:border-t-blue-gray-200 focus:border-2 focus:border-gray-900 focus:border-t-transparent focus:outline-0 disabled:border-0 disabled:bg-blue-gray-50"
@@ -256,11 +234,11 @@ const steps = [
                       Limited Price
                     </label>
                   </div>
-                  <div class="relative h-10 w-full min-w-[70px] flex-shrink"> <!-- flex-shrink -->
+                  <div class="relative h-10 w-full min-w-[70px]">
                     <div
                       class="absolute grid w-6 h-6 top-2/4 right-3 -translate-y-2/4 place-items-center text-blue-gray-500"
                     >
-                      <img src={coinStackSvg.src} class="w-6 h-6" />
+                      <img src={priceTagSvg.src} class="w-6 h-6" />
                     </div>
                     <input
                       class="peer h-full w-full rounded-[7px] border border-blue-gray-200 bg-transparent px-3 py-2.5 !pr-9 font-sans text-sm font-normal text-blue-gray-700 outline outline-0 transition-all placeholder-shown:border placeholder-shown:border-blue-gray-200 placeholder-shown:border-t-blue-gray-200 focus:border-2 focus:border-gray-900 focus:border-t-transparent focus:outline-0 disabled:border-0 disabled:bg-blue-gray-50"
@@ -285,12 +263,12 @@ const steps = [
               </div>
             </div>
           </div>
-          <div class="p-4 overflow-x-auto"> <!-- Added overflow-x-auto -->
-            <table class="w-full min-w-max text-left bg-green-300 text-green-700"> <!-- min-w-max -->
+          <div class="p-4">
+            <table class="w-full text-left bg-green-300 text-green-700">
               <thead>
                 <tr>
                   <td
-                    class="px-2 py-2 transition-colors cursor-pointer bg-[orange] hover:bg-blue-gray-50"
+                    class="px-4 py-2 transition-colors cursor-pointer bg-[orange] hover:bg-blue-gray-50"
                   >
                     <p
                       class="items-center justify-between gap-2 text-white text-sm antialiased font-semibold leading-4 font-montserrat"
@@ -299,7 +277,7 @@ const steps = [
                     </p>
                   </td>
                   <td
-                    class="px-2 py-2 transition-colors cursor-pointer bg-[orange] hover:bg-blue-gray-50"
+                    class="px-4 py-2 transition-colors cursor-pointer bg-[orange] hover:bg-blue-gray-50"
                   >
                     <p
                       class="items-center justify-between gap-2 text-white text-sm antialiased font-semibold leading-4 font-montserrat"
@@ -308,21 +286,12 @@ const steps = [
                     </p>
                   </td>
                   <td
-                    class="px-2 py-2 transition-colors cursor-pointer bg-[orange] hover:bg-blue-gray-50"
+                    class="px-4 py-2 transition-colors cursor-pointer bg-[orange] hover:bg-blue-gray-50"
                   >
                     <p
                       class="items-center justify-between gap-2 text-white text-sm antialiased font-semibold leading-4 font-montserrat"
                     >
                       Filled (<span id="filledAmountWart">0</span>)
-                    </p>
-                  </td>
-                  <td
-                    class="px-2 py-2 transition-colors cursor-pointer bg-[orange] hover:bg-blue-gray-50"
-                  >
-                    <p
-                      class="items-center justify-between gap-2 text-white text-sm antialiased font-semibold leading-4 font-montserrat"
-                    >
-                      *
                     </p>
                   </td>
                 </tr>
@@ -335,21 +304,21 @@ const steps = [
 
       <!-- Swap -->
       <div
-        class="flex md:flex-col gap-4 border-2 md:w-[20%] border-black border-dashed justify-between rounded-xl p-4 md:min-w-max bg-white step-4 min-w-0 flex-shrink" <!-- Added min-w-0 flex-shrink -->
+        class="flex md:flex-col gap-4 border-2 md:w-[20%] border-black border-dashed justify-between rounded-xl p-4 md:min-w-max step-4 bg-white"
       >
         <div
           class="flex md:flex-row flex-col justify-between items-center gap-2 text-sm overflow-auto"
         >
           <div
             id="sellTokenArrowPoint"
-            class="bg-[gray] text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden flex-shrink" <!-- flex-shrink -->
+            class="bg-[gray] text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden"
           >
             <span id="sellToken" class="block w-full overflow-auto">0</span> TOKEN
           </div>
           <img src={rightArrowSvg.src} class="w-8 h-8 md:rotate-0 rotate-90" />
           <div
             id="buyWartArrowPoint"
-            class="bg-gray-900 text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden flex-shrink" <!-- flex-shrink -->
+            class="bg-gray-900 text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden"
           >
             <span id="buyWart" class="block w-full overflow-auto">0</span> WART
           </div>
@@ -359,14 +328,14 @@ const steps = [
         >
           <div
             id="sellWartArrowPoint"
-            class="bg-gray-900 text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden flex-shrink" <!-- flex-shrink -->
+            class="bg-gray-900 text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden"
           >
             <span id="sellWart" class="block w-full overflow-auto">0</span> WART
           </div>
           <img src={rightArrowSvg.src} class="w-8 h-8 md:rotate-0 rotate-90" />
           <div
             id="buyTokenArrowPoint"
-            class="bg-[gray] text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden flex-shrink" <!-- flex-shrink -->
+            class="bg-[gray] text-white font-inter font-normal rounded-md px-2 py-1 w-[80px] h-[50px] text-center overflow-hidden"
           >
             <span id="buyToken" class="block w-full overflow-auto">0</span> TOKEN
           </div>
@@ -375,23 +344,23 @@ const steps = [
 
       <!-- Pool & Summary -->
       <div
-        class="flex flex-col gap-2 overflow-hidden text-gray-700 bg-white md:w-[40%] md:min-w-max w-full min-w-0 flex-shrink" <!-- Added w-full min-w-0 flex-shrink -->
+        class="flex flex-col gap-2 overflow-hidden md:w-[40%] md:min-w-max text-gray-700 bg-white"
       >
         <!-- pool table -->
         <div>
           <h5
-            class="block font-sans text-lg antialiased font-semibold leading-snug tracking-normal text-blue-gray-900 "
+            class="block font-sans text-lg antialiased font-semibold leading-snug tracking-normal"
           >
             Pool
           </h5>
           <div
-            class="flex md:flex-col w-full mt-1 border border-gray-600 rounded-md overflow-hidden overflow-x-auto" <!-- Added overflow-x-auto -->
+            class="flex md:flex-col w-full mt-1 border border-gray-600 rounded-md overflow-hidden"
           >
             <div
-              class="flex md:flex-row flex-col gap-0 text-center overflow-auto w-full min-w-max bg-gray-900" <!-- min-w-max for scroll -->
+              class="flex md:flex-row flex-col gap-0 text-center overflow-auto w-full bg-gray-900"
             >
               <div
-                class="flex justify-center py-2 w-full transition-colors min-w-6 cursor-pointer  text-white"
+                class="flex justify-center py-2 w-full transition-colors min-w-6 cursor-pointer text-white"
               >
                 <p
                   class="items-center justify-between gap-2 antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px]"
@@ -400,7 +369,7 @@ const steps = [
                 </p>
               </div>
               <div
-                class="flex justify-center py-2 w-full transition-colors cursor-pointer  text-white"
+                class="flex justify-center py-2 w-full transition-colors cursor-pointer text-white"
               >
                 <p
                   class="items-center justify-between gap-2 antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px]"
@@ -409,7 +378,7 @@ const steps = [
                 </p>
               </div>
               <div
-                class="flex justify-center py-2 w-full transition-colors cursor-pointer  text-white"
+                class="flex justify-center py-2 w-full transition-colors cursor-pointer text-white"
               >
                 <p
                   class="items-center justify-between gap-2 antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px]"
@@ -418,7 +387,7 @@ const steps = [
                 </p>
               </div>
               <div
-                class="flex justify-center py-2 w-full transition-colors cursor-pointer  text-white"
+                class="flex justify-center py-2 w-full transition-colors cursor-pointer text-white"
               >
                 <p
                   class="items-center justify-between gap-2 antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px]"
@@ -435,7 +404,7 @@ const steps = [
               >
                 <div
                   id="poolInteractedTokenArrowPoint"
-                  class="bg-[gray] m-w-[200px] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden flex-shrink" <!-- flex-shrink -->
+                  class="bg-[gray] m-w-[200px] text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center overflow-hidden"
                 >
                   <span
                     id="poolInteractedToken"
@@ -443,26 +412,24 @@ const steps = [
                   > TOKEN
                 </div>
               </div>
-              <div class="w-full h-full content-center">
-                <div
-                  class="sm:w-[80px] w-full h-[50px] mx-auto rounded-md justify-center flex items-center text-input text-wart token step-5"
-                  id="parentBeforeToken"
-                >
-                  <input
-                    id="beforeToken"
-                    value="100"
-                    class="border-[gray] border-2 rounded-md outline-none px-4 pt-2 pb-[26px] text-center text-sm leading-4 sm:w-[80px] w-full h-[50px] overflow-hidden bg-transparent z-50"
-                  />
-                </div>
+              <div
+                class="w-full h-full justify-center flex items-center text-input text-wart token step-5"
+                id="parentBeforeToken"
+              >
+                <input
+                  id="beforeToken"
+                  value="100"
+                  class="border-[gray] border-2 rounded-md outline-none px-4 pt-2 pb-[26px] text-center text-sm leading-4 sm:w-[80px] w-full h-[50px] overflow-hidden"
+                />
               </div>
               <div
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-[gray] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden flex-shrink" <!-- flex-shrink -->
+                  class="bg-[gray] text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center overflow-hidden"
                 >
                   <span id="afterToken" class="block w-full overflow-auto"
-                    >100</span
+                    >600</span
                   > TOKEN
                 </div>
               </div>
@@ -470,7 +437,7 @@ const steps = [
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-[gray] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] place-content-center text-center overflow-hidden flex-shrink" <!-- flex-shrink -->
+                  class="bg-[gray] text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] place-content-center text-center overflow-hidden"
                 >
                   <span id="afterToken" class="block w-full overflow-auto"
                     >TOKEN</span
@@ -486,7 +453,7 @@ const steps = [
               >
                 <div
                   id="poolInteractedWartArrowPoint"
-                  class="bg-gray-900 text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden flex-shrink" <!-- flex-shrink -->
+                  class="bg-gray-900 text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center overflow-hidden"
                 >
                   <span
                     id="poolInteractedWart"
@@ -494,26 +461,24 @@ const steps = [
                   > WART
                 </div>
               </div>
-              <div class="w-full h-full content-center">
-                <div
-                  class="sm:w-[80px] w-full h-[50px] mx-auto rounded-md justify-center flex items-center text-input text-wart wart step-6"
-                  id="parentBeforeWart"
-                >
-                  <input
-                    id="beforeWart"
-                    value="200"
-                    class="border-[black] border-2 rounded-md outline-none px-4 pt-2 pb-[26px] text-center text-sm leading-4 sm:w-[80px] w-full h-[50px] overflow-hidden bg-transparent z-50"
-                  />
-                </div>
+              <div
+                class="w-full h-full justify-center flex items-center text-input text-wart wart step-6"
+                id="parentBeforeWart"
+              >
+                <input
+                  id="beforeWart"
+                  value="200"
+                  class="border-[black] border-2 rounded-md outline-none px-4 text-sm leading-4 sm:w-[80px] w-full h-[50px] text-center overflow-hidden pt-2 pb-[26px]"
+                />
               </div>
               <div
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-gray-900 text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden flex-shrink" <!-- flex-shrink -->
+                  class="bg-gray-900 text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center overflow-hidden"
                 >
                   <span id="afterWart" class="block w-full overflow-auto"
-                    >200</span
+                    >250</span
                   > WART
                 </div>
               </div>
@@ -521,7 +486,7 @@ const steps = [
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-gray-900 text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center place-content-center overflow-hidden flex-shrink" <!-- flex-shrink -->
+                  class="bg-gray-900 text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center place-content-center overflow-hidden"
                 >
                   <span id="afterWart" class="block w-full overflow-auto"
                     >WART</span
@@ -536,7 +501,7 @@ const steps = [
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-[orange] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center flex-shrink" <!-- flex-shrink -->
+                  class="bg-[orange] text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center"
                 >
                   <span
                     id="poolInteractedPrice"
@@ -548,7 +513,7 @@ const steps = [
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-[orange] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center flex-shrink" <!-- flex-shrink -->
+                  class="bg-[orange] text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center"
                 >
                   <span id="beforePrice" class="block w-full overflow-auto"
                     >N/A</span
@@ -559,7 +524,7 @@ const steps = [
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-[orange] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center flex-shrink" <!-- flex-shrink -->
+                  class="bg-[orange] text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center"
                 >
                   <span id="afterPrice" class="block w-full overflow-auto"
                     >N/A</span
@@ -570,7 +535,7 @@ const steps = [
                 class="w-full h-full justify-center flex items-center text-sm leading-4"
               >
                 <div
-                  class="bg-[orange] text-white font-inter font-normal rounded-md px-2 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center flex-shrink" <!-- flex-shrink -->
+                  class="bg-[orange] text-white font-inter font-normal rounded-md px-4 py-2 w-[80px] h-[50px] text-center overflow-hidden place-content-center"
                 >
                   <span id="afterPrice" class="block w-full overflow-auto"
                     >PRICE</span
@@ -582,14 +547,32 @@ const steps = [
         </div>
 
         <!-- new table -->
-        <div class="flex flex-col gap-2 overflow-x-auto"> <!-- Added overflow-x-auto for summaries -->
+        <div class="flex flex-col gap-2">
           <div>
             <h5
-            class="block font-sans text-lg antialiased font-semibold leading-snug tracking-normal text-blue-gray-900"
+            class="block font-sans text-lg antialiased font-semibold leading-snug tracking-normal"
+            >
+              Buyer Swaps
+            </h5>
+            <table class="w-full">
+              <thead>
+                <tr>
+                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[orange]">*</th>
+                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[orange]">FROM (WART)</th>
+                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[orange]">TO (TOKEN)</th>
+                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[orange]">PRICE</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyBuyers"> </tbody>
+            </table>
+          </div>
+          <div>
+            <h5
+            class="block font-sans text-lg antialiased font-semibold leading-snug tracking-normal"
             >
               Seller Swaps
             </h5>
-            <table class="w-full min-w-max text-start"> <!-- min-w-max -->
+            <table class="w-full text-start">
               <thead>
                 <tr>
                   <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[gray]">*</th>
@@ -601,42 +584,23 @@ const steps = [
               <tbody id="tbodySellers"> </tbody>
             </table>
           </div>
-          <div>
-            <h5
-            class="block font-sans text-lg antialiased font-semibold leading-snug tracking-normal text-blue-gray-900"
-            >
-              Buyer Swaps
-            </h5>
-            <table class="w-full min-w-max"> <!-- min-w-max -->
-              <thead>
-                <tr >
-                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[orange]">*</th>
-                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[orange]">FROM (WART)</th>
-                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[orange]">TO (TOKEN)</th>
-                  <th class="antialiased leading-4 font-inter p-[10px] font-bold text-white text-[15px] bg-[orange]">PRICE</th>
-                </tr>
-              </thead>
-              <tbody id="tbodyBuyers"> </tbody>
-            </table>
-          </div>
         </div>
       </div>
     </div>
-    <div class="md:p-6 p-3 mx-auto max-w-[1440px] fontfamily">
-      <h2 class="font-bold text-xl pb-3">Questions and Answers</h2>
+    <div class="md:p-6 p-3 container">
+      <h2>Questions and Answers</h2>
       <QA question="What is this?">
-    Warthog is implementing a completely new DeFi model supporting a Fair Batch Matching engine, which, in a one-of-a-kind way combines <em>two</em> sources of liquidity in a fair and sandwich-proof way: 
-    <ul class="pl-5 list-disc">
+    Warthog is implementing a completely new DeFi model supporting a matching engine, which, in a one-of-a-kind way combines <em>two</em> sources of liquidity in a fair and sandwich-proof way: 
+    <ul>
       <li>discrete liquidity in the form of order books</li>
       <li>continuous liquidity in the form of a liquidity pool</li>
     </ul>
-        Fair Batch Matching (FBM) is covered in the scientific paper <a class="underline" href="https://github.com/CoinFuMasterShifu/FairBatchMatching/blob/main/FairBatchMatching.pdf" target="_blank">Fair Batch Matching Liquidity Pools for Sandwich-Proof DeFi</a>.
       </QA>
       <QA question='What do you mean by "sandwich-proof"?'>
-        Sandwich attacks are one of the most dreaded DeFi attacks. They are part of a bigger problem called <em>front-running</em> which is inherently caused by that fact that in current DeFi designs reordering of transactions has an effect on their fill price. This is highly unfair against traders because their transactions are regularly sandwiched (front-run and back-run) by exploiters of this design. For example they buy before normal buy orders are executed, and sell immediately afterwards, essentially doing arbitrage trading within a block and causing financial loss to their victims. Reordering DeFi orders that are matched with our FBM engine won't have any effect such that sandwich attacks are not possible.
+        Sandwich attacks are one of the most dreaded DeFi attacks. They are part of a bigger problem called <em>front-running</em> which is inherently caused by that fact that in current DeFi designs reordering of transactions has an effect on their fill price. This is highly unfair against traders because their transactions are regularly sandwiched (front-run and back-run) by exploiters of this design. For example they buy before normal buy orders are executed, and sell immediately afterwards, essentially doing arbitrage trading within a block and causing financial loss to their victims. Reordering of Warthog's transactions won't have any effect such that sandwich attacks are not possible.
       </QA>
       <QA question="What is a matching engine?">
-          Simply put, in TradFi (Traditional Finance) a <em>matching engine</em> is a program or routine that matches buy and sell orders. It is responsible for deciding which orders are matched and deducting fees. In Warthog's FBM engine we do not only match buy and sell orders, but also pool liquidity.
+          Simply put, in TradFi (Traditional Finance) a <em>matching engine</em> is a program or routine that matches buy and sell orders. It is responsible for deciding which orders are matched and deducting fees. In Warthog we do not only match buy and sell orders, but also pool liquidity.
       </QA>
       <QA question='What are "WART" and "TOKEN"?'>
           WART is the native currency in Warthog. In this demo it acts as the quote currency. TOKEN acts as a generic placeholder for any Warthog tradable token (a feature that we are working on) that takes the role of the base currency.
@@ -646,7 +610,7 @@ const steps = [
       </QA>
       <QA question="What are the gray, black and yellow colors expressing?">
         For easier visualization we use the following color-codes:
-        <ul class="pl-5 list-disc">
+        <ul>
           <li>Gray: TOKEN amount</li>
           <li>Black: WART amount</li>
           <li>Yellow: Price</li>
@@ -672,7 +636,6 @@ const steps = [
     </div>
     <script>
       import LeaderLine from "leader-line-new";
-import deleteSvgUrl from "../BalkyImages/deFiDemo/delete-svgrepo-com.svg?url";
       const arrowTokenFromSeller = new LeaderLine(
         document.getElementById("sellTokenArrowPoint"),
         document.getElementById("buyTokenArrowPoint")
@@ -790,7 +753,7 @@ import deleteSvgUrl from "../BalkyImages/deFiDemo/delete-svgrepo-com.svg?url";
       }
       document.addEventListener("DOMContentLoaded", () => {
         let Module: any;
-    const initModule = import("../../public/defi/demo").then((module) => {
+        const initModule = import("../scripts/demo").then((module) => {
           Module = {
             onRuntimeInitialized: () => {
               console.log("runtime initialized");
@@ -814,50 +777,14 @@ import deleteSvgUrl from "../BalkyImages/deFiDemo/delete-svgrepo-com.svg?url";
 
         function insertRow(obj, rowarr, id) {
           var row = obj.insertRow(-1);
-          row.className = "p-2 h-9";
+          row.className = "p-4 h-9";
           for (var i = 0; i < rowarr.length; ++i) {
             var cell = row.insertCell(i); // Create a new cell
             cell.className =
-              "px-2 border-b border-blue-gray-50 font-sans text-sm antialiased font-normal leading-normal";
+              "px-4 border-b border-blue-gray-50 font-sans text-sm antialiased font-normal leading-normal";
             if (i === rowarr.length - 1) cell.className += " " + id;
-            cell.innerHTML = `<span class="inline-block max-w-[48px] overflow-scroll">${rowarr[i]}</span>`; // Set the innerHTML directly
+            cell.innerHTML = `${rowarr[i]}`; // Set the innerHTML directly
           }
-        }
-        function insertOrderbookEntry(obj,base,rowarr, id){
-          var row = obj.insertRow(-1);
-          const rowIndex = row.rowIndex;
-
-          row.className = "p-2 h-9";
-          for (var i = 0; i < rowarr.length; ++i) {
-            var cell = row.insertCell(i); // Create a new cell
-            cell.className =
-              "px-2 border-b border-blue-gray-50 font-sans text-sm antialiased font-normal leading-normal";
-            if (i === rowarr.length - 1)
-              cell.innerHTML = `<span class="flex items-center max-w-[48px] overflow-scroll ${id}">${rowarr[i]}</span>`; // Set the innerHTML directly
-            else
-              cell.innerHTML = `<span class="flex items-center max-w-[48px] overflow-scroll">${rowarr[i]}</span>`; // Set the innerHTML directly
-          }
-
-          var lastCell = row.insertCell(rowarr.length);
-          lastCell.className =
-              "border-b border-blue-gray-50 font-sans text-sm antialiased font-normal leading-normal";
-          const deleteSvgPath = deleteSvgUrl;
-          var img = document.createElement('img');
-          img.className = "w-6 h-6 cursor-pointer"
-          img.src = deleteSvgPath;
-          img.onclick = function(){
-              deleteOrder(base,rowIndex - 1);
-          };
-          lastCell.appendChild(img);
-        }
-        function deleteOrder(base, index){
-            var str = JSON.stringify({
-               base: base,
-               index: index
-            });
-            var res = JSON.parse(Module.ccall("deleteOrder","string",["string"],[str]))
-            console.log(res);
-            updateData(res);
         }
         function price(base, quote) {
           if (base != 0) {
@@ -866,11 +793,11 @@ import deleteSvgUrl from "../BalkyImages/deFiDemo/delete-svgrepo-com.svg?url";
           return "N/A";
         }
         function annotate_parse_errors({ poolToken, poolWart }) {
-          document.getElementById("parentBeforeToken").style.backgroundColor =
-            poolToken ? "red" : "white";
-          document.getElementById("parentBeforeWart").style.backgroundColor = poolWart
+          document.getElementById("beforeToken").style.backgroundColor =
+            poolToken ? "red" : "transparent";
+          document.getElementById("beforeWart").style.backgroundColor = poolWart
             ? "red"
-            : "white";
+            : "transparent";
           return !poolToken && !poolWart; // true if both don't have parse errors
         }
         function updateData(res) {
@@ -887,23 +814,21 @@ import deleteSvgUrl from "../BalkyImages/deFiDemo/delete-svgrepo-com.svg?url";
           var tbodyBuy = document.getElementById("tbodyBuy");
           tbodyBuy.innerHTML = "";
           for (var i = 0, len = buys.length; i < len; i++) {
-            // insertRow(
-            //   tbodyBuy,
-            //   [buys[i]["limit"], buys[i]["amount"], buys[i]["filled"]],
-            //   "filledAmountWartItem"
-            // );
-            insertOrderbookEntry(tbodyBuy, false, [buys[i]["limit"], buys[i]["amount"], buys[i]["filled"]], "filledAmountWartItem");
+            insertRow(
+              tbodyBuy,
+              [buys[i]["limit"], buys[i]["amount"], buys[i]["filled"]],
+              "filledAmountWartItem"
+            );
           }
           var sells = match.sells;
           var tbodySell = document.getElementById("tbodySell");
           tbodySell.innerHTML = "";
           for (var i = 0, len = sells.length; i < len; i++) {
-            // insertRow(
-            //   tbodySell,
-            //   [sells[i]["limit"], sells[i]["amount"], sells[i]["filled"]],
-            //   "filledAmountTokenItem"
-            // );
-            insertOrderbookEntry(tbodySell,true, [sells[i]["limit"], sells[i]["amount"], sells[i]["filled"]], "filledAmountTokenItem");
+            insertRow(
+              tbodySell,
+              [sells[i]["limit"], sells[i]["amount"], sells[i]["filled"]],
+              "filledAmountTokenItem"
+            );
           }
 
           // summary part
@@ -1016,16 +941,16 @@ import deleteSvgUrl from "../BalkyImages/deFiDemo/delete-svgrepo-com.svg?url";
         document
           .getElementById("beforeWart")
           .addEventListener("input", editPool);
-
-        // Added: Recalculate LeaderLines on window resize (for mobile reflow)
-        window.addEventListener('resize', () => {
-          arrowTokenFromSeller.position();
-          arrowTokenFromPool.position();
-          arrowWartFromBuyer.position();
-          arrowWartFromPool.position();
-          arrowWartToPool.position();
-          arrowTokenToPool.position();
-        });
+        document
+          .getElementById("parentBeforeToken")
+          .addEventListener("click", () =>
+            document.getElementById("beforeToken").focus()
+          );
+        document
+          .getElementById("parentBeforeWart")
+          .addEventListener("click", () =>
+            document.getElementById("beforeWart").focus()
+          );
       });
     </script>
   </div>
