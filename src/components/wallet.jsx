@@ -765,7 +765,7 @@ const Wallet = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Warthog Wallet</h1>
+        <h1 className="text-4xl font-bold text-white">Warthog Wallet</h1>
       </div>
 
       {deferredPrompt && (

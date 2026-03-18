@@ -20,6 +20,7 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
   const [timeoutId24h, setTimeoutId24h] = useState(null);
   const [timeoutIdWeek, setTimeoutIdWeek] = useState(null);
   const [timeoutIdMonth, setTimeoutIdMonth] = useState(null);
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   const abbreviate = (str) => str ? `${str.slice(0,6)}...${str.slice(-4)}` : 'N/A';
 
@@ -60,6 +61,31 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
       });
     }
   }, [allHistory, onCountsUpdate]);
+
+  useEffect(() => {
+    const checkDarkMode = () => {
+      const isDark = document.documentElement.classList.contains('dark') ||
+                     window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setIsDarkMode(isDark);
+    };
+
+    checkDarkMode();
+
+    // Listen for changes in dark mode
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    mediaQuery.addEventListener('change', checkDarkMode);
+
+    return () => {
+      observer.disconnect();
+      mediaQuery.removeEventListener('change', checkDarkMode);
+    };
+  }, []);
 
   const fetchInitialHistory = async () => {
     setLoading(true);
@@ -194,6 +220,13 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
   const currentHistory = allHistory.slice(startIndex, endIndex);
   const hasNext = (endIndex < allHistory.length) || hasMore;
 
+  // Colors based on theme
+  const sectionColor = isDarkMode ? '#FFECB3' : '#333';
+  const txBackground = isDarkMode ? '#ffecb33d' : '#ddd';
+  const txBorder = isDarkMode ? '#caa21eff' : '#888';
+  const txColor = isDarkMode ? '#e9e6dbff' : '#333';
+  const labelColor = isDarkMode ? '#caa21eff' : '#333';
+
   return (
     <>
       <style>{`
@@ -202,7 +235,7 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
           50% { opacity: 0.5; }
         }
       `}</style>
-      <section style={{ fontFamily: 'Montserrat', color: '#FFECB3' }}>
+      <section style={{ fontFamily: 'Montserrat', color: sectionColor }}>
       <div className="flex flex-col md:flex-row justify-between md:items-center">
         {blockCounts && (
           <div className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-sm font-medium order-1 md:order-2 mt-2 md:mt-0 mb-1 w-fit">
@@ -255,16 +288,16 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
               key={index}
               id={`tx-${tx.txid}`}
               style={{
-                backgroundColor: '#ffecb33d',
-                border: '1px solid #caa21eff',
+                backgroundColor: txBackground,
+                border: `1px solid ${txBorder}`,
                 borderRadius: '8px',
                 padding: '16px',
                 marginBottom: '16px',
-                color: '#e9e6dbff'
+                color: txColor
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <strong style={{ color: '#caa21eff' }}>TxID:</strong>
+                <strong style={{ color: labelColor }}>TxID:</strong>
                 <span 
                   title={tx.txid || 'N/A'} 
                   style={{ cursor: 'pointer' }} 
@@ -274,7 +307,7 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <strong style={{ color: '#caa21eff' }}>From:</strong>
+                <strong style={{ color: labelColor }}>From:</strong>
                 <span
                   title={!tx.fromAddress ? 'Block Reward' : tx.fromAddress}
                   style={{ cursor: tx.fromAddress ? 'pointer' : 'default' }}
@@ -284,7 +317,7 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <strong style={{ color: '#caa21eff' }}>To:</strong>
+                <strong style={{ color: labelColor }}>To:</strong>
                 <span 
                   title={tx.toAddress || 'N/A'} 
                   style={{ cursor: 'pointer' }} 
@@ -294,23 +327,23 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <strong style={{ color: '#caa21eff' }}>Amount (WART):</strong>
+                <strong style={{ color: labelColor }}>Amount (WART):</strong>
                 <span>{tx.amount !== undefined ? parseFloat(tx.amount).toFixed(8) : 'N/A'}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <strong style={{ color: '#caa21eff' }}>Fee (WART):</strong>
+                <strong style={{ color: labelColor }}>Fee (WART):</strong>
                 <span>{tx.fee !== undefined ? parseFloat(tx.fee).toFixed(8) : 'N/A'}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <strong style={{ color: '#caa21eff' }}>Confirmations:</strong>
+                <strong style={{ color: labelColor }}>Confirmations:</strong>
                 <span>{tx.confirmations || 'N/A'}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <strong style={{ color: '#caa21eff' }}>Height:</strong>
+                <strong style={{ color: labelColor }}>Height:</strong>
                 <span>{tx.height || 'N/A'}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <strong style={{ color: '#caa21eff' }}>Date:</strong>
+                <strong style={{ color: labelColor }}>Date:</strong>
                 <span>{tx.timestamp ? new Date(tx.timestamp * 1000).toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ' UTC') : 'N/A'}</span>
               </div>
             </div>
