@@ -222,8 +222,8 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
 
   // Colors based on theme
   const sectionColor = isDarkMode ? '#FFECB3' : '#333';
-  const txBackground = isDarkMode ? '#ffecb33d' : '#f5f5f5';
-  const txBorder = isDarkMode ? '#caa21eff' : '#ccc';
+  const txBackground = isDarkMode ? '#ffecb33d' : '#ddd';
+  const txBorder = isDarkMode ? '#caa21eff' : '#888';
   const txColor = isDarkMode ? '#e9e6dbff' : '#333';
   const labelColor = isDarkMode ? '#caa21eff' : '#333';
 
