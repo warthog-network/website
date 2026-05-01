@@ -10,7 +10,7 @@ import NEWS3 from '../BalkyImages/BlogPost.png';
 const title = 'News Blog';
 const baseURL = 'https://warthog.network';
 
-import BannerTop from "../BalkyImages/highlight.svg";
+
 import BlogImage from '../BalkyImages/Warthog_2024_Full Logo.svg';
 import Littlewart from '../BalkyImages/littlewart.svg';
 import Arrow from '../BalkyImages/Arrow 1.png';
@@ -45,7 +45,7 @@ const latestNewsArticleRelativeLink = `/articles/${generateArticalIdentity(lates
         <script type="module" src="/scripts/WebShare.js"></script>
         <div class="BannerExpand">
             <section>
-                <div class="bannerBackgroundImage" style={`background-image: url(${BannerTop.src})`}>
+                <div class="bannerBackgroundImage">
                     <div class="bannerBackgroundContent" >
                         <div class="Latest flex">LATEST<img class="ms-2" src={Littlewart.src}/></div>
                         <div class="Title uppercase"><a href={latestNewsArticleRelativeLink}>{latestNewsArticle.data.title}</a></div>
@@ -125,6 +125,7 @@ const latestNewsArticleRelativeLink = `/articles/${generateArticalIdentity(lates
         border-radius: .5rem;
     }
     .bannerBackgroundImage {
+        background-image: url('../BalkyImages/highlight.svg');
         display: flex;
         flex-direction: column;
         background-size: auto 100%;
@@ -201,7 +202,7 @@ const latestNewsArticleRelativeLink = `/articles/${generateArticalIdentity(lates
         text-align: left;
         text-underline-position: from-font;
         text-decoration-skip-ink: none;
-        color: #1E1E1E;
+        color: #38bdf8;
     }
     .postTitle {
         font-family: Montserrat;
@@ -211,7 +212,7 @@ const latestNewsArticleRelativeLink = `/articles/${generateArticalIdentity(lates
         text-align: left;
         text-underline-position: from-font;
         text-decoration-skip-ink: none;
-        color: #1E1E1E;
+        color: #f8fafc;
     }
     .postDate {
         font-family: Montserrat;
@@ -222,7 +223,7 @@ const latestNewsArticleRelativeLink = `/articles/${generateArticalIdentity(lates
         text-align: left;
         text-underline-position: from-font;
         text-decoration-skip-ink: none;
-        color: #a6a6a6;
+        color: rgba(248, 250, 252, 0.7);
     }
     @media (max-width: 1024px) {
         .bannerBackgroundContent {   

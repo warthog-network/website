@@ -4,7 +4,7 @@ function QA({ question, children }) {
       <summary className="font-semibold cursor-pointer">
       {question}
       </summary>
-    <div class="pt-3 tracking-tight leading-5">
+    <div className="pt-3 tracking-tight leading-5">
       {children}
     </div>
     </details>

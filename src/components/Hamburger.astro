@@ -2,28 +2,50 @@
 ---
 
 <style>
-.hamburger {
-  cursor: pointer;
-  padding: .5rem;
-}
-.hamburger .line {
-  display: block;
-  width: 40px;
-  height: 5px;
-  margin-bottom: 10px;
-  background-color: #352e2e;
-}
+  .hamburger {
+    z-index: 1100;
+    cursor: pointer;
+    padding: 0.35rem;
+    border-radius: var(--radius-md);
+    border: none;
+    background: rgba(255, 255, 255, 0.05);
+  }
 
-@media screen and (min-width: 1024px) {
- 
- /*hamburger*/
- .hamburger {
-   display: none;
- }
-}
+  .hamburger .line {
+    display: block;
+    width: 32px;
+    height: 3px;
+    margin-bottom: 6px;
+    background-color: #fff;
+    border-radius: 999px;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+
+  .hamburger .line:last-child {
+    margin-bottom: 0;
+  }
+
+  .hamburger.active .line:nth-child(1) {
+    transform: translateY(9px) rotate(45deg);
+  }
+
+  .hamburger.active .line:nth-child(2) {
+    opacity: 0;
+  }
+
+  .hamburger.active .line:nth-child(3) {
+    transform: translateY(-9px) rotate(-45deg);
+  }
+
+  @media screen and (min-width: 1101px) {
+    .hamburger {
+      display: none;
+    }
+  }
 </style>
+
 <div class="hamburger">
-    <span class="line"></span>
-    <span class="line"></span>
-    <span class="line"></span>
+  <span class="line"></span>
+  <span class="line"></span>
+  <span class="line"></span>
 </div>

@@ -1,34 +1,35 @@
 ---
-import '../blogstyles.css';
-import '../styles.css';
-import BaseHead from '../components/BaseHeadMaxWidth.astro';
-const {title} = Astro.props;
+import "../blogstyles.css";
+import "../styles.css";
+import BaseHead from "../components/BaseHeadMaxWidth.astro";
+const { title } = Astro.props;
 import Footer from "../components/FooterMaxWidth.astro";
 
 ---
 
 <html lang="en">
-    <head>
-        <meta charset="utf-8" />
-        <link rel="icon" type="image/svg+xml" href="/favicon.png" />
-        <meta name="viewport" content="width=device-width" />
-        <meta name="generator" content={Astro.generator} />
-        <title>{title}</title>
-    </head>
-		
-	<body>
-		<BaseHead/>
-	
-        <main>
-            <slot />
-        </main>
-        
-        <footer>
-            <script>
-                import "../scripts/menu.js";
-              </script>
-              <Footer/>
-           
-        </footer>
-	</body>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.png" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="color-scheme" content="dark" />
+    <title>{title}</title>
+  </head>
+
+  <body class="site-body">
+    <a href="#main-content" class="skip-link">Skip to content</a>
+    <BaseHead />
+
+    <main id="main-content" class="site-main">
+      <slot />
+    </main>
+
+    <footer class="site-footer section">
+      <script>
+        import "../scripts/menu.js";
+      </script>
+      <Footer />
+    </footer>
+  </body>
 </html>

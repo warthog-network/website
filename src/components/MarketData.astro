@@ -71,7 +71,8 @@ import { createChart } from 'lightweight-charts';
         document.getElementById("1dayChart").addEventListener('click', (event) => this.GetOneDayChartData(event.target));
 
         window.addEventListener('resize', () => {
-            this.chart.resize(container.clientWidth, container.clientHeight);
+            const rect = container.getBoundingClientRect();
+            this.chart.resize(Math.max(0, rect.width), Math.max(0, rect.height));
         })
       }
 
@@ -96,36 +97,35 @@ import { createChart } from 'lightweight-charts';
           this.candlesOn = !this.candlesOn;
       }
 
-      async fetchChartData(countBack, dataResolutionInMinutes) {
+      async fetchChartData(days) {
         let data;
-        const keyName = this.CachedDataKey(countBack, dataResolutionInMinutes);
+        const keyName = this.CachedDataKey(days);
         //console.log(keyName);
 
-        if (this.cachedData.has(keyName) && this.CachedDataNotOld(this.cachedData.get(keyName), dataResolutionInMinutes)) {
+        if (this.cachedData.has(keyName) && this.CachedDataNotOld(this.cachedData.get(keyName), days)) {
           data = this.cachedData.get(keyName);
           //console.log("It was cached");
         }else{
-          const url = 'https://api.xeggex.com/api/v2/market/candles?symbol=wart_usdt&resolution=' + dataResolutionInMinutes.toString() + '&countBack=' + countBack.toString() + '&firstDataRequest=1';
+          const url = `https://api.coingecko.com/api/v3/coins/warthog/ohlc?vs_currency=usd&days=${days}`;
           try {
             const response = await fetch(url);
             if (!response.ok) {
               throw new Error('Network response was not ok');
             }
             data = await response.json();
-            //data.chartChange = this.CalculateChartDataChange(data);
             this.cachedData.set(keyName, data)
             this.SaveCachedDataToLocalStorage(this.cachedData);
             //console.log("Queried and saved to cache");
           } catch (error) {
             console.error('Error fetching market data:', error);
-            data = [{ open: 10, high: 10.63, low: 9.49, close: 9.55, time: 1642427876 }, { open: 9.55, high: 10.30, low: 9.42, close: 9.94, time: 1642514276 }, { open: 9.94, high: 10.17, low: 9.92, close: 9.78, time: 1642600676 }, { open: 9.78, high: 10.59, low: 9.18, close: 9.51, time: 1642687076 }, { open: 9.51, high: 10.46, low: 9.10, close: 10.17, time: 1642773476 }, { open: 10.17, high: 10.96, low: 10.16, close: 10.47, time: 1642859876 }, { open: 10.47, high: 11.39, low: 10.40, close: 10.81, time: 1642946276 }, { open: 10.81, high: 11.60, low: 10.30, close: 10.75, time: 1643032676 }, { open: 10.75, high: 11.60, low: 10.49, close: 10.93, time: 1643119076 }, { open: 10.93, high: 11.53, low: 10.76, close: 10.96, time: 1643205476 }];
+            data = [[1642427876, 10, 10.63, 9.49, 9.55], [1642514276, 9.55, 10.30, 9.42, 9.94], [1642600676, 9.94, 10.17, 9.92, 9.78], [1642687076, 9.78, 10.59, 9.18, 9.51], [1642773476, 9.51, 10.46, 9.10, 10.17], [1642859876, 10.17, 10.96, 10.16, 10.47], [1642946276, 10.47, 11.39, 10.40, 10.81], [1643032676, 10.81, 11.60, 10.30, 10.75], [1643119076, 10.75, 11.60, 10.49, 10.93], [1643205476, 10.93, 11.53, 10.76, 10.96]];
           }
         }
         
-        const remappedData = data.bars.map(({ open, high, low, close, time}) => ({open, high, low, close, time: time / 1000}));
-        const remappedAreaData = data.bars.map(datapoint => ({
-            time: datapoint.time / 1000,
-            value: (datapoint.close + datapoint.open) / 2,
+        const remappedData = data.map(([time, open, high, low, close]) => ({open, high, low, close, time: time / 1000}));
+        const remappedAreaData = data.map(([time, open, high, low, close]) => ({
+            time: time / 1000,
+            value: (close + open) / 2,
         }));
 
         console.log(remappedData);
@@ -137,35 +137,21 @@ import { createChart } from 'lightweight-charts';
         this.chart.timeScale().fitContent(); 
       }
 
-      CachedDataKey(cb, drm) {
-        return cb.toString() + ":" + drm.toString();
+      CachedDataKey(days) {
+        return days.toString();
       }
 
-      CachedDataNotOld(data, updateFrequencyInMin) {
+      CachedDataNotOld(data, days) {
         const dateNow = Date.now();
-        //console.log(data);
-        const lastUpdate = data.bars[data.bars.length - 1].time;
-        const dateDiff = dateNow - lastUpdate; 
-        if (dateDiff < (1000 * 60 * updateFrequencyInMin)) {
-          //console.log("Cached data is still new");
-          return true;
+        if (data.length > 0) {
+          const lastUpdate = data[data.length - 1][0];
+          const dateDiff = dateNow - lastUpdate; 
+          if (dateDiff < (1000 * 60 * days)) { // Buffer based on days
+            return true;
+          }
         }
-        //console.log("Cached data is old, time to replace it.")
         return false;
       }
-
-      //CalculateChartDataChange(data) {
-      //  if ("bars" in data && data.bars.length > 1) {
-      //    const firstValue = data.bars[0].open;
-      //    const lastValue = data.bars[data.bars.length - 1].close;
-      //    const percentageDiff = ((lastValue - firstValue) / firstValue) * 100;
-
-      //    return percentageDiff.toFixed(2);
-      // }
-      //  return 0.00;
-      //}
-
-      //Testing sync to new repo
 
       SaveCachedDataToLocalStorage(dataMap) {
         const obj = Object.fromEntries(dataMap);
@@ -175,7 +161,6 @@ import { createChart } from 'lightweight-charts';
         };
 
         localStorage.setItem("WarthogCharts", JSON.stringify(dataObj));
-        //console.log("Saved to localstorage");
       }
 
       LoadCachedDataFromLocalStorage() {
@@ -187,22 +172,13 @@ import { createChart } from 'lightweight-charts';
           if ("timestamp" in storedData && "mapData" in storedData) {
             if (currentTime - storedData.timestamp < oneDayMs) {
               this.cachedData = new Map(Object.entries(storedData.mapData));
-              //console.log("Loaded from localstorage");
             }
           }
         }
       }
 
       async GetSixMonthChartData(button = null) {
-        const today = new Date();
-
-        const sixMonthsAgo = new Date();
-        sixMonthsAgo.setMonth(today.getMonth() - 6);
-        const diffInMillisec = today - sixMonthsAgo;
-
-        const diffInDays = Math.floor(diffInMillisec / (1000 * 60 * 60 * 24));
-
-        await this.fetchChartData(diffInDays, 1440);
+        await this.fetchChartData(180);
 
         if (button) {
           this.ClearButtonHighlights();
@@ -211,15 +187,7 @@ import { createChart } from 'lightweight-charts';
       }
 
       async GetOneMonthChartData(button = null) {
-        const today = new Date();
-
-        const oneMonthsAgo = new Date();
-        oneMonthsAgo.setMonth(today.getMonth() - 1);
-        const diffInMillisec = today - oneMonthsAgo;
-
-        const diffInDays = Math.floor(diffInMillisec / (1000 * 60 * 60 * 24));
-
-        await this.fetchChartData(diffInDays, 1440);
+        await this.fetchChartData(30);
 
         if (button) {
           this.ClearButtonHighlights();
@@ -228,8 +196,7 @@ import { createChart } from 'lightweight-charts';
       }
 
       async GetFiveDayChartData(button = null) {
-        //with resolution of 60mins at 5 days we want 24hrs * 5 days = countBack 120 data points
-        await this.fetchChartData(120, 60);
+        await this.fetchChartData(5);
 
         if (button) {
           this.ClearButtonHighlights();
@@ -238,8 +205,7 @@ import { createChart } from 'lightweight-charts';
       }
 
       async GetOneDayChartData(button = null) {
-        //with resolution of 30mins at 1 day we want to countBack 48 data points
-        await this.fetchChartData(48, 30);
+        await this.fetchChartData(1);
 
         if (button) {
           this.ClearButtonHighlights();
@@ -279,22 +245,25 @@ import { createChart } from 'lightweight-charts';
     }
 
     async fetchMarketData() {
-        const url = 'https://api.xeggex.com/api/v2/market/getbysymbol/wart_usdt';
+        const url = 'https://api.coingecko.com/api/v3/coins/warthog';
         try {
           const response = await fetch(url);
           if (!response.ok) {
             throw new Error('Network response was not ok');
           }
           const data = await response.json();
-          await this.BuildHalvingPointEstimates(data)
-          this.DisplayMinedInfo(data);
-
-          document.getElementById('symbol').textContent = data.symbol;
-          document.getElementById('price').textContent = '$' + data.lastPrice;
-          document.getElementById('updated').textContent = new Date().toLocaleTimeString();
-          document.getElementById('marketCap').textContent = '$' + data.marketcapNumber.toLocaleString();
-
+          const marketData = data.market_data;
           
+          const circulatingSupply = marketData.circulating_supply;
+          const maxSupply = marketData.max_supply || 18921600; // Fallback
+
+          await this.BuildHalvingPointEstimates({primaryCirculation: circulatingSupply});
+          this.DisplayMinedInfo({primaryCirculation: circulatingSupply});
+
+          document.getElementById('symbol').textContent = 'WART/USDT';
+          document.getElementById('price').textContent = '$' + marketData.current_price.usd.toFixed(8);
+          document.getElementById('updated').textContent = new Date(marketData.last_updated).toLocaleTimeString();
+          document.getElementById('marketCap').textContent = '$' + marketData.market_cap.usd.toLocaleString();
 
         } catch (error) {
           console.error('Error fetching market data:', error);
@@ -325,18 +294,20 @@ import { createChart } from 'lightweight-charts';
       const nextHalvingPercentage = ((amountToMineForNextHalving / maxSupply) * 100);
       
       const progressBar = document.querySelector(".progress-bar");
-      const progressLine = document.querySelector(".progress-line");
       const totalSupply = document.querySelector(".totalSupply");
       const progressPercentage = document.querySelector(".progress-percentage");
       const progressCirculatingSupply = document.querySelector(".progress-circulatingSupply");
-      const nextHalvingLine = document.querySelector(".nextHalving-line");
+      const currentMarker = document.querySelector(".progress-marker--current");
+      const halvingMarker = document.querySelector(".progress-marker--halving");
+      const nextHalvingValue = document.querySelector(".next-halving-value");
 
-      progressBar.style.width = percentage + '%';
-      progressLine.style.right = (100 - percentage) + '%'
-      nextHalvingLine.style.right = nextHalvingPercentage + '%';
+      progressBar.style.width = `${percentage}%`;
+      currentMarker.style.left = `${percentage}%`;
+      halvingMarker.style.left = `${nextHalvingPercentage}%`;
       totalSupply.textContent = maxSupply.toLocaleString();
-      progressPercentage.textContent = percentage.toFixed(2).toString() + '%';
-      progressCirculatingSupply.textContent = circulatingSupply.toLocaleString();
+      progressPercentage.textContent = `${percentage.toFixed(2)}% mined`;
+      progressCirculatingSupply.textContent = `${circulatingSupply.toLocaleString()} WART`;
+      nextHalvingValue.textContent = `${amountToMineForNextHalving.toLocaleString()} WART`;
     }
     async BuildHalvingPointEstimates(apiData) {
       const blockHeightPerHalving = 3153600;
@@ -346,21 +317,19 @@ import { createChart } from 'lightweight-charts';
       let runningTotal = 0;
 
       //Build a list of amounts required to mine at each halving stage
-      if (this.estimatedHalvingPointsByMinedAmount.length <= 1) {
+      if (this.estimatedHalvingPointsByMinedAmount.length === 0) {
         const amountToMine = (blockHeightPerHalving * initialRewardInWart);
         runningTotal = amountToMine;
         this.estimatedHalvingPointsByMinedAmount.push({AmountMined: amountToMine, reward: initialRewardInWart, runningTotal: runningTotal });
-      } else {
-        do {
+      } 
+      while (this.estimatedHalvingPointsByMinedAmount.length > 0 && this.estimatedHalvingPointsByMinedAmount[this.estimatedHalvingPointsByMinedAmount.length - 1].runningTotal <= circulatingSupply) {
           const lastReward = this.estimatedHalvingPointsByMinedAmount[this.estimatedHalvingPointsByMinedAmount.length - 1].reward;
           const thisReward = lastReward / 2;
           const amountToMine = (blockHeightPerHalving * thisReward);
-          runningTotal += this.estimatedHalvingPointsByMinedAmount[this.estimatedHalvingPointsByMinedAmount.length - 1].runningTotal;
+          runningTotal = this.estimatedHalvingPointsByMinedAmount[this.estimatedHalvingPointsByMinedAmount.length - 1].runningTotal + amountToMine;
 
           this.estimatedHalvingPointsByMinedAmount.push({AmountMined: amountToMine, reward: thisReward, runningTotal: runningTotal });
-        }while(runningTotal <= circulatingSupply)
-
-      }
+        }
 
       console.log(this.estimatedHalvingPointsByMinedAmount);
     }
@@ -369,7 +338,7 @@ import { createChart } from 'lightweight-charts';
       let runningTotal = 0;
 
       for (let i = 0; i < estimateList.length; i++) {
-        runningTotal += estimateList[i].runningTotal;
+        runningTotal += estimateList[i].AmountMined;
 
         if (runningTotal > currentMined) {
           break;
@@ -387,98 +356,253 @@ import { createChart } from 'lightweight-charts';
 
 
 <style>
-  
-.wartChart {
-  
-  width: 100%;
-  height: 290px;
-}
-.wartSectionHeading {
-  font-family: 'Montserrat';
-  font-style: normal;
-  font-weight: 700;
-  font-size: 50px;
-  line-height: 61px;
-}
-.wartSectionHeading {
-  font-family: 'Montserrat';
-  font-style: normal;
-  font-weight: 700;
-  font-size: 50px;
-  line-height: 61px;
-}
-.wartWhereToBuyBlock {
-  width: 150px;
-  height: 205px;
-  @apply md:mx-[40px] mx-4;
-}
-.wartWhereToBuyBlockText {
-  font-family: 'Montserrat';
-  font-style: normal;
-  font-weight: 400;
-  font-size: 20px;
-  line-height: 20px;
-}
-.chartSelected {
-  background-color: darkslategray;
-}
-.percentage {
-  margin-left: auto;
-}
+  .market-section {
+    background: rgba(5, 9, 20, 0.5);
+  }
+
+  .market-grid {
+    display: grid;
+    gap: clamp(1.5rem, 3vw, 2.5rem);
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  @media (min-width: 1024px) {
+    .market-grid {
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+      align-items: stretch;
+    }
+  }
+
+  .chart-card,
+  .market-stack,
+  .progress-card {
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(8, 12, 24, 0.85);
+    padding: clamp(1.25rem, 3vw, 1.75rem);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+    max-width: 100%;
+  }
+
+  .chart-panel__actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 0.75rem;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .chart-panel__canvas {
+    width: 100%;
+    max-width: 100%;
+    height: 320px;
+    border-radius: var(--radius-md);
+    background: #020617;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .chart-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-top: 1rem;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .chart-btn {
+    border-radius: var(--radius-full);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 0.45rem 1.1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text);
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .chartSelected {
+    background: rgba(56, 189, 248, 0.2);
+    border-color: rgba(56, 189, 248, 0.6);
+  }
+
+  .market-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .market-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .market-stat {
+    margin: 0;
+    color: var(--color-text-muted);
+  }
+
+  .market-stat__value {
+    color: var(--color-text);
+    font-size: 1.1rem;
+  }
+
+  .countdown-pill {
+    display: inline-flex;
+    padding: 0.35rem 0.85rem;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.08);
+    font-size: 0.85rem;
+  }
+
+  .progress-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .progress-meta {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .progress-meta__block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .progress-percentage {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #fcd34d;
+  }
+
+  .progress-circulatingSupply,
+  .next-halving-value {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+  }
+
+  .progress-track {
+    width: 100%;
+    height: 20px;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.12);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    position: absolute;
+    inset: 0;
+    width: 0%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #facc15 0%, #f59e0b 60%, #f4bc38 100%);
+    transition: width 0.4s ease;
+  }
+
+  .progress-marker {
+    position: absolute;
+    top: -14px;
+    width: 2px;
+    height: 48px;
+    background: rgba(248, 250, 252, 0.65);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .progress-marker span {
+    position: absolute;
+    top: -18px;
+    background: rgba(0, 0, 0, 0.65);
+    padding: 0.1rem 0.35rem;
+    border-radius: 999px;
+    font-size: 0.65rem;
+  }
 </style>
 
-<market-data class="sm:w-full md:w-9/12 h-128">
-
-  <div class="">
-    <wart-chart class="relative ">
-      <button id="toggleChart" class="block ml-auto mb-4 mr-4 bg-black text-white text-xs border border-gray-300 rounded-lg px-4 py-2">Candle/Line</button> 
-      <div id = "realChart" class="wartChart flex justify-between items-center bg-black"/>
-      <div class="flex md:flex-row sm:flex-col justify-center mt-4">
-        <div>
-          <button id="1dayChart" class="GetChartFunction bg-black text-white mx-6 rounded-lg px-4 py-2 md:w-auto ">1 Day</button>
-          <button id="5dayChart" class="GetChartFunction bg-black text-white mx-6 rounded-lg px-4 py-2 md:w-auto ">5 Days</button>
-        </div>
-        <div>
-          <button id="1moChart" class="GetChartFunction bg-black text-white mx-6 rounded-lg px-4 py-2 md:w-auto ">1 Month</button>
-          <button id="6moChart" class="GetChartFunction bg-black text-white mx-6 rounded-lg px-4 py-2 md:w-auto ">6 Months</button>
-        </div>
-        
-        
-      </div>
-      
-    </wart-chart>
-    <section class="md:ml-6 md:mr-6 flex md:flex-row flex-col md:justify-between md:items-center p-4">
-  
-      <div class="mr-4 h-48 md:w-auto sm:w-full">
-          <div class="text-white text-xl font-bold mb-4" id="symbol">Loading...</div>
-          <p class="text-white">Xeggex.com: <span id="price">Loading...</span></p>
-          <p class="text-white">MarketCap: <span id="marketCap">Not yet updated</span></p>
-          <p class="text-white">Last updated: <span id="updated">Not yet updated</span></p>
-          <span class="text-xs text-white pt-4">Next update in: </span><div class="inline-block text-xs text-black mt-4 ml-2 p-2 rounded-md bg-gray-200" id="countdown"></div>
+<market-data>
+  <section class="market-section section">
+    <ContentDiv>
+      <div class="section__header">
+        <p class="section__eyebrow">Live data</p>
+        <h2 class="section__title">Market pulse & supply progress</h2>
       </div>
 
-      <div class="relative md:w-2/3 sm:w-full h-48 bg-black md:p-2 flex md:items-center">
-        <div class="absolute top-0 left-0 text-xl font-bold text-white">MINED</div>
-        <div class="relative w-full top-28 md:top-8 h-6 bg-gray-300 rounded-l-sm">
-          <div class="relative progress-bar h-full bg-yellow-400 rounded-l-sm">
-            <img class="absolute right-1" src={warthogShape.src}/>
+      <div class="market-grid">
+        <article class="chart-card">
+          <div class="chart-panel__actions">
+            <button id="toggleChart" class="chart-btn">Candle / Line</button>
           </div>
-          <div class="progress-line absolute right-0 top-[-70px] w-[2px] h-[70px] bg-yellow-400">
-            <div class="progress-percentage absolute right-0 mr-2 text-yellow-400 font-bold text-xl">%</div>
-            <div class="progress-circulatingSupply absolute right-0 mr-2 top-6 text-white text-md">0</div>
-          </div>
-          <div class="nextHalving-line absolute right-0 top-[-70px] w-[2px] h-[70px] bg-green-400">
-            <div class="absolute left-0 ml-2 text-md font-bold text-green-400">Next Halving</div>
-          </div>
-          <div class="text-right">
-            <div class="inline-block text-md text-white">Total:</div>
-            <div class="inline-block totalSupply font-bold text-md text-white"></div>
-          </div>
-        </div>
-        
+          <wart-chart>
+            <div id="realChart" class="chart-panel__canvas"></div>
+            <div class="chart-controls">
+              <button id="1dayChart" class="chart-btn GetChartFunction">1 Day</button>
+              <button id="5dayChart" class="chart-btn GetChartFunction">5 Days</button>
+              <button id="1moChart" class="chart-btn GetChartFunction">1 Month</button>
+              <button id="6moChart" class="chart-btn GetChartFunction">6 Months</button>
+            </div>
+          </wart-chart>
+        </article>
+
+        <section class="market-stack">
+          <article class="market-card">
+            <div class="text-xl font-semibold" id="symbol">Loading...</div>
+            <p class="market-stat">
+              CoinGecko price:
+              <span class="market-stat__value" id="price">Loading...</span>
+            </p>
+            <p class="market-stat">
+              Market cap:
+              <span class="market-stat__value" id="marketCap">Not yet updated</span>
+            </p>
+            <p class="market-stat">
+              Last updated:
+              <span class="market-stat__value" id="updated">Not yet updated</span>
+            </p>
+            <div class="countdown-pill">
+              Next update in:&nbsp;<span id="countdown">...</span>
+            </div>
+          </article>
+
+          <article class="progress-card">
+            <div class="progress-meta">
+              <div class="progress-meta__block">
+                <p class="market-meta__stat">Mined supply</p>
+                <span class="progress-percentage">0% mined</span>
+                <span class="progress-circulatingSupply">0 WART</span>
+              </div>
+              <div class="progress-meta__block text-right text-green-400">
+                <p class="market-meta__stat">Next halving</p>
+                <span class="next-halving-value">--</span>
+                <small class="muted">Total <span class="totalSupply font-semibold text-white"></span></small>
+              </div>
+            </div>
+            <div class="progress-track">
+              <div class="progress-bar"><img class="absolute right-1" src={warthogShape.src}/></div>
+              <div class="progress-marker progress-marker--current">
+                <span>Now</span>
+              </div>
+              <div class="progress-marker progress-marker--halving">
+                <span>Halving</span>
+              </div>
+            </div>
+          </article>
+        </section>
       </div>
-    </section>
-  </div>
- 
-  
+    </ContentDiv>
+  </section>
 </market-data>
