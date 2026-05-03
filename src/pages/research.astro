@@ -1,0 +1,178 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const title = "Research";
+---
+
+<BaseLayout title={title}>
+  <div class="research-container">
+    <div class="research-header">
+      <h1>Research</h1>
+      <p class="subtitle">
+        Warthog's research represents genuine scientific breakthroughs in cryptocurrency,
+        grounded in rigorous mathematical foundations. The core development team holds
+        advanced degrees in mathematics and statistics from top-tier universities.
+      </p>
+    </div>
+
+    <div class="research-grid">
+      <div class="research-card">
+        <div class="paper-preview">
+          <a href="/PoBW.pdf" target="_blank">
+            <img src="/Images/PoBW-preview.png" alt="Proof of Balanced Work Preview" />
+            <span class="view-overlay">Click to View</span>
+          </a>
+        </div>
+        <div class="paper-content">
+          <h2>Proof of Balanced Work</h2>
+          <p>
+            PoBW introduces a novel cryptographic mining paradigm that combines multiple
+            hash functions multiplicatively. This innovation enables hybrid mining algorithms
+            requiring both CPU and GPU capabilities simultaneously, providing strong
+            ASIC-resistance and targeting specifically gaming PCs' hardware configurations.
+          </p>
+        </div>
+      </div>
+
+      <div class="research-card">
+        <div class="paper-preview">
+          <a href="/FairBatchMatching.pdf" target="_blank">
+            <img src="/Images/FairBatchMatching-preview.png" alt="Fair Batch Matching Preview" />
+            <span class="view-overlay">Click to View</span>
+          </a>
+        </div>
+        <div class="paper-content">
+          <h2>Fair Batch Matching</h2>
+          <p>
+            FBM is a groundbreaking DeFi matching algorithm that eliminates sandwich attacks
+            and MEV extraction by processing all swap orders jointly within a block.
+            Every participant receives identical pricing regardless of transaction sequence,
+            establishing a Nash equilibrium where MEV exploitation becomes mathematically impossible.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .research-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  .research-header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+
+  .research-header h1 {
+    font-family: Montserrat, sans-serif;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 1rem;
+  }
+
+  .subtitle {
+    font-family: Montserrat, sans-serif;
+    font-size: 1.1rem;
+    font-weight: 400;
+    color: rgba(248, 250, 252, 0.85);
+    line-height: 1.6;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .research-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+  }
+
+  .research-card {
+    background: rgba(42, 42, 42, 0.8);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .research-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  }
+
+  .paper-preview {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .paper-preview img {
+    width: 100%;
+    height: auto;
+    display: block;
+    transition: transform 0.3s ease;
+  }
+
+  .paper-preview:hover img {
+    transform: scale(1.02);
+  }
+
+  .view-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Montserrat, sans-serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #f8fafc;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+
+  .paper-preview:hover .view-overlay {
+    opacity: 1;
+  }
+
+  .paper-content {
+    padding: 1.5rem;
+  }
+
+  .paper-content h2 {
+    font-family: Montserrat, sans-serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #f8fafc;
+    margin-bottom: 0.75rem;
+  }
+
+  .paper-content p {
+    font-family: Montserrat, sans-serif;
+    font-size: 0.938rem;
+    font-weight: 400;
+    line-height: 1.6;
+    color: rgba(248, 250, 252, 0.85);
+  }
+
+  @media (max-width: 850px) {
+    .research-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .research-container {
+      padding: 1rem;
+    }
+
+    .research-header h1 {
+      font-size: 2rem;
+    }
+  }
+</style>
