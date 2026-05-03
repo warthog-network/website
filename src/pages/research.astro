@@ -2,57 +2,71 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 
 const title = "Research";
+const paperParam = Astro.url.searchParams.get('paper');
 ---
 
 <BaseLayout title={title}>
-  <div class="research-container">
-    <div class="research-header">
-      <h1>Research</h1>
-      <p class="subtitle">
-        Warthog's research represents genuine scientific breakthroughs in cryptocurrency,
-        grounded in rigorous mathematical foundations. The core development team holds
-        advanced degrees in mathematics and statistics from top-tier universities.
-      </p>
+  {paperParam ? (
+    <div class="paper-viewer">
+      <a href="/research" class="back-button">← Back to Research</a>
+      <object
+        data={paperParam === 'pobw' ? '/PoBW.pdf' : '/FairBatchMatching.pdf'}
+        type="application/pdf"
+        class="pdf-viewer"
+      >
+        <iframe
+          src={paperParam === 'pobw' ? '/PoBW.pdf' : '/FairBatchMatching.pdf'}
+          class="pdf-iframe"
+        ></iframe>
+      </object>
     </div>
+  ) : (
+    <div class="research-container">
+      <div class="research-header">
+        <h1>Research</h1>
+        <p class="subtitle">
+          Warthog's research represents genuine scientific breakthroughs in cryptocurrency,
+          grounded in rigorous mathematical foundations. The core development team holds
+          advanced degrees in mathematics and statistics from top-tier universities.
+        </p>
+      </div>
 
-    <div class="research-grid">
-      <div class="research-card">
-        <div class="paper-preview">
-          <a href="/PoBW.pdf" target="_blank">
+      <div class="research-grid">
+        <a href="?paper=pobw" class="research-card">
+          <div class="paper-preview">
             <img src="/Images/PoBW-preview.png" alt="Proof of Balanced Work Preview" />
             <span class="view-overlay">Click to View</span>
-          </a>
-        </div>
-        <div class="paper-content">
-          <h2>Proof of Balanced Work</h2>
-          <p>
-            PoBW introduces a novel cryptographic mining paradigm that combines multiple
-            hash functions multiplicatively. This innovation enables hybrid mining algorithms
-            requiring both CPU and GPU capabilities simultaneously, providing strong
-            ASIC-resistance and targeting specifically gaming PCs' hardware configurations.
-          </p>
-        </div>
-      </div>
+          </div>
+          <div class="paper-content">
+            <h2>Proof of Balanced Work</h2>
+            <p>
+              PoBW introduces a novel cryptographic mining paradigm that combines multiple
+              hash functions multiplicatively. This innovation enables hybrid mining algorithms
+              requiring both CPU and GPU capabilities simultaneously, providing strong
+              ASIC-resistance and promoting energy-efficient mining through balanced hardware
+              configurations.
+            </p>
+          </div>
+        </a>
 
-      <div class="research-card">
-        <div class="paper-preview">
-          <a href="/FairBatchMatching.pdf" target="_blank">
+        <a href="?paper=fbm" class="research-card">
+          <div class="paper-preview">
             <img src="/Images/FairBatchMatching-preview.png" alt="Fair Batch Matching Preview" />
             <span class="view-overlay">Click to View</span>
-          </a>
-        </div>
-        <div class="paper-content">
-          <h2>Fair Batch Matching</h2>
-          <p>
-            FBM is a groundbreaking DeFi matching algorithm that eliminates sandwich attacks
-            and MEV extraction by processing all swap orders jointly within a block.
-            Every participant receives identical pricing regardless of transaction sequence,
-            establishing a Nash equilibrium where MEV exploitation becomes mathematically impossible.
-          </p>
-        </div>
+          </div>
+          <div class="paper-content">
+            <h2>Fair Batch Matching</h2>
+            <p>
+              FBM is a groundbreaking DeFi matching algorithm that eliminates sandwich attacks
+              and MEV extraction by processing all swap orders jointly within a block.
+              Every participant receives identical pricing regardless of transaction sequence,
+              establishing a Nash equilibrium where manipulation becomes mathematically impossible.
+            </p>
+          </div>
+        </a>
       </div>
     </div>
-  </div>
+  )}
 </BaseLayout>
 
 <style>
@@ -96,6 +110,8 @@ const title = "Research";
     border-radius: 0.75rem;
     overflow: hidden;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    text-decoration: none;
+    display: block;
   }
 
   .research-card:hover {
@@ -115,7 +131,7 @@ const title = "Research";
     transition: transform 0.3s ease;
   }
 
-  .paper-preview:hover img {
+  .research-card:hover .paper-preview img {
     transform: scale(1.02);
   }
 
@@ -135,10 +151,9 @@ const title = "Research";
     color: #f8fafc;
     opacity: 0;
     transition: opacity 0.3s ease;
-    pointer-events: none;
   }
 
-  .paper-preview:hover .view-overlay {
+  .research-card:hover .view-overlay {
     opacity: 1;
   }
 
@@ -160,6 +175,38 @@ const title = "Research";
     font-weight: 400;
     line-height: 1.6;
     color: rgba(248, 250, 252, 0.85);
+  }
+
+  .paper-viewer {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 100px);
+  }
+
+  .back-button {
+    font-family: Montserrat, sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #38bdf8;
+    padding: 1rem 2rem;
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+
+  .back-button:hover {
+    color: #f8fafc;
+  }
+
+  .pdf-viewer {
+    flex: 1;
+    width: 100%;
+    border: none;
+  }
+
+  .pdf-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
   }
 
   @media (max-width: 850px) {
