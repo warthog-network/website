@@ -12,13 +12,6 @@ const links = [
 
 const wallet = [{ name: 'WALLET', href: '/webwallet' }];
 
-const publiNodes = [
-  { name: 'Rafiki', href: 'http://65.87.7.86:3001', id: 'myInput' },
-  { name: 'Polaire', href: 'http://217.182.64.43:3001', id: 'myInput2' },
-  { name: 'Losthymns', href: 'https://warthognode.duckdns.org', id: 'myInput3' },
-  
-];
-
 const networks = [
   { imgSrc: 'github_gray.svg', href: 'https://github.com/warthog-network' },
   { imgSrc: 'discord_gray.svg', href: 'https://discord.com/invite/QMDV8bGTdQ' },
@@ -46,6 +39,69 @@ const networks = [
   document.querySelectorAll('.copy-button').forEach(button => {
     button.addEventListener('click', copyToClipboard);
   });
+
+  // Node fetching and dropdown population
+  const API_URL = 'https://data.warthog.network/legacy-nodes.json';
+  let nodesCache = null;
+  let nodesLoading = false;
+
+  function updateDropdowns(nodes, loading, error) {
+    const desktopDropdown = document.getElementById('nodes-dropdown-desktop');
+    const mobileDropdown = document.getElementById('nodes-dropdown-mobile');
+    const loadingHtml = '<span class="nodes-loading">Loading...</span>';
+    const errorHtml = '<span class="nodes-error">Failed to load nodes</span>';
+    const emptyHtml = '<span class="nodes-empty">No nodes available</span>';
+
+    const contentHtml = (() => {
+      if (loading) return loadingHtml;
+      if (error) return errorHtml;
+      if (!nodes || nodes.length === 0) return emptyHtml;
+      return nodes.map((node, idx) => `
+        <a class="copy-button" data-input-id="node-${idx}">
+          <label>${node.name}</label>
+          <input id="node-${idx}" value="${node.url}" readonly />
+        </a>
+      `).join('');
+    })();
+
+    if (desktopDropdown) desktopDropdown.innerHTML = contentHtml;
+    if (mobileDropdown) mobileDropdown.innerHTML = contentHtml;
+
+    // Re-attach copy button listeners
+    document.querySelectorAll('.copy-button').forEach(button => {
+      button.addEventListener('click', copyToClipboard);
+    });
+  }
+
+  async function fetchNodes() {
+    if (nodesCache !== null) {
+      updateDropdowns(nodesCache, false, null);
+      return;
+    }
+    if (nodesLoading) return;
+
+    nodesLoading = true;
+    updateDropdowns(null, true, null);
+
+    try {
+      const response = await fetch(API_URL);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      nodesCache = data.nodes || data;
+      nodesLoading = false;
+      updateDropdowns(nodesCache, false, null);
+    } catch (e) {
+      nodesLoading = false;
+      updateDropdowns(null, false, e.message || 'Failed to load nodes');
+    }
+  }
+
+  // Fetch nodes when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fetchNodes);
+  } else {
+    fetchNodes();
+  }
 
   const closeMenu = document.querySelector('.close-menu');
   if (closeMenu) {
@@ -405,25 +461,15 @@ input {
 
   <div class="dropdown">
     <button class="menuItem Nodes underlineText dropbtn">PUBLIC NODES</button>
-    <div class="dropdown-content menuItem">
-      {publiNodes.map((node) => (
-        <a class="copy-button" data-input-id={node.id}>
-          <label>{node.name}</label>
-          <input id={node.id} value={node.href} readonly />
-        </a>
-      ))}
+    <div class="dropdown-content menuItem" id="nodes-dropdown-desktop">
+      <span class="nodes-loading">Loading...</span>
     </div>
   </div>
-  
+
   <div class="dropdown ghost menu">
     <button class="menuItem Nodes underlineText dropbtn">PUBLIC NODES</button>
-    <div class="dropdown-content menuItem">
-      {publiNodes.map((node) => (
-        <a class="copy-button" data-input-id={node.id}>
-          <label>{node.name}</label>
-          <input id={node.id} value={node.href} readonly />
-        </a>
-      ))}
+    <div class="dropdown-content menuItem" id="nodes-dropdown-mobile">
+      <span class="nodes-loading">Loading...</span>
     </div>
   </div>
 

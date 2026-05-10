@@ -3,13 +3,9 @@ import CryptoJS from 'crypto-js';
 import axios from 'axios';
 import { ethers } from 'ethers';
 import TransactionHistory from './TransactionHistory';
+import { fetchNodes } from '../lib/nodesCache';
 
 const API_URL = '/api/proxy';
-const defaultNodeList = [
-  'https://warthognode.duckdns.org',
-  'http://217.182.64.43:3001',
-  
-];
 
 const Wallet = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -39,7 +35,10 @@ const Wallet = () => {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [isWalletProcessed, setIsWalletProcessed] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [selectedNode, setSelectedNode] = useState(defaultNodeList[0]);
+  const [nodeList, setNodeList] = useState([]);
+  const [nodesLoading, setNodesLoading] = useState(true);
+  const [nodesError, setNodesError] = useState(null);
+  const [selectedNode, setSelectedNode] = useState('');
   const [showDownloadPrompt, setShowDownloadPrompt] = useState(false);
   const [sending, setSending] = useState(false); // New: to disable button during send
   const [failedTransactions, setFailedTransactions] = useState([]); // New: to log failed transactions
@@ -71,12 +70,30 @@ const Wallet = () => {
   const [registration, setRegistration] = useState(null);
   const [usdBalance, setUsdBalance] = useState(null);
 
-  // Load selectedNode from localStorage on mount
+  // Fetch nodes and validate savedNode from localStorage
   useEffect(() => {
-    const savedNode = localStorage.getItem('selectedNode');
-    if (savedNode && defaultNodeList.includes(savedNode)) {
-      setSelectedNode(savedNode);
+    async function loadNodes() {
+      setNodesLoading(true);
+      setNodesError(null);
+      const { nodes, error } = await fetchNodes();
+      if (error) {
+        setNodesError(error);
+        setNodesLoading(false);
+        return;
+      }
+      setNodeList(nodes || []);
+      setNodesLoading(false);
+
+      if (nodes && nodes.length > 0) {
+        const savedNode = localStorage.getItem('selectedNode');
+        if (savedNode && nodes.includes(savedNode)) {
+          setSelectedNode(savedNode);
+        } else {
+          setSelectedNode(nodes[0]);
+        }
+      }
     }
+    loadNodes();
   }, []);
 
   const abbreviate = (str) => str ? `${str.slice(0,6)}...${str.slice(-4)}` : 'N/A';
@@ -787,20 +804,29 @@ const Wallet = () => {
               <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Node Selection</h2>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Node:</label>
-                <select
-                  value={selectedNode}
-                  onChange={(e) => {
-                    setSelectedNode(e.target.value);
-                    localStorage.setItem('selectedNode', e.target.value);
-                  }}
-                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                >
-                  {defaultNodeList.map((node, index) => (
-                    <option key={index} value={node}>
-                      {node}
-                    </option>
-                  ))}
-                </select>
+                {nodesLoading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900 dark:border-white"></div>
+                    <span className="ml-2 text-gray-500">Loading nodes...</span>
+                  </div>
+                ) : nodesError ? (
+                  <div className="text-red-500 py-2">{nodesError}</div>
+                ) : (
+                  <select
+                    value={selectedNode}
+                    onChange={(e) => {
+                      setSelectedNode(e.target.value);
+                      localStorage.setItem('selectedNode', e.target.value);
+                    }}
+                    className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  >
+                    {nodeList.map((node, index) => (
+                      <option key={index} value={node.url}>
+                        {node.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             </div>
           )}
