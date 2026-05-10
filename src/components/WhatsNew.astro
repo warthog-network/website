@@ -103,6 +103,10 @@ const GetArticleImage = (category) => {
       transform: translateY(0);
     }
   }
+
+  .animation-delay-0 { animation-delay: 0s; }
+  .animation-delay-1 { animation-delay: 0.1s; }
+  .animation-delay-2 { animation-delay: 0.2s; }
 </style>
 
 <section class="news-section section--surface">
@@ -121,8 +125,7 @@ const GetArticleImage = (category) => {
     {
       last3Articles.map((news, index) => (
         <a
-          class="article-card"
-          style={`animation-delay:${index * 0.1}s`}
+          class={`article-card animation-delay-${index}`}
           href={`/articles/${generateArticalIdentity(news.data.title, news.data.date, news.data.author)}`}
         >
           <img src={GetArticleImage(news.data.category)} alt="" loading="lazy" />
