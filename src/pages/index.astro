@@ -10,17 +10,19 @@ import UpcomingFeatures from "../components/UpcomingFeatures.astro";
 import RoadMap from "../components/RoadMap.astro";
 import ChainContributors from "../components/ChainContributors.astro";
 import WhereToBuy from "../components/WhereToBuy.astro";
+import MobileWalletButton from "../components/mobile-wallet-button.astro";
 
 const title = "Warthog Network";
 ---
 <BaseLayout title={title} >
     <ParallaxLayout
       inset="inset-x-0"
-      height="h-[735px] md:h-[545px] lg:h-[540px]"
+      height="h-[735px] md:h-[785px] lg:h-[540px]"
       backgroundTailwind="bg-[url('../Images/Parallax/WarthogParallaxBGwhite640.jpg')] md:bg-[url('../Images/Parallax/WarthogParallaxBGwhite768.jpg')] lg:bg-[url('../Images/Parallax/WarthogParallaxBGwhite.jpg')]"
       scrollSpeed="1">
 
     <Hero/>
+  
     </ParallaxLayout>
 
     <WhatsNew/>
