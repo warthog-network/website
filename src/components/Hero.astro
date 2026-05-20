@@ -1,9 +1,20 @@
 ---
+import MobileWalletButton from '../components/mobile-wallet-button.astro'
 import Dunes from '../BalkyImages/dunes.svg'
 import DunesMobile from '../BalkyImages/dune-colorful-abstract-digital-art-4k-wallpaper-uhdpaper.com-192@1@n 1.png'
+import { imageConfig } from 'astro:assets'
 ---
 
 <style>
+
+.hero-img-btn-apk-sml
+   {
+    display: none !important;
+  }
+.hero-img-btn-apk
+   {
+    display: block !important;
+  }
   .article-link {
     width: 293px;
     height: 28px;
@@ -85,7 +96,7 @@ import DunesMobile from '../BalkyImages/dune-colorful-abstract-digital-art-4k-wa
 
   .hero-img-btn {
     position: absolute;
-    bottom: 1.4rem;
+    bottom: 1.5rem;
     right: 0.5rem;
     background-color: gold;
     color: rgb(0, 0, 0);
@@ -165,7 +176,7 @@ import DunesMobile from '../BalkyImages/dune-colorful-abstract-digital-art-4k-wa
   }
 
   /* Media query for <1250px: Center text, overlay on image, switch to mobile image */
-  @media (max-width: 1248px) {
+@media (max-width: 1248px) {
     .hero-grid {
       grid-template-columns: 1fr;
       grid-template-areas: 'hero-img'; /* Image full, text overlays */
@@ -173,71 +184,82 @@ import DunesMobile from '../BalkyImages/dune-colorful-abstract-digital-art-4k-wa
 
     .hero-grid-text {
       position: absolute;
-      top: 50%;
+      top: 41%;                    /* Slightly higher to balance lower buttons */
       left: 50%;
       transform: translate(-50%, -50%);
-      z-index: 2; /* Above image and scrim */
-      max-width: 90%; /* Match image width effectively */
-      width: 100%; /* Constrain to parent (image) width */
-      text-align: center; /* Center text */
-      text-shadow: 50px 10px 20px rgba(46, 46, 46, 0.8); /* Enhanced shadow for readability */
-      padding: 2rem;
-      color: white; /* High contrast on dark overlay */
+      z-index: 2;
+      max-width: 88%;
+      width: 100%;
+      text-align: center;
+      text-shadow: 50px 10px 20px rgba(46, 46, 46, 0.8);
+      padding: 1.8rem 2rem;
+      color: white;
       box-sizing: border-box;
     }
 
     .hero-text-title-bold,
     .hero-text-title,
     .hero-text-paragraph {
-      color: inherit; /* Inherit white */
-      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); /* Shadow for extra readability */
+      color: inherit;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
     }
 
     .article-link {
-      background: rgba(240, 240, 239, 0.8); /* Semi-transparent for overlay */
-      margin: 0 auto; /* Center the link */
+      background: rgba(240, 240, 239, 0.8);
+      margin: 0 auto;
     }
 
     .hero-grid-img {
-      max-width: 100%; /* Full width */
+      max-width: 100%;
       justify-self: center;
-      padding: 0; /* Remove padding to prevent overflow */
+      padding: 0;                  /* Removed extra bottom padding */
       box-sizing: border-box;
     }
 
     .heroCutoutNew {
-      display: none; /* Hide desktop image */
+      display: none;
     }
 
     .dunes2 {
-      display: block; /* Show mobile image */
+      display: block;
       width: 100%;
       border-radius: 10px;
-      margin-top: 1rem; /* Reduced optional spacing */
+      margin-top: 1rem;
     }
 
     .hero-grid-img::before {
-      display: block; /* Show scrim covering full image */
-      top: -1rem; /* Adjusted top to -1.5rem to balance the small difference */
+      display: block;
+      top: -1rem;
       left: 0;
-      width: 100%; /* Full width, no extra */
-      height: calc(100% + 3rem); /* Adjusted height to compensate for top difference */
-     
-      border-radius: 10px; /* Adjusted radius for smaller extension */
+      width: 100%;
+      height: calc(100% + 3.5rem);   /* Much shorter extension — scrim stops near bottom */
+      border-radius: 10px;
     }
 
+    /* === TWO BUTTONS SIDE-BY-SIDE, LOWERED BUT STILL ON THE IMAGE === */
     .hero-img-btn {
-      bottom: 1rem;
-      right: 50%;
-      transform: translateX(50%); /* Center button horizontally */
-      width: auto;
-      padding: 10px 40px;
-      z-index: 3; /* Above scrim */
+      bottom: 2rem;              /* Lowered more */
+      left: 50%;
+      right: auto;
+      transform: translateX(-115%);
+      padding: 12px 40px;
+      z-index: 3;
     }
-  }
 
+    .hero-img-btn-apk {
+      display: block !important;
+      position: absolute;
+      bottom: 2rem;              /* Same height as the other button */
+      left: 50%;
+      transform: translateX(28%);  /* Spacing between buttons — tweak % if needed */
+      z-index: 3;
+    }
+
+    /* Make both buttons look consistent */
+  
+  }
   /* Updated media query for <900px: Switch to portrait/vertical stack with animation */
-  @media (max-width: 765px) {
+  @media (max-width: 1020px) {
     .hero-grid {
       display: flex;
       flex-direction: column; /* Stack vertically for portrait */
@@ -262,7 +284,28 @@ import DunesMobile from '../BalkyImages/dune-colorful-abstract-digital-art-4k-wa
       text-shadow: none; /* Remove shadow if not on overlay */
       transform: translateY(0); /* Ensure settled position */
     }
+.hero-img-btn-apk
+   {
+    display: none !important;
+  }
+.hero-img-btn-apk-sml {
+  display: block !important;                 /* As requested — pure block */
+  margin: -4.75rem auto -2.75rem auto;  /* Top spacing + auto left/right = centered + bottom spacing */
+  padding: 0 1rem;                /* Gives it breathing room / "border" padding on sides */
+  width: fit-content;             /* Shrinks to the button’s natural width so it can center */
+  box-sizing: border-box;
+}
 
+/* Optional: extra polish for the actual button inside the component */
+.hero-img-btn-apk-sml :global(button),
+.hero-img-btn-apk-sml :global(a) {
+  display: block;                 /* Keeps the inner button as block too */
+  padding: 14px 40px !important;
+  border-radius: 8px;
+  box-shadow: 8px 12px 15px -8px rgba(0, 0, 0, 0.3);
+  margin: 0 auto;  
+                /* Just in case — reinforces centering */
+}
     .hero-grid-img {
       position: relative;
       width: 100%;
@@ -275,7 +318,7 @@ import DunesMobile from '../BalkyImages/dune-colorful-abstract-digital-art-4k-wa
 
     .hero-img-btn {
       position: absolute;
-      top: 65%; /* Moved up slightly towards the center */
+      top: 55%; /* Moved up slightly towards the center */
       left: 50%;
       transform: translate(-50%, -50%);
       max-width: 12rem;
@@ -331,6 +374,7 @@ import DunesMobile from '../BalkyImages/dune-colorful-abstract-digital-art-4k-wa
       padding: 0.75rem 2rem;
       font-size: 14px;
     }
+    
   }
 
   /* Other media queries */
@@ -371,18 +415,28 @@ import DunesMobile from '../BalkyImages/dune-colorful-abstract-digital-art-4k-wa
     <div class="pt-2">
       <div class="hero-text-title-bold">Rethinking</div> 
       <div class="hero-text-title">The Blockchain</div>
+     
     </div>
     <p class="hero-text-paragraph">
       Warthog's decentralized network empowers individuals with fair, balanced, and synergized CPU/GPU work. 
       It secures hardcoded DeFi and token technologies, 
       eliminating the risks of smart contracts. Our goal is a safer, more efficient blockchain, 
       aligned with the original vision of cryptocurrency: "one CPU, one vote."
+      
     </p>
+   
   </div>
 
   <div class="hero-grid-img">
+    
     <img class="heroCutoutNew" src={Dunes.src} alt="Abstract dunes landscape for Warthog blockchain hero section">
     <img class="dunes2" src={DunesMobile.src} alt="Abstract dunes landscape for Warthog blockchain hero section (mobile)">
     <a href='/#wheretobuy' class="hero-img-btn">Where To Buy</a>
+    <div class="hero-img-btn-apk-sml">
+     <MobileWalletButton />
+     </div>
   </div>
+  <div class="hero-img-btn-apk">
+     <MobileWalletButton />
+     </div>
 </div>
