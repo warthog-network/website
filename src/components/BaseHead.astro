@@ -74,20 +74,12 @@ import DropDownMenu from '../components/Menu.astro';
     overflow-x: hidden;
   }
 
-  .mobileMenu .ghost .dropdown-content a {
-    padding: 12px 1rem;
+  .mobileMenu .ghost .dropdown-content a,
+  .mobileMenu .ghost .dropdown-content .node-entry {
     max-width: 100%;
     word-wrap: break-word;
     white-space: normal;
     box-sizing: border-box;
-  }
-
-  .mobileMenu .ghost .dropdown-content input {
-    max-width: 100%;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    box-sizing: border-box;
-    width: 100%;
   }
 
   @media screen and (max-width: 767px) {

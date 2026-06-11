@@ -24,9 +24,17 @@ const networks = [
   // Single handler for all copy buttons
   function copyToClipboard(event) {
     const button = event.currentTarget;
-    const inputId = button.dataset.inputId;
-    const copyText = document.getElementById(inputId);
+    const url = button.dataset.nodeUrl;
 
+    if (url) {
+      navigator.clipboard.writeText(url);
+      alert("Copied the text: " + url);
+      return;
+    }
+
+    // Fallback for any legacy copy buttons using input id
+    const inputId = button.dataset.inputId;
+    const copyText = inputId ? document.getElementById(inputId) : null;
     if (copyText instanceof HTMLInputElement) {
       copyText.select();
       copyText.setSelectionRange(0, 99999);
@@ -35,143 +43,124 @@ const networks = [
     }
   }
 
-  // Attach listeners to all copy buttons
+  // Attach listeners to all copy buttons (initial, in case any exist before nodes populate)
   document.querySelectorAll('.copy-button').forEach(button => {
     button.addEventListener('click', copyToClipboard);
   });
 
-  // Node fetching and dropdown population
-  const API_URL = 'https://data.warthog.network/legacy-nodes.json';
-  let nodesCache = null;
-  let nodesLoading = false;
+  // Guard to prevent duplicate initialization when Menu component is rendered multiple times (desktop + mobileMenu)
+  if (!window.__warthogMenuInitialized) {
+    window.__warthogMenuInitialized = true;
 
-  function updateDropdowns(nodes, loading, error) {
-    const desktopDropdown = document.getElementById('nodes-dropdown-desktop');
-    const mobileDropdown = document.getElementById('nodes-dropdown-mobile');
-    const loadingHtml = '<span class="nodes-loading">Loading...</span>';
-    const errorHtml = '<span class="nodes-error">Failed to load nodes</span>';
-    const emptyHtml = '<span class="nodes-empty">No nodes available</span>';
-
-    const contentHtml = (() => {
-      if (loading) return loadingHtml;
-      if (error) return errorHtml;
-      if (!nodes || nodes.length === 0) return emptyHtml;
-      return nodes.map((node, idx) => `
-        <a class="copy-button" data-input-id="node-${idx}">
-          <label>${node.name}</label>
-          <input id="node-${idx}" value="${node.url}" readonly />
-        </a>
-      `).join('');
-    })();
-
-    if (desktopDropdown) desktopDropdown.innerHTML = contentHtml;
-    if (mobileDropdown) mobileDropdown.innerHTML = contentHtml;
-
-    // Re-attach copy button listeners
-    document.querySelectorAll('.copy-button').forEach(button => {
-      button.addEventListener('click', copyToClipboard);
-    });
-  }
-
-  async function fetchNodes() {
-    if (nodesCache !== null) {
-      updateDropdowns(nodesCache, false, null);
-      return;
-    }
-    if (nodesLoading) return;
-
-    nodesLoading = true;
-    updateDropdowns(null, true, null);
-
-    try {
-      const response = await fetch(API_URL);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
-      nodesCache = data.nodes || data;
-      nodesLoading = false;
-      updateDropdowns(nodesCache, false, null);
-    } catch (e) {
-      nodesLoading = false;
-      updateDropdowns(null, false, e.message || 'Failed to load nodes');
-    }
-  }
-
-  // Fetch nodes when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', fetchNodes);
-  } else {
-    fetchNodes();
-  }
-
-  const closeMenu = document.querySelector('.close-menu');
-  if (closeMenu) {
-    closeMenu.addEventListener('click', () => {
-      const mobileMenu = closeMenu.closest('.mobileMenu');
-      if (mobileMenu) {
-        mobileMenu.classList.remove('show');
-      }
-    });
-  }
-
-  // Dropdown toggle functionality
-  function closeAllDropdowns() {
-    document.querySelectorAll('.dropdown').forEach(dd => {
-      dd.classList.remove('active');
-    });
-  }
-
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.dropdown')) {
-      closeAllDropdowns();
-    }
-  });
-
-  document.querySelectorAll('.dropbtn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const dropdown = btn.parentElement;
-      const isActive = dropdown.classList.contains('active');
-      closeAllDropdowns();
-      if (!isActive) {
-        dropdown.classList.add('active');
-      }
-    });
-  });
-
-  // Cycling social icon functionality
-  function initCyclingSocialIcon() {
-    const cyclingLink = document.getElementById('cycling-social-link');
-    const cyclingImg = document.getElementById('cycling-social-img');
-    
-    if (!cyclingLink || !cyclingImg) return;
-
-    const networks = [
-      { imgSrc: 'github_gray.svg', href: 'https://github.com/warthog-network' },
-      { imgSrc: 'discord_gray.svg', href: 'https://discord.com/invite/QMDV8bGTdQ' },
-      { imgSrc: 'telegram_gray.svg', href: 'https://t.me/warthognetwork' },
-      { imgSrc: 'twitter_gray.svg', href: 'https://x.com/warthognetwork' },
+    // Hardcoded public nodes (official 1 and official 2)
+    const HARDCODED_NODES = [
+      { url: 'https://warthognode.duckdns.org', name: 'official 1' },
+      { url: 'http://65.87.7.86:3001', name: 'official 2' },
     ];
 
-    let currentIndex = 0;
+    function updateDropdowns(nodes) {
+      const desktopDropdowns = document.querySelectorAll('.nodes-dropdown-desktop');
+      const mobileDropdowns = document.querySelectorAll('.nodes-dropdown-mobile');
 
-    function cycleSocialIcon() {
-      currentIndex = (currentIndex + 1) % networks.length;
-      const network = networks[currentIndex];
-      cyclingLink.href = network.href;
-      cyclingImg.src = '/Images/' + network.imgSrc;
-      cyclingImg.alt = network.imgSrc.replace('_gray.svg', '').replace('.svg', '');
+      const contentHtml = (nodes && nodes.length > 0)
+        ? nodes.map((node) => `
+          <a class="copy-button node-entry" data-node-url="${node.url}">
+            <span class="node-name">${node.name}</span>
+            <span class="node-url">${node.url}</span>
+          </a>
+        `).join('')
+        : '<span class="nodes-empty">No nodes available</span>';
+
+      desktopDropdowns.forEach(el => { el.innerHTML = contentHtml; });
+      mobileDropdowns.forEach(el => { el.innerHTML = contentHtml; });
+
+      // Re-attach copy button listeners
+      document.querySelectorAll('.copy-button').forEach(button => {
+        button.addEventListener('click', copyToClipboard);
+      });
     }
 
-    // Cycle every 3 seconds
-    setInterval(cycleSocialIcon, 3000);
-  }
+    // Populate immediately (no API call). Uses querySelectorAll so both desktop and mobile instances get filled.
+    function populateNodes() {
+      updateDropdowns(HARDCODED_NODES);
+    }
 
-  // Initialize when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initCyclingSocialIcon);
-  } else {
-    initCyclingSocialIcon();
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', populateNodes);
+    } else {
+      populateNodes();
+    }
+
+    const closeMenu = document.querySelector('.close-menu');
+    if (closeMenu) {
+      closeMenu.addEventListener('click', () => {
+        const mobileMenu = closeMenu.closest('.mobileMenu');
+        if (mobileMenu) {
+          mobileMenu.classList.remove('show');
+        }
+      });
+    }
+
+    // Dropdown toggle functionality
+    function closeAllDropdowns() {
+      document.querySelectorAll('.dropdown').forEach(dd => {
+        dd.classList.remove('active');
+      });
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.dropdown')) {
+        closeAllDropdowns();
+      }
+    });
+
+    document.querySelectorAll('.dropbtn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const dropdown = btn.parentElement;
+        const isActive = dropdown.classList.contains('active');
+        closeAllDropdowns();
+        if (!isActive) {
+          dropdown.classList.add('active');
+        }
+      });
+    });
+
+    // Cycling social icon functionality
+    function initCyclingSocialIcon() {
+      const cyclingLink = document.getElementById('cycling-social-link');
+      const cyclingImg = document.getElementById('cycling-social-img');
+      
+      if (!cyclingLink || !cyclingImg) return;
+
+      const networks = [
+        { imgSrc: 'github_gray.svg', href: 'https://github.com/warthog-network' },
+        { imgSrc: 'discord_gray.svg', href: 'https://discord.com/invite/QMDV8bGTdQ' },
+        { imgSrc: 'telegram_gray.svg', href: 'https://t.me/warthognetwork' },
+        { imgSrc: 'twitter_gray.svg', href: 'https://x.com/warthognetwork' },
+      ];
+
+      let currentIndex = 0;
+
+      function cycleSocialIcon() {
+        currentIndex = (currentIndex + 1) % networks.length;
+        const network = networks[currentIndex];
+        cyclingLink.href = network.href;
+        cyclingImg.src = '/Images/' + network.imgSrc;
+        cyclingImg.alt = network.imgSrc.replace('_gray.svg', '').replace('.svg', '');
+      }
+
+      // Cycle every 3 seconds
+      setInterval(cycleSocialIcon, 3000);
+    }
+
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initCyclingSocialIcon);
+    } else {
+      initCyclingSocialIcon();
+    }
   }
 </script>
 
@@ -383,6 +372,7 @@ input{
   top: 100%;
   left: 50%;
   transform: translateX(-50%);
+  padding: 0.25rem 0;
 }
 .ghost{
     display: none;
@@ -393,13 +383,15 @@ input{
     transform: none;
     box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5);
     border-radius: 4px;
-    margin-top: 0.5rem;
+    margin-top: 0.4rem;
+    margin-bottom: 0.4rem;
     width: 100%;
     max-width: 100%;
     left: auto;
     top: auto;
     min-width: auto;
     box-sizing: border-box;
+    padding: 4px 0;
   }
   .dropdown{
     display: none;
@@ -417,33 +409,92 @@ input{
     display: none;
   }
   .mobileMenu .dropdown.active .dropdown-content {
-    display: block;
+    display: flex;
+    flex-direction: column;
   }
 }
 /* Links inside the dropdown */
 .dropdown-content a {
   color: rgb(255, 255, 255);
-  padding: 12px 50px;
   text-decoration: none;
   display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
   box-sizing: border-box;
+  max-width: 100%;
+  cursor: pointer;
 }
-input {
-  background: none;
-  border: none;
-}
-/* Change color of dropdown links on hover */
+
+/* Change color of dropdown links on hover (fallback) */
 .dropdown-content a:hover {background-color: rgb(245, 208, 0);}
 
 /* Show the dropdown menu on active class */
-.dropdown.active .dropdown-content {display: block;}
+.dropdown.active .dropdown-content {
+  display: flex;
+  flex-direction: column;
+}
 
 /* Change the background color of the dropdown button when the dropdown content is shown */
 .dropdown.active .dropbtn {background-color: transparent;}
+</style>
+
+<style is:global>
+  /* PUBLIC NODES dropdown list items - must be global so JS-injected content (innerHTML) matches */
+  .dropdown-content .node-entry {
+    display: block;
+    width: 100%;
+    padding: 0.55rem 0.7rem;
+    border-radius: 3px;
+    margin-bottom: 2px;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    box-sizing: border-box;
+  }
+  .dropdown-content .node-entry:last-child {
+    margin-bottom: 0;
+  }
+
+  .dropdown-content .node-name {
+    display: block;
+    font-weight: 600;
+    font-size: 0.85rem;
+    line-height: 1.2;
+    margin-bottom: 1px;
+    color: #fff;
+    text-align: center;
+    cursor: inherit;
+  }
+
+  .dropdown-content .node-url {
+    display: block;
+    font-size: 0.68rem;
+    line-height: 1.25;
+    color: #bbbbbb;
+    word-break: break-all;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    text-align: center;
+    cursor: inherit;
+  }
+
+  .dropdown-content .node-entry:hover {
+    background-color: rgb(245, 208, 0);
+    color: #1f1f1f;
+  }
+  .dropdown-content .node-entry:hover .node-name,
+  .dropdown-content .node-entry:hover .node-url {
+    color: inherit;
+  }
+
+  /* When the dropdown is shown as flex column (desktop + mobile active), stretch children */
+  .dropdown.active .dropdown-content,
+  .mobileMenu .dropdown.active .dropdown-content {
+    align-items: stretch;
+  }
+
+  /* Slightly tighter on the floating desktop popup */
+  .dropdown .dropdown-content .node-entry {
+    padding-top: 0.45rem;
+    padding-bottom: 0.45rem;
+  }
 </style>
 
 <div class='menu'>
@@ -461,16 +512,12 @@ input {
 
   <div class="dropdown">
     <button class="menuItem Nodes underlineText dropbtn">PUBLIC NODES</button>
-    <div class="dropdown-content menuItem" id="nodes-dropdown-desktop">
-      <span class="nodes-loading">Loading...</span>
-    </div>
+    <div class="dropdown-content menuItem nodes-dropdown-desktop"></div>
   </div>
 
   <div class="dropdown ghost menu">
     <button class="menuItem Nodes underlineText dropbtn">PUBLIC NODES</button>
-    <div class="dropdown-content menuItem" id="nodes-dropdown-mobile">
-      <span class="nodes-loading">Loading...</span>
-    </div>
+    <div class="dropdown-content menuItem nodes-dropdown-mobile"></div>
   </div>
 
   <div class='mobile-social-links'>
