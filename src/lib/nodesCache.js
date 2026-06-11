@@ -1,39 +1,16 @@
-const API_URL = 'https://data.warthog.network/legacy-nodes.json';
+const HARDCODED_NODES = [
+  { url: 'https://warthognode.duckdns.org', name: 'official 1' },
+  { url: 'http://65.87.7.86:3001', name: 'official 2' },
+];
 
-let cache = null;
+let cache = HARDCODED_NODES;
 let loading = false;
 let error = null;
 const subscribers = [];
 
 export async function fetchNodes() {
-  if (cache !== null) {
-    return { nodes: cache, loading: false, error };
-  }
-
-  if (loading) {
-    return { nodes: null, loading: true, error: null };
-  }
-
-  loading = true;
-  error = null;
-  notifySubscribers();
-
-  try {
-    const response = await fetch(API_URL);
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    const data = await response.json();
-    cache = data.nodes || data;
-    loading = false;
-    notifySubscribers();
-    return { nodes: cache, loading: false, error: null };
-  } catch (e) {
-    error = 'Failed to load nodes';
-    loading = false;
-    notifySubscribers();
-    return { nodes: null, loading: false, error };
-  }
+  // Hardcoded public nodes (no API call)
+  return { nodes: HARDCODED_NODES, loading: false, error: null };
 }
 
 function notifySubscribers() {
