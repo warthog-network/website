@@ -633,6 +633,14 @@ Astro.csp?.insertDirective(`font-src * data:`);
         </ol>
         There exists only one such price and our algorithm determines this price.
       </QA>
+      <QA question="I placed both a buy and a sell order at the same price, but only one side filled. Why?">
+        The other side was satisfied by the liquidity pool instead. When the
+        pool price isn't exactly at your order's price, one side can swap
+        directly with the pool more cheaply than matching your order. This is
+        the Fair Batch Matching equilibrium, not a bug. To force a direct match,
+        set a limit price that crosses the pool price enough to make the other
+        side prefer your order.
+      </QA>
     </div>
     <script>
       import LeaderLine from "leader-line-new";
