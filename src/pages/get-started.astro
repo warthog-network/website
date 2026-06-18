@@ -11,6 +11,9 @@ import Pickaxe from "../BalkyImages/getstartedimgs/pickaxe.svg";
 import Book from "../BalkyImages/getstartedimgs/book.svg";
 import WhereToBuy from "../components/WhereToBuy.astro";
 
+const webWalletUrl = "/webwallet";
+const mobileWalletApk = "/app-releaseV1_7.apk";
+
 const wallets = [
   {
     title: "Wart DAPP (GUI)",
@@ -260,6 +263,34 @@ const wallets = [
                 </div>
               </div>
             ))}
+            <div class="gs-card">
+              <div class="gs-card-icon">
+                <img src={Wallet.src} alt="" />
+              </div>
+              <h3>Web Wallet</h3>
+              <p>
+                Browser-based wallet for desktop and mobile. Access your WART
+                wallet from any device — no install required.
+              </p>
+              <div class="gs-card-actions">
+                <a href={webWalletUrl}>Open Web Wallet</a>
+              </div>
+            </div>
+            <div class="gs-card">
+              <div class="gs-card-icon">
+                <img src={Wallet.src} alt="" />
+              </div>
+              <h3>Mobile Wallet</h3>
+              <p>
+                Android wallet app. Download the APK to install on your Android
+                device.
+              </p>
+              <div class="gs-card-actions">
+                <a href={mobileWalletApk} download="app-releaseV1_7.apk">
+                  Download APK
+                </a>
+              </div>
+            </div>
           </div>
         </div>
 
