@@ -2,355 +2,359 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 const title = "Get Started";
 import "../styles.css";
-import Arrow from "../BalkyImages/Arrow 2.svg";
 import Wallet from "../BalkyImages/getstartedimgs/wallet.svg";
 import Nodes from "../BalkyImages/getstartedimgs/blockchain_nodes.svg";
 import GPU from "../BalkyImages/getstartedimgs/gpu.svg";
 import Pool from "../BalkyImages/getstartedimgs/pool.svg";
+import Swap from "../BalkyImages/deFiDemo/swap-vertical-circle.svg";
+import Pickaxe from "../BalkyImages/getstartedimgs/pickaxe.svg";
+import Book from "../BalkyImages/getstartedimgs/book.svg";
 import WhereToBuy from "../components/WhereToBuy.astro";
+
+const webWalletUrl = "/webwallet";
+const mobileWalletApk = "/app-releaseV1_7.apk";
+
+const wallets = [
+  {
+    title: "Wart DAPP (GUI)",
+    description:
+      "GUI wallet for Windows and Linux. Connects with one click to a public node, or manually type your node IP.",
+    download: "https://github.com/warthog-network/wart-dapp/releases",
+    guide: "https://docs.warthog.network/guides/wallet/wart-dapp/",
+  },
+  {
+    title: "Wart-Wallet (GUI)",
+    description:
+      "GUI wallet for Windows and Linux. Manually type your node IP (local or public).",
+    download: "https://github.com/warthog-network/wart-wallet/releases",
+    guide: "https://github.com/warthog-network/wart-wallet/blob/master/README.md",
+  },
+  {
+    title: "wart-wallet (command-line)",
+    description:
+      "Command-line wallet for power users. Manually type your node IP (local or public).",
+    download: "https://github.com/warthog-network/Warthog/releases",
+    guide: "https://docs.warthog.network/guides/wallet/wart-wallet-cli/",
+  },
+  {
+    title: "Browser Extension Wallet",
+    description:
+      "Browser extension for Chrome and Firefox. Uses public nodes or manually add your node IP.",
+    download: "https://github.com/warthog-network/warthog-extension/releases",
+    guide: "https://docs.warthog.network/guides/wallet/browser-extension-wallet/",
+  },
+];
 ---
 
 <style>
-    h1 {
-        font-weight: bold;
-    }
-    h3 {
-        font-size: 0.8rem;
-    }
+  .get-started-section {
+    padding-block: clamp(3rem, 6vw, 5.5rem);
+  }
 
-    .section-grids {
-        height: 30rem;
-        align-items: center;
-        position: relative;
-        display: grid;
-        grid-template-columns: 1fn 1fn;
-        grid-template-areas: "descriptions list";
-    }
-    @media (max-width: 40rem) {
-        .section-grids {
-            position: relative;
-            display: grid;
-            grid-template-columns: 1fn;
-            grid-template-areas:
-                "descriptions"
-                "list";
-        }
-        .descriptions {
-            margin-left: 0.5rem;
-            margin-right: 0.5rem;
-            justify-content: center;
-            border-color: black;
-            border-bottom-style: line;
-            border-bottom-width: 0.13rem;
-            border-right-style: none;
-            border-right-width: none;
-            max-width: 30rem;
-            grid-area: descriptions;
-            padding: 1rem;
-        }
-    }
-    .descriptions {
-        border-color: black;
-        border-right-style: line;
-        border-right-width: 0.13rem;
-        max-width: 30rem;
-        margin-top: 1rem;
-        grid-area: descriptions;
-        padding: 1rem;
-    }
-    .list {
-        padding: 1rem;
-        font-size: 1.5rem;
-        justify-content: start;
-        grid-area: list;
-    }
-    header {
-        background: radial-gradient(
-            circle at 24.1% 68.8%,
-            rgb(50, 50, 50) 0%,
-            rgb(0, 0, 0) 99.4%
-        );
-        color: white;
-        font-size: 2rem;
-    }
-    header > section {
-        padding: 0.5rem;
-        display: flex;
-    }
-    header > section > img {
-        padding-left: 1rem;
-    }
+  /* Pill segmented tab bar */
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    width: fit-content;
+    max-width: 100%;
+    background: rgba(8, 12, 24, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 0.35rem;
+    gap: 0.35rem;
+    margin-bottom: 2rem;
+  }
 
-    p {
-        max-width: 30rem;
-    }
-    .headers {
-        padding-top: 1rem;
-        padding-bottom: 1rem;
-        padding-right: 1rem;
-        display: flex;
-    }
-    .headers > img {
-        padding-left: 1rem;
-    }
-    h2 {
-        font-weight: bold;
-        font-size: 1.5rem;
-    }
-    .MiningPool {
-        gap: 4rem;
-        align-items: center;
-        height: 30rem;
-        margin-left: 1rem;
-        padding: 1rem;
-        display: flex;
-        justify-content: left;
-    }
-    @media (max-width:45rem) {
-        .MiningPool {
-        gap: 4rem;
-        align-items: center;
-        height: 30rem;
-        margin-left: 1rem;
-        padding: 1rem;
-        display: block;
-        justify-content: left;
-    }
-    }
-    .MiningPool-text {
-        margin-right: 1rem;
-        font-size: 0.8rem;
-    }
-    .bggrey {
-        background-color: rgb(209, 209, 209);
-        color: #000000;
-    }
+  .tabs input[type="radio"] {
+    display: none;
+  }
 
-    .bggrey h2,
-    .bggrey h1,
-    .bggrey p,
-    .bggrey li,
-    .bggrey a {
-        color: #000000;
-    }
+  .tab-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.6rem 1.25rem;
+    cursor: pointer;
+    border-radius: 8px;
+    color: var(--color-text-muted);
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+    white-space: nowrap;
+  }
 
-    .bggrey a {
-        color: #000000;
-    }
+  .tab-label:hover {
+    color: var(--color-text);
+    background: rgba(255, 255, 255, 0.04);
+  }
 
-    .bggrey a:hover {
-        color: #333333;
-    }
+  .tab-label img {
+    width: 18px;
+    height: 18px;
+    opacity: 0.7;
+    filter: brightness(1.4);
+    transition: opacity 0.2s, filter 0.2s;
+  }
 
-    /* Improve image contrast on grey backgrounds */
-    .bggrey .headers > img {
-        filter: brightness(0) contrast(1.2);
-        opacity: 0.9;
-    }
+  .tab-label:hover img {
+    opacity: 1;
+  }
 
-    /* Improve image contrast on dark backgrounds */
-    .section-grids:not(.bggrey) .headers > img {
-        filter: brightness(1.2) contrast(1.1);
-    }
+  .tabs input:checked + .tab-label {
+    background: var(--color-accent);
+    color: #0f172a;
+    box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35);
+  }
 
-    /* Make NODE icon brighter with higher contrast */
-    .section-grids .descriptions .headers h2#node + img {
-        filter: brightness(2.5) contrast(1.8) !important;
-    }
+  .tabs input:checked + .tab-label img {
+    opacity: 1;
+    filter: brightness(0.3) saturate(1.5);
+  }
+
+  .tab-panel {
+    display: none;
+    flex-basis: 100%;
+    margin-top: 1.5rem;
+  }
+
+  #tab-wallets:checked ~ #panel-wallets,
+  #tab-node:checked ~ #panel-node,
+  #tab-mining:checked ~ #panel-mining,
+  #tab-buying:checked ~ #panel-buying {
+    display: block;
+  }
+
+  /* Card grid */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: clamp(1rem, 2vw, 1.5rem);
+  }
+
+  .gs-card {
+    background: rgba(8, 12, 24, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .gs-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: var(--shadow-card);
+  }
+
+  .gs-card-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(56, 189, 248, 0.1);
+    border-radius: 0.75rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .gs-card-icon img {
+    width: 28px;
+    height: 28px;
+    filter: brightness(1.4);
+  }
+
+  .gs-card h3 {
+    font-size: 1.125rem;
+    margin: 0;
+    color: var(--color-text);
+    font-weight: 600;
+  }
+
+  .gs-card p {
+    color: var(--color-text-muted);
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .gs-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: auto;
+    padding-top: 0.5rem;
+  }
+
+  .gs-card-actions a {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.45rem 0.95rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: var(--color-text);
+    text-decoration: none;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .gs-card-actions a:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+
+  /* Anchor offset for fixed nav */
+  .anchor {
+    scroll-margin-top: 5rem;
+  }
 </style>
 
 <BaseLayout title={title}>
-    <div>
-        <header>
-            <section><h3>Get started</h3></section>
-             <section><h1><a href="#wallet">WALLETS</a></h1><img src={Arrow.src} /></section>
-            <section><h1><a href="#node">NODE</a></h1><img src={Arrow.src} /></section>
-            <section><h1><a href="#mining">MINING</a></h1><img src={Arrow.src} /></section>
-            <section><h1><a href="#buying">BUYING</a></h1><img src={Arrow.src} /></section>
-        </header>
-        <section class="section-grids">
-            <div class="descriptions">
-                <div class="headers">
-                    <h2 id="wallet">Wart dapp (GUI)</h2><img src={Wallet.src} />
-                </div>
-                <div>
-                    <p>
-                        To get started with Warthog network, you need first to
-                        create your wallet. You can currently choose between 3
-                        wallet solutions. Each of them need an instance of the
-                        node, local or public
-                    </p>
-                    <p>
-                        WART DAPP is a GUI wallet working on Windows and Linux.
-                        It works with a node. You can connect it with one click
-                        to a public node, or manually type your node IP.
-                    </p>
-                </div>
-            </div>
+  <section class="get-started-section">
+    <div class="site-shell">
+      <div class="section__header anchor" id="wallet">
+        <p class="section__eyebrow">Getting Started</p>
+        <h1 class="section__title">All the tools you need</h1>
+        <p class="section__lede">
+          Pick a wallet, run a node, start mining, or buy WART — everything you
+          need to begin using the Warthog network.
+        </p>
+      </div>
 
-            <div class="list">
-                <li>
-                    <a
-                        href="https://github.com/warthog-network/wart-dapp/releases"
-                        >Download</a>
-                </li>
-                <li>
-                    <a href="https://docs.warthog.network/guides/wallet/wart-dapp/"
-                        >Guide</a>
-                </li>
-            </div>
-        </section>
-        <section class="section-grids bggrey">
-            <div class="descriptions">
-                <div class="headers">
-                    <h2>Wart-Wallet (GUI)</h2><img src={Wallet.src} />
-                </div>
-                <div>
-                    <p>
-                        WART WALLET is also GUI wallet working on Windows and
-                        Linux. It works with a node. You have to manually type
-                        your node IP (local or public)
-                    </p>
-                </div>
-            </div>
+      <div class="tabs">
+        <input type="radio" name="tabs" id="tab-wallets" checked />
+        <label for="tab-wallets" class="tab-label">
+          <img src={Wallet.src} alt="" />
+          <span>Wallets</span>
+        </label>
 
-            <div class="list">
-                <li>
-                    <a
-                        href="https://github.com/warthog-network/wart-wallet/releases"
-                        >Download</a>
-                </li>
-                <li>
-                    <a
-                        href="https://github.com/warthog-network/wart-wallet/blob/master/README.md"
-                        >Guide</a>
-                </li>
-            </div>
-        </section>
-        <section class="section-grids">
-            <div class="descriptions">
-                <div class="headers">
-                    <h2>wart-wallet (command-line)</h2><img src={Wallet.src} />
-                </div>
-                <div>
-                    <p>
-                        WART WALLET is also GUI wallet working on Windows and
-                        Linux. It works with a node. You have to manually type
-                        your node IP (local or public)
-                    </p>
-                </div>
-            </div>
+        <input type="radio" name="tabs" id="tab-node" />
+        <label for="tab-node" class="tab-label">
+          <img src={Nodes.src} alt="" />
+          <span>Node</span>
+        </label>
 
-            <div class="list">
-                <li>
-                    <a
-                        href="https://github.com/warthog-network/Warthog/releases"
-                        >Download</a>
-                </li>
-                <li>
-                    <a
-                        href="https://docs.warthog.network/guides/wallet/wart-wallet-cli/"
-                        >Guide</a>
-                </li>
-            </div>
-        </section>
-        <section class="section-grids  bggrey">
-            <div class="descriptions">
-                <div class="headers">
-                    <h2>Browser Extension Wallet</h2><img src={Wallet.src} />
-                </div>
-                <div>
-                    <p>
-                        Browser Extension Wallet is a GUI wallet working on Chrome and
-                        Firefox. It works with a set of public nodes or you can manually add
-                        your node IP (local or public)
-                    </p>
-                </div>
-            </div>
+        <input type="radio" name="tabs" id="tab-mining" />
+        <label for="tab-mining" class="tab-label">
+          <img src={GPU.src} alt="" />
+          <span>Mining</span>
+        </label>
 
-            <div class="list">
-                <li>
-                    <a
-                        href="https://github.com/warthog-network/warthog-extension/releases"
-                        >Download</a>
-                </li>
-                <li>
-                    <a
-                        href="https://docs.warthog.network/guides/wallet/browser-extension-wallet/"
-                        >Guide</a>
-                </li>
-            </div>
-        </section>
-       
-        <section class="section-grids">
-            <div class="descriptions">
-                <div class="headers">
-                    <h2 id="node">NODE</h2><img src={Nodes.src} />
-                </div>
-                <div>
-                    <p>
-                        See here if you want to install your node on your
-                        computer (to support the blockchain decentralization, to
-                        use your wallet with a local node, or to mine solo for
-                        examples.
-                    </p>
-                </div>
-            </div>
-            <div class="list">
-                <li>
-                    <a
-                        href="https://github.com/warthog-network/Warthog/releases"
-                        >Download</a>
-                </li>
-                <li>
-                    <a href="https://docs.warthog.network/guides/node/"
-                        >Guide</a>
-                </li>
-            </div>
-        </section>
-        <div class='bggrey '>
-        <section class="MiningPool">
-            <div>
-                <div class="headers">
-                    <h2 id="mining">Mining</h2><img src={GPU.src} />
-                </div>
-                <h1>MINING GUIDE</h1>
-                <p class="MiningPool-text">
-                    See this guide to start mining now :
-                </p>
-                <div class="headers">
-                    <a
-                        class="MiningPool-text"
-                        href="https://docs.warthog.network/guides/mining/mining-quickstart/"
-                        >ENGLISH</a>
-                    <a
-                        class="MiningPool-text"
-                        href="https://docs.warthog.network/guides/mining/mining-quickstart_fr/"
-                        >FRENCH</a>
-                </div>
-            </div>
+        <input type="radio" name="tabs" id="tab-buying" />
+        <label for="tab-buying" class="tab-label">
+          <img src={Swap.src} alt="" />
+          <span>Trade</span>
+        </label>
 
-            <div>
-                <div class="headers">
-                    <h2>Pool</h2><img src={Pool.src} />
+        <div class="tab-panel" id="panel-wallets">
+          <div class="cards-grid">
+            {wallets.map((w) => (
+              <div class="gs-card">
+                <div class="gs-card-icon">
+                  <img src={Wallet.src} alt="" />
                 </div>
-                <p>See here for a list of pools:</p>
-                <li>
-                    <a
-                        class="MiningPool-text"
-                        href="https://miningpoolstats.stream/warthog"
-                        >Miningpoolstats</a>
-                </li><li>
-                    <a
-                        class="MiningPool-text"
-                        href="https://docs.warthog.network/links/#pools">
-                        DOCS</a>
-                </li>
+                <h3>{w.title}</h3>
+                <p>{w.description}</p>
+                <div class="gs-card-actions">
+                  <a href={w.download}>Download</a>
+                  <a href={w.guide}>Guide</a>
+                </div>
+              </div>
+            ))}
+            <div class="gs-card">
+              <div class="gs-card-icon">
+                <img src={Wallet.src} alt="" />
+              </div>
+              <h3>Web Wallet</h3>
+              <p>
+                Browser-based wallet for desktop and mobile. Access your WART
+                wallet from any device — no install required.
+              </p>
+              <div class="gs-card-actions">
+                <a href={webWalletUrl}>Open Web Wallet</a>
+              </div>
             </div>
-        </section>
+            <div class="gs-card">
+              <div class="gs-card-icon">
+                <img src={Wallet.src} alt="" />
+              </div>
+              <h3>Mobile Wallet</h3>
+              <p>
+                Android wallet app. Download the APK to install on your Android
+                device.
+              </p>
+              <div class="gs-card-actions">
+                <a href={mobileWalletApk} download="app-releaseV1_7.apk">
+                  Download APK
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel anchor" id="panel-node">
+          <div class="cards-grid">
+            <div class="gs-card">
+              <div class="gs-card-icon">
+                <img src={Nodes.src} alt="" />
+              </div>
+              <h3>Run a Node</h3>
+              <p>
+                Install a node on your computer to support the blockchain
+                decentralization, use your wallet with a local node, or mine
+                solo.
+              </p>
+              <div class="gs-card-actions">
+                <a href="https://github.com/warthog-network/Warthog/releases">Download</a>
+                <a href="https://docs.warthog.network/guides/node/">Guide</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel anchor" id="panel-mining">
+          <div class="cards-grid">
+            <div class="gs-card">
+              <div class="gs-card-icon">
+                <img src={Book.src} alt="" />
+              </div>
+              <h3>Mining Guide</h3>
+              <p>Start mining now. Janushash requires both CPU and GPU.</p>
+              <div class="gs-card-actions">
+                <a href="https://docs.warthog.network/guides/mining/quickstart/">English</a>
+                <a href="https://docs.warthog.network/guides/mining/quickstart/quickstart_fr/">French</a>
+              </div>
+            </div>
+            <div class="gs-card">
+              <div class="gs-card-icon">
+                <img src={Pool.src} alt="" />
+              </div>
+              <h3>Mining Pools</h3>
+              <p>List of mining pools for Warthog.</p>
+              <div class="gs-card-actions">
+                <a href="https://miningpoolstats.stream/warthog">Miningpoolstats</a>
+                <a href="https://docs.warthog.network/links/#pools">Docs</a>
+              </div>
+            </div>
+            <div class="gs-card">
+              <div class="gs-card-icon">
+                <img src={Pickaxe.src} alt="" />
+              </div>
+              <h3>BzMiner</h3>
+              <p>CPU/GPU Miner</p>
+              <div class="gs-card-actions">
+                <a href="https://www.bzminer.com/">Download</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-panel anchor" id="panel-buying">
+          <WhereToBuy />
+        </div>
+      </div>
     </div>
-    </div>
-    <div id="buying">
-    <WhereToBuy />
-</div>
+  </section>
 </BaseLayout>

@@ -1,0 +1,76 @@
+---
+const { question } = Astro.props;
+---
+
+<details class="faq-item">
+  <summary class="faq-question">{question}</summary>
+  <div class="faq-answer">
+    <slot />
+  </div>
+</details>
+
+<style>
+  .faq-item {
+    background: rgba(8, 12, 24, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .faq-item:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: var(--shadow-card);
+  }
+
+  .faq-item[open] {
+    border-color: var(--color-accent);
+  }
+
+  .faq-question {
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--color-text);
+    list-style: none;
+    position: relative;
+  }
+
+  .faq-question::-webkit-details-marker {
+    display: none;
+  }
+
+  .faq-question::after {
+    content: "+";
+    position: absolute;
+    right: 1.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-accent);
+    font-size: 1.25rem;
+    line-height: 1;
+  }
+
+  .faq-item[open] .faq-question::after {
+    content: "−";
+  }
+
+  .faq-answer {
+    padding: 0 1.25rem 1.25rem 1.25rem;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+  }
+
+  .faq-answer :global(a) {
+    color: var(--color-accent);
+    text-decoration: underline;
+  }
+
+  .faq-answer :global(code) {
+    background: rgba(56, 189, 248, 0.15);
+    color: var(--color-accent);
+    padding: 0.1rem 0.3rem;
+    border-radius: 0.25rem;
+    font-size: 0.85em;
+  }
+</style>
