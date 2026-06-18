@@ -1,7 +1,7 @@
 ---
 import dollarSvg from "../BalkyImages/deFiDemo/dollar-minimalistic.svg";
 import priceTagSvg from "../BalkyImages/deFiDemo/price-tag.svg";
-import QA from "../components/QA.jsx"
+import FAQ from "../components/FAQ.astro"
 import swapVirticalCircleSvg from "../BalkyImages/deFiDemo/swap-vertical-circle.svg";
 import rightArrowSvg from "../BalkyImages/deFiDemo/right-arrow.svg";
 import BaseLayout from "../layouts/BaseLayout.astro";
@@ -589,42 +589,42 @@ Astro.csp?.insertDirective(`font-src * data:`);
     </div>
     <div class="md:p-6 p-3 container">
       <h2>Questions and Answers</h2>
-      <QA question="What is this?">
+      <FAQ question="What is this?">
     Warthog is implementing a completely new DeFi model supporting a matching engine, which, in a one-of-a-kind way combines <em>two</em> sources of liquidity in a fair and sandwich-proof way: 
     <ul>
       <li>discrete liquidity in the form of order books</li>
       <li>continuous liquidity in the form of a liquidity pool</li>
     </ul>
-      </QA>
-      <QA question='What do you mean by "sandwich-proof"?'>
+      </FAQ>
+      <FAQ question='What do you mean by "sandwich-proof"?'>
         Sandwich attacks are one of the most dreaded DeFi attacks. They are part of a bigger problem called <em>front-running</em> which is inherently caused by that fact that in current DeFi designs reordering of transactions has an effect on their fill price. This is highly unfair against traders because their transactions are regularly sandwiched (front-run and back-run) by exploiters of this design. For example they buy before normal buy orders are executed, and sell immediately afterwards, essentially doing arbitrage trading within a block and causing financial loss to their victims. Reordering of Warthog's transactions won't have any effect such that sandwich attacks are not possible.
-      </QA>
-      <QA question="What is a matching engine?">
+      </FAQ>
+      <FAQ question="What is a matching engine?">
           Simply put, in TradFi (Traditional Finance) a <em>matching engine</em> is a program or routine that matches buy and sell orders. It is responsible for deciding which orders are matched and deducting fees. In Warthog we do not only match buy and sell orders, but also pool liquidity.
-      </QA>
-      <QA question='What are "WART" and "TOKEN"?'>
+      </FAQ>
+      <FAQ question='What are "WART" and "TOKEN"?'>
           WART is the native currency in Warthog. In this demo it acts as the quote currency. TOKEN acts as a generic placeholder for any Warthog tradable token (a feature that we are working on) that takes the role of the base currency.
-      </QA>
-      <QA question="What are base and quote currencies?">
+      </FAQ>
+      <FAQ question="What are base and quote currencies?">
         In finance terms, when talking about trading a currency pair, the currency that you are trading, i.e. buying or selling, is called <em>base currency</em>, whereas the other, the one with respect to which you are expressing the price, is called <em>quote currency</em>. In this example TOKEN is the base currency since we are refering buy/sell terms to TOKEN, and WART is the quote currency since we are expressing the prices in WART.
-      </QA>
-      <QA question="What are the gray, black and yellow colors expressing?">
+      </FAQ>
+      <FAQ question="What are the gray, black and yellow colors expressing?">
         For easier visualization we use the following color-codes:
         <ul>
           <li>Gray: TOKEN amount</li>
           <li>Black: WART amount</li>
           <li>Yellow: Price</li>
         </ul>
-      </QA>
-      <QA question="Why is the buy order amount measured in WART but not in TOKEN despite I am buying TOKEN?">
+      </FAQ>
+      <FAQ question="Why is the buy order amount measured in WART but not in TOKEN despite I am buying TOKEN?">
         In DeFi trades are specified as swaps, i.e. the input amount is specified for both trade directions 
         <ul>
           <li>When you swap from WART to TOKEN the WART to be swapped is specified.</li>
           <li>When you swap from TOKEN to WART the WART to be swapped is specified.</li>
         </ul>
         If we create an order book with TOKEN base currency out of these swaps, the buy orders are swaps that specify the WART amount to be swapped into TOKEN in contrast to traditional order books which would instead specify the TOKEN amount to buy with WART.
-      </QA>
-      <QA question="How does matching work in Warthog?">
+      </FAQ>
+      <FAQ question="How does matching work in Warthog?">
         The matching mechanism that we invented at Warthog works by finding a price <em>p</em> at which the situation between buy and sell orders is saturated, i.e.
         <ol>
           <li>Buys are saturated: Either all swaps from WART to TOKEN at current limit price or above are filled, or additional swaps would move the price down below a limit swap that was partially matched already.</li>
@@ -632,15 +632,15 @@ Astro.csp?.insertDirective(`font-src * data:`);
           <li>Some buy or sell pressure goes to the pool to move the price to <em>p</em></li>
         </ol>
         There exists only one such price and our algorithm determines this price.
-      </QA>
-      <QA question="I placed both a buy and a sell order at the same price, but only one side filled. Why?">
+      </FAQ>
+      <FAQ question="I placed both a buy and a sell order at the same price, but only one side filled. Why?">
         The other side was satisfied by the liquidity pool instead. When the
         pool price isn't exactly at your order's price, one side can swap
         directly with the pool more cheaply than matching your order. This is
         the Fair Batch Matching equilibrium, not a bug. To force a direct match,
         set a limit price that crosses the pool price enough to make the other
         side prefer your order.
-      </QA>
+      </FAQ>
     </div>
     <script>
       import LeaderLine from "leader-line-new";
