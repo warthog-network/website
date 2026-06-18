@@ -1,72 +1,60 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 
-const title = "Research";
-const paperParam = Astro.url.searchParams.get('paper');
+const title = "Whitepaper & Research";
+
+const papers = [
+  {
+    title: "Whitepaper",
+    description:
+      "The complete Warthog Network whitepaper — covers the project's vision, architecture, mining (Janushash/PoBW), DeFi (Fair Batch Matching), tokenomics, and roadmap. Auto-built on every commit to the build branch, always up to date.",
+    image: "/Images/whitepaper-preview.png",
+    href: "https://github.com/warthog-network/whitepaper/releases/download/build/main.pdf",
+  },
+  {
+    title: "Proof of Balanced Work",
+    description:
+      "PoBW introduces a novel cryptographic mining paradigm that combines multiple hash functions multiplicatively. This innovation enables hybrid mining algorithms requiring both CPU and GPU capabilities simultaneously, providing strong ASIC-resistance and promoting energy-efficient mining through balanced hardware configurations.",
+    image: "/Images/PoBW-preview.png",
+    href: "/PoBW.pdf",
+  },
+  {
+    title: "Fair Batch Matching",
+    description:
+      "FBM is a groundbreaking DeFi matching algorithm that eliminates sandwich attacks and MEV extraction by processing all swap orders jointly within a block. Every participant receives identical pricing regardless of transaction sequence, establishing a Nash equilibrium where manipulation becomes mathematically impossible.",
+    image: "/Images/FairBatchMatching-preview.png",
+    href: "/FairBatchMatching.pdf",
+  },
+];
 ---
 
 <BaseLayout title={title}>
-  {paperParam ? (
-    <div class="paper-viewer">
-      <a href="/research" class="back-button">← Back to Research</a>
-      <object
-        data={paperParam === 'pobw' ? '/PoBW.pdf' : '/FairBatchMatching.pdf'}
-        type="application/pdf"
-        class="pdf-viewer"
-      >
-        <iframe
-          src={paperParam === 'pobw' ? '/PoBW.pdf' : '/FairBatchMatching.pdf'}
-          class="pdf-iframe"
-        ></iframe>
-      </object>
+  <div class="research-container">
+    <div class="research-header">
+      <h1>Whitepaper &amp; Research</h1>
+      <p class="subtitle">
+        Warthog's whitepaper and research papers represent genuine scientific breakthroughs
+        in cryptocurrency, grounded in rigorous mathematical foundations. The core development
+        team holds advanced degrees in mathematics, statistics, and computer science from
+        top-tier universities.
+      </p>
     </div>
-  ) : (
-    <div class="research-container">
-      <div class="research-header">
-        <h1>Research</h1>
-        <p class="subtitle">
-          Warthog's research represents genuine scientific breakthroughs in cryptocurrency,
-          grounded in rigorous mathematical foundations. The core development team holds
-          advanced degrees in mathematics, statistics, and computer science from top-tier universities.
-        </p>
-      </div>
 
-      <div class="research-grid">
-        <a href="?paper=pobw" class="research-card">
+    <div class="research-grid">
+      {papers.map((paper) => (
+        <a href={paper.href} class="research-card" target="_blank" rel="noopener">
           <div class="paper-preview">
-            <img src="/Images/PoBW-preview.png" alt="Proof of Balanced Work Preview" />
+            <img src={paper.image} alt={`${paper.title} Preview`} />
             <span class="view-overlay">Click to View</span>
           </div>
           <div class="paper-content">
-            <h2>Proof of Balanced Work</h2>
-            <p>
-              PoBW introduces a novel cryptographic mining paradigm that combines multiple
-              hash functions multiplicatively. This innovation enables hybrid mining algorithms
-              requiring both CPU and GPU capabilities simultaneously, providing strong
-              ASIC-resistance and promoting energy-efficient mining through balanced hardware
-              configurations.
-            </p>
+            <h2>{paper.title}</h2>
+            <p>{paper.description}</p>
           </div>
         </a>
-
-        <a href="?paper=fbm" class="research-card">
-          <div class="paper-preview">
-            <img src="/Images/FairBatchMatching-preview.png" alt="Fair Batch Matching Preview" />
-            <span class="view-overlay">Click to View</span>
-          </div>
-          <div class="paper-content">
-            <h2>Fair Batch Matching</h2>
-            <p>
-              FBM is a groundbreaking DeFi matching algorithm that eliminates sandwich attacks
-              and MEV extraction by processing all swap orders jointly within a block.
-              Every participant receives identical pricing regardless of transaction sequence,
-              establishing a Nash equilibrium where manipulation becomes mathematically impossible.
-            </p>
-          </div>
-        </a>
-      </div>
+      ))}
     </div>
-  )}
+  </div>
 </BaseLayout>
 
 <style>
@@ -101,7 +89,7 @@ const paperParam = Astro.url.searchParams.get('paper');
 
   .research-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 2rem;
   }
 
@@ -122,11 +110,13 @@ const paperParam = Astro.url.searchParams.get('paper');
   .paper-preview {
     position: relative;
     overflow: hidden;
+    aspect-ratio: 1275 / 1651;
   }
 
   .paper-preview img {
     width: 100%;
-    height: auto;
+    height: 100%;
+    object-fit: cover;
     display: block;
     transition: transform 0.3s ease;
   }
@@ -175,38 +165,6 @@ const paperParam = Astro.url.searchParams.get('paper');
     font-weight: 400;
     line-height: 1.6;
     color: rgba(248, 250, 252, 0.85);
-  }
-
-  .paper-viewer {
-    display: flex;
-    flex-direction: column;
-    height: calc(100vh - 100px);
-  }
-
-  .back-button {
-    font-family: Montserrat, sans-serif;
-    font-size: 1rem;
-    font-weight: 600;
-    color: #38bdf8;
-    padding: 1rem 2rem;
-    text-decoration: none;
-    transition: color 0.3s ease;
-  }
-
-  .back-button:hover {
-    color: #f8fafc;
-  }
-
-  .pdf-viewer {
-    flex: 1;
-    width: 100%;
-    border: none;
-  }
-
-  .pdf-iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
   }
 
   @media (max-width: 850px) {
