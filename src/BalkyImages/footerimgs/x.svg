@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="-650 -636.815 2500 2500">
-  <defs>
-    <mask id="x-cutout">
-      <rect x="-650" y="-636.815" width="2500" height="2500" fill="white"/>
-      <path d="M306.615 79.694H144.011L892.476 1150.3h162.604ZM0 0h357.328l309.814 450.883L1055.03 0h105.86L714.15 519.295 1200 1226.37H842.672L515.493 750.215 105.866 1226.37H0l468.485-544.568Z" fill="black"/>
-    </mask>
-  </defs>
-  <circle cx="600" cy="613.185" r="1080" fill="#F0F0EF" mask="url(#x-cutout)"/>
-</svg>
