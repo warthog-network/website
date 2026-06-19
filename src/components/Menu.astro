@@ -146,7 +146,7 @@ const networks = [
         currentIndex = (currentIndex + 1) % networks.length;
         const network = networks[currentIndex];
         cyclingLink.href = network.href;
-        cyclingImg.src = '/Images/' + network.imgSrc;
+        cyclingImg.src = '/images/' + network.imgSrc;
         cyclingImg.alt = network.imgSrc.replace('_gray.svg', '').replace('.svg', '');
       }
 
@@ -522,7 +522,7 @@ input{
   <div class='mobile-social-links'>
     {networks.map((network) => (
       <a href={network.href} target="_blank">
-        <img class='icon' src={'/Images/' + network.imgSrc} alt="logo" />
+        <img class='icon' src={'/images/' + network.imgSrc} alt="logo" />
       </a>
     ))}
   </div>
@@ -531,13 +531,13 @@ input{
 <span class='social-links desktop-social-links'>
   {networks.map((network) => (
     <a href={network.href} target="_blank">
-      <img class='icon' src={'/Images/' + network.imgSrc} alt="logo" />
+      <img class='icon' src={'/images/' + network.imgSrc} alt="logo" />
     </a>
   ))}
 </span>
 
 <span class="cycling-social-icon desktop-cycling-social">
   <a id="cycling-social-link" href={networks[0].href} target="_blank">
-    <img id="cycling-social-img" class='icon' src={'/Images/' + networks[0].imgSrc} alt="social" />
+    <img id="cycling-social-img" class='icon' src={'/images/' + networks[0].imgSrc} alt="social" />
   </a>
 </span>
