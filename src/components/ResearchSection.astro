@@ -1,8 +1,4 @@
 ---
-import BaseLayout from "../layouts/BaseLayout.astro";
-
-const title = "Whitepaper & Research";
-
 const papers = [
   {
     title: "Whitepaper",
@@ -28,7 +24,132 @@ const papers = [
 ];
 ---
 
-<BaseLayout title={title}>
+<style>
+  .research-section {
+    padding-block: clamp(3rem, 6vw, 5.5rem);
+    scroll-margin-top: 5rem;
+  }
+
+  .research-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-inline: clamp(1rem, 4vw, 3rem);
+  }
+
+  .research-header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+
+  .research-header h1 {
+    font-family: var(--font-sans);
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 1rem;
+  }
+
+  .subtitle {
+    font-family: var(--font-sans);
+    font-size: 1.1rem;
+    font-weight: 400;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .research-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
+  }
+
+  .research-card {
+    background: rgba(8, 12, 24, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    text-decoration: none;
+    display: block;
+  }
+
+  .research-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(56, 189, 248, 0.45);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  }
+
+  .paper-preview {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 1275 / 1651;
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .paper-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+  }
+
+  .research-card:hover .paper-preview img {
+    transform: scale(1.02);
+  }
+
+  .view-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-sans);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .research-card:hover .view-overlay {
+    opacity: 1;
+  }
+
+  .paper-content {
+    padding: 1.5rem;
+  }
+
+  .paper-content h2 {
+    font-family: var(--font-sans);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 0.75rem;
+  }
+
+  .paper-content p {
+    font-family: var(--font-sans);
+    font-size: 0.938rem;
+    font-weight: 400;
+    line-height: 1.6;
+    color: var(--color-text-muted);
+  }
+
+  @media (max-width: 850px) {
+    .research-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<section class="research-section" id="research">
   <div class="research-container">
     <div class="research-header">
       <h1>Whitepaper &amp; Research</h1>
@@ -55,129 +176,4 @@ const papers = [
       ))}
     </div>
   </div>
-</BaseLayout>
-
-<style>
-  .research-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem;
-  }
-
-  .research-header {
-    text-align: center;
-    margin-bottom: 3rem;
-  }
-
-  .research-header h1 {
-    font-family: Montserrat, sans-serif;
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: #f8fafc;
-    margin-bottom: 1rem;
-  }
-
-  .subtitle {
-    font-family: Montserrat, sans-serif;
-    font-size: 1.1rem;
-    font-weight: 400;
-    color: rgba(248, 250, 252, 0.85);
-    line-height: 1.6;
-    max-width: 800px;
-    margin: 0 auto;
-  }
-
-  .research-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 2rem;
-  }
-
-  .research-card {
-    background: rgba(42, 42, 42, 0.8);
-    border-radius: 0.75rem;
-    overflow: hidden;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    text-decoration: none;
-    display: block;
-  }
-
-  .research-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  }
-
-  .paper-preview {
-    position: relative;
-    overflow: hidden;
-    aspect-ratio: 1275 / 1651;
-  }
-
-  .paper-preview img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    transition: transform 0.3s ease;
-  }
-
-  .research-card:hover .paper-preview img {
-    transform: scale(1.02);
-  }
-
-  .view-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: Montserrat, sans-serif;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #f8fafc;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-
-  .research-card:hover .view-overlay {
-    opacity: 1;
-  }
-
-  .paper-content {
-    padding: 1.5rem;
-  }
-
-  .paper-content h2 {
-    font-family: Montserrat, sans-serif;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #f8fafc;
-    margin-bottom: 0.75rem;
-  }
-
-  .paper-content p {
-    font-family: Montserrat, sans-serif;
-    font-size: 0.938rem;
-    font-weight: 400;
-    line-height: 1.6;
-    color: rgba(248, 250, 252, 0.85);
-  }
-
-  @media (max-width: 850px) {
-    .research-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .research-container {
-      padding: 1rem;
-    }
-
-    .research-header h1 {
-      font-size: 2rem;
-    }
-  }
-</style>
+</section>

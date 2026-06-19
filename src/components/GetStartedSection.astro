@@ -1,7 +1,4 @@
 ---
-import BaseLayout from "../layouts/BaseLayout.astro";
-const title = "Get Started";
-import "../styles.css";
 import Wallet from "../BalkyImages/getstartedimgs/wallet.svg";
 import Nodes from "../BalkyImages/getstartedimgs/blockchain_nodes.svg";
 import GPU from "../BalkyImages/getstartedimgs/gpu.svg";
@@ -9,7 +6,7 @@ import Pool from "../BalkyImages/getstartedimgs/pool.svg";
 import Swap from "../BalkyImages/getstartedimgs/swap.svg";
 import Pickaxe from "../BalkyImages/getstartedimgs/pickaxe.svg";
 import Book from "../BalkyImages/getstartedimgs/book.svg";
-import WhereToBuy from "../components/WhereToBuy.astro";
+import WhereToBuy from "./WhereToBuy.astro";
 
 const webWalletUrl = "/webwallet";
 const mobileWalletApk = "/app-releaseV1_7.apk";
@@ -49,9 +46,9 @@ const wallets = [
 <style>
   .get-started-section {
     padding-block: clamp(3rem, 6vw, 5.5rem);
+    scroll-margin-top: 5rem;
   }
 
-  /* Pill segmented tab bar */
   .tabs {
     display: flex;
     flex-wrap: wrap;
@@ -125,7 +122,6 @@ const wallets = [
     display: block;
   }
 
-  /* Card grid */
   .cards-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -204,157 +200,150 @@ const wallets = [
     border-color: var(--color-accent);
     color: var(--color-accent);
   }
-
-  /* Anchor offset for fixed nav */
-  .anchor {
-    scroll-margin-top: 5rem;
-  }
 </style>
 
-<BaseLayout title={title}>
-  <section class="get-started-section">
-    <div class="site-shell">
-      <div class="section__header anchor" id="wallet">
-        <p class="section__eyebrow">Getting Started</p>
-        <h1 class="section__title">All the tools you need</h1>
-        <p class="section__lede">
-          Pick a wallet, run a node, start mining, or buy WART — everything you
-          need to begin using the Warthog network.
-        </p>
+<section class="get-started-section" id="get-started">
+  <div class="site-shell">
+    <div class="section__header">
+      <p class="section__eyebrow">Getting Started</p>
+      <h1 class="section__title">All the tools you need</h1>
+      <p class="section__lede">
+        Pick a wallet, run a node, start mining, or buy WART — everything you
+        need to begin using the Warthog network.
+      </p>
+    </div>
+
+    <div class="tabs">
+      <input type="radio" name="tabs" id="tab-wallets" checked />
+      <label for="tab-wallets" class="tab-label">
+        <img src={Wallet.src} alt="" />
+        <span>Wallets</span>
+      </label>
+
+      <input type="radio" name="tabs" id="tab-node" />
+      <label for="tab-node" class="tab-label">
+        <img src={Nodes.src} alt="" />
+        <span>Node</span>
+      </label>
+
+      <input type="radio" name="tabs" id="tab-mining" />
+      <label for="tab-mining" class="tab-label">
+        <img src={GPU.src} alt="" />
+        <span>Mining</span>
+      </label>
+
+      <input type="radio" name="tabs" id="tab-buying" />
+      <label for="tab-buying" class="tab-label">
+        <img src={Swap.src} alt="" />
+        <span>Trade</span>
+      </label>
+
+      <div class="tab-panel" id="panel-wallets">
+        <div class="cards-grid">
+          {wallets.map((w) => (
+            <div class="gs-card">
+              <div class="gs-card-icon">
+                <img src={Wallet.src} alt="" />
+              </div>
+              <h3>{w.title}</h3>
+              <p>{w.description}</p>
+              <div class="gs-card-actions">
+                <a href={w.download}>Download</a>
+                <a href={w.guide}>Guide</a>
+              </div>
+            </div>
+          ))}
+          <div class="gs-card">
+            <div class="gs-card-icon">
+              <img src={Wallet.src} alt="" />
+            </div>
+            <h3>Web Wallet</h3>
+            <p>
+              Browser-based wallet for desktop and mobile. Access your WART
+              wallet from any device — no install required.
+            </p>
+            <div class="gs-card-actions">
+              <a href={webWalletUrl}>Open Web Wallet</a>
+            </div>
+          </div>
+          <div class="gs-card">
+            <div class="gs-card-icon">
+              <img src={Wallet.src} alt="" />
+            </div>
+            <h3>Mobile Wallet</h3>
+            <p>
+              Android wallet app. Download the APK to install on your Android
+              device.
+            </p>
+            <div class="gs-card-actions">
+              <a href={mobileWalletApk} download="app-releaseV1_7.apk">
+                Download APK
+              </a>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="tabs">
-        <input type="radio" name="tabs" id="tab-wallets" checked />
-        <label for="tab-wallets" class="tab-label">
-          <img src={Wallet.src} alt="" />
-          <span>Wallets</span>
-        </label>
-
-        <input type="radio" name="tabs" id="tab-node" />
-        <label for="tab-node" class="tab-label">
-          <img src={Nodes.src} alt="" />
-          <span>Node</span>
-        </label>
-
-        <input type="radio" name="tabs" id="tab-mining" />
-        <label for="tab-mining" class="tab-label">
-          <img src={GPU.src} alt="" />
-          <span>Mining</span>
-        </label>
-
-        <input type="radio" name="tabs" id="tab-buying" />
-        <label for="tab-buying" class="tab-label">
-          <img src={Swap.src} alt="" />
-          <span>Trade</span>
-        </label>
-
-        <div class="tab-panel" id="panel-wallets">
-          <div class="cards-grid">
-            {wallets.map((w) => (
-              <div class="gs-card">
-                <div class="gs-card-icon">
-                  <img src={Wallet.src} alt="" />
-                </div>
-                <h3>{w.title}</h3>
-                <p>{w.description}</p>
-                <div class="gs-card-actions">
-                  <a href={w.download}>Download</a>
-                  <a href={w.guide}>Guide</a>
-                </div>
-              </div>
-            ))}
-            <div class="gs-card">
-              <div class="gs-card-icon">
-                <img src={Wallet.src} alt="" />
-              </div>
-              <h3>Web Wallet</h3>
-              <p>
-                Browser-based wallet for desktop and mobile. Access your WART
-                wallet from any device — no install required.
-              </p>
-              <div class="gs-card-actions">
-                <a href={webWalletUrl}>Open Web Wallet</a>
-              </div>
+      <div class="tab-panel" id="panel-node">
+        <div class="cards-grid">
+          <div class="gs-card">
+            <div class="gs-card-icon">
+              <img src={Nodes.src} alt="" />
             </div>
-            <div class="gs-card">
-              <div class="gs-card-icon">
-                <img src={Wallet.src} alt="" />
-              </div>
-              <h3>Mobile Wallet</h3>
-              <p>
-                Android wallet app. Download the APK to install on your Android
-                device.
-              </p>
-              <div class="gs-card-actions">
-                <a href={mobileWalletApk} download="app-releaseV1_7.apk">
-                  Download APK
-                </a>
-              </div>
+            <h3>Run a Node</h3>
+            <p>
+              Install a node on your computer to support the blockchain
+              decentralization, use your wallet with a local node, or mine
+              solo.
+            </p>
+            <div class="gs-card-actions">
+              <a href="https://github.com/warthog-network/Warthog/releases">Download</a>
+              <a href="https://docs.warthog.network/guides/node/">Guide</a>
             </div>
           </div>
         </div>
+      </div>
 
-        <div class="tab-panel anchor" id="panel-node">
-          <div class="cards-grid">
-            <div class="gs-card">
-              <div class="gs-card-icon">
-                <img src={Nodes.src} alt="" />
-              </div>
-              <h3>Run a Node</h3>
-              <p>
-                Install a node on your computer to support the blockchain
-                decentralization, use your wallet with a local node, or mine
-                solo.
-              </p>
-              <div class="gs-card-actions">
-                <a href="https://github.com/warthog-network/Warthog/releases">Download</a>
-                <a href="https://docs.warthog.network/guides/node/">Guide</a>
-              </div>
+      <div class="tab-panel" id="panel-mining">
+        <div class="cards-grid">
+          <div class="gs-card">
+            <div class="gs-card-icon">
+              <img src={Book.src} alt="" />
+            </div>
+            <h3>Mining Guide</h3>
+            <p>Start mining now. Janushash requires both CPU and GPU.</p>
+            <div class="gs-card-actions">
+              <a href="https://docs.warthog.network/guides/mining/quickstart/">English</a>
+              <a href="https://docs.warthog.network/guides/mining/quickstart/quickstart_fr/">French</a>
+            </div>
+          </div>
+          <div class="gs-card">
+            <div class="gs-card-icon">
+              <img src={Pool.src} alt="" />
+            </div>
+            <h3>Mining Pools</h3>
+            <p>List of mining pools for Warthog.</p>
+            <div class="gs-card-actions">
+              <a href="https://miningpoolstats.stream/warthog">Miningpoolstats</a>
+              <a href="https://docs.warthog.network/links/#pools">Docs</a>
+            </div>
+          </div>
+          <div class="gs-card">
+            <div class="gs-card-icon">
+              <img src={Pickaxe.src} alt="" />
+            </div>
+            <h3>BzMiner</h3>
+            <p>CPU/GPU Miner</p>
+            <div class="gs-card-actions">
+              <a href="https://www.bzminer.com/">Download</a>
             </div>
           </div>
         </div>
+      </div>
 
-        <div class="tab-panel anchor" id="panel-mining">
-          <div class="cards-grid">
-            <div class="gs-card">
-              <div class="gs-card-icon">
-                <img src={Book.src} alt="" />
-              </div>
-              <h3>Mining Guide</h3>
-              <p>Start mining now. Janushash requires both CPU and GPU.</p>
-              <div class="gs-card-actions">
-                <a href="https://docs.warthog.network/guides/mining/quickstart/">English</a>
-                <a href="https://docs.warthog.network/guides/mining/quickstart/quickstart_fr/">French</a>
-              </div>
-            </div>
-            <div class="gs-card">
-              <div class="gs-card-icon">
-                <img src={Pool.src} alt="" />
-              </div>
-              <h3>Mining Pools</h3>
-              <p>List of mining pools for Warthog.</p>
-              <div class="gs-card-actions">
-                <a href="https://miningpoolstats.stream/warthog">Miningpoolstats</a>
-                <a href="https://docs.warthog.network/links/#pools">Docs</a>
-              </div>
-            </div>
-            <div class="gs-card">
-              <div class="gs-card-icon">
-                <img src={Pickaxe.src} alt="" />
-              </div>
-              <h3>BzMiner</h3>
-              <p>CPU/GPU Miner</p>
-              <div class="gs-card-actions">
-                <a href="https://www.bzminer.com/">Download</a>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="tab-panel anchor" id="panel-buying">
-          <WhereToBuy />
-        </div>
+      <div class="tab-panel" id="panel-buying">
+        <WhereToBuy />
       </div>
     </div>
-  </section>
-</BaseLayout>
+  </div>
+</section>
