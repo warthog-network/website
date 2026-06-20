@@ -11,6 +11,8 @@ import RoadMap from "../components/RoadMap.astro";
 import ChainContributors from "../components/ChainContributors.astro";
 import WhereToBuy from "../components/WhereToBuy.astro";
 import MobileWalletButton from "../components/mobile-wallet-button.astro";
+import GetStartedSection from "../components/GetStartedSection.astro";
+import ResearchSection from "../components/ResearchSection.astro";
 
 const title = "Warthog Network";
 ---
@@ -18,11 +20,11 @@ const title = "Warthog Network";
     <ParallaxLayout
       inset="inset-x-0"
       height="h-[735px] md:h-[785px] lg:h-[540px]"
-      backgroundTailwind="bg-[url('../Images/Parallax/WarthogParallaxBGwhite640.jpg')] md:bg-[url('../Images/Parallax/WarthogParallaxBGwhite768.jpg')] lg:bg-[url('../Images/Parallax/WarthogParallaxBGwhite.jpg')]"
+      backgroundTailwind="bg-[url('../images/parallax/WarthogParallaxBGwhite640.jpg')] md:bg-[url('../images/parallax/WarthogParallaxBGwhite768.jpg')] lg:bg-[url('../images/parallax/WarthogParallaxBGwhite.jpg')]"
       scrollSpeed="1">
 
     <Hero/>
-  
+
     </ParallaxLayout>
 
     <WhatsNew/>
@@ -30,19 +32,23 @@ const title = "Warthog Network";
     <UniqueFeatures/>
 
 
-    <ParallaxLayout 
+    <ParallaxLayout
     inset="inset-0"
     height="h-[75rem] sm:h-[65rem] md:h-[65rem] lg:h-[55rem]"
-    backgroundTailwind="bg-[url('../Images/Parallax/WarthogParallaxBGcolor640.jpg')] md:bg-[url('../Images/Parallax/WarthogParallaxBGcolor768.jpg')] lg:bg-[url('../Images/Parallax/WarthogParallaxBGcolor.jpg')]"
+    backgroundTailwind="bg-[url('../images/parallax/WarthogParallaxBGcolor640.jpg')] md:bg-[url('../images/parallax/WarthogParallaxBGcolor768.jpg')] lg:bg-[url('../images/parallax/WarthogParallaxBGcolor.jpg')]"
     scrollSpeed="1">
     <RevolutionaryFeatures/>
- 
+
 </ParallaxLayout>
   <UpcomingFeatures/>
 
   <MarketData/>
 
   <WhereToBuy/>
+
+  <GetStartedSection/>
+
+  <ResearchSection/>
 
   <RoadMap/>
 

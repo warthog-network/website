@@ -1,9 +1,9 @@
 ---
 const links = [
-  { name: 'GET\u00A0\STARTED', href: '/get-started' },
+  { name: 'GET\u00A0\STARTED', href: '/#get-started' },
   { name: 'NEWS', href: '/news' },
   { name: 'DOCS', href: 'https://docs.warthog.network/', target: '_blank' },
-  { name: 'WHITEPAPER\u00A0&\u00A0RESEARCH', href: '/research' },
+  { name: 'WHITEPAPER\u00A0&\u00A0RESEARCH', href: '/#research' },
   { name: 'FAQS', href: '/faqs' },
   { name: 'EXPLORER', href: '/explorer', target: '_blank' },
   { name: 'DEFI\u00A0\DEMO', href: '/defi-demo' },
@@ -15,7 +15,7 @@ const networks = [
   { imgSrc: 'github_gray.svg', href: 'https://github.com/warthog-network' },
   { imgSrc: 'discord_gray.svg', href: 'https://discord.com/invite/QMDV8bGTdQ' },
   { imgSrc: 'telegram_gray.svg', href: 'https://t.me/warthognetwork' },
-  { imgSrc: 'twitter_gray.svg', href: 'https://x.com/warthognetwork' },
+  { imgSrc: 'x_gray.svg', href: 'https://x.com/warthognetwork' },
 ];
 ---
 
@@ -137,7 +137,7 @@ const networks = [
         { imgSrc: 'github_gray.svg', href: 'https://github.com/warthog-network' },
         { imgSrc: 'discord_gray.svg', href: 'https://discord.com/invite/QMDV8bGTdQ' },
         { imgSrc: 'telegram_gray.svg', href: 'https://t.me/warthognetwork' },
-        { imgSrc: 'twitter_gray.svg', href: 'https://x.com/warthognetwork' },
+        { imgSrc: 'x_gray.svg', href: 'https://x.com/warthognetwork' },
       ];
 
       let currentIndex = 0;
@@ -146,7 +146,7 @@ const networks = [
         currentIndex = (currentIndex + 1) % networks.length;
         const network = networks[currentIndex];
         cyclingLink.href = network.href;
-        cyclingImg.src = '/Images/' + network.imgSrc;
+        cyclingImg.src = '/images/' + network.imgSrc;
         cyclingImg.alt = network.imgSrc.replace('_gray.svg', '').replace('.svg', '');
       }
 
@@ -522,7 +522,7 @@ input{
   <div class='mobile-social-links'>
     {networks.map((network) => (
       <a href={network.href} target="_blank">
-        <img class='icon' src={'/Images/' + network.imgSrc} alt="logo" />
+        <img class='icon' src={'/images/' + network.imgSrc} alt="logo" />
       </a>
     ))}
   </div>
@@ -531,13 +531,13 @@ input{
 <span class='social-links desktop-social-links'>
   {networks.map((network) => (
     <a href={network.href} target="_blank">
-      <img class='icon' src={'/Images/' + network.imgSrc} alt="logo" />
+      <img class='icon' src={'/images/' + network.imgSrc} alt="logo" />
     </a>
   ))}
 </span>
 
 <span class="cycling-social-icon desktop-cycling-social">
   <a id="cycling-social-link" href={networks[0].href} target="_blank">
-    <img id="cycling-social-img" class='icon' src={'/Images/' + networks[0].imgSrc} alt="social" />
+    <img id="cycling-social-img" class='icon' src={'/images/' + networks[0].imgSrc} alt="social" />
   </a>
 </span>

@@ -1,53 +1,187 @@
 ---
-import Discord from "../BalkyImages/footerimgs/Discord Logos.svg";
-import Telegram from "../BalkyImages/footerimgs/telegram-1.png";
-import Twitter from "../BalkyImages/footerimgs/twitter.svg";
-import Github from "../BalkyImages/footerimgs/github.svg";
+const year = new Date().getFullYear();
 ---
 
-<div
-  class="text-center sm:text-left pt-5 bg-[radial-gradient(circle_at_24.1%_68.8%,_rgb(22,_22,_22)_0%,_rgb(0,_0,_0)_99.4%)] text-white"
->
-  <section
-    class="inline-flex md:text-base sm:text-sm text-2xl items-center flex-col sm:flex-row sm:flex-wrap justify-center sm:justify-start gap-4 sm:gap-6 lg:gap-10 mb-3"
-  >
-    <img
-      class="w-52"
-      src="/Images/Warthog_2024_Full Logo.svg"
-      alt="Warthog Logo"
-    />
-    <a href="/get-started" class="px-2">Get started</a>
-    <a href="/news" class="px-2">News</a>
-    <a href="https://docs.warthog.network/" target="_blank" class="px-2"
-      >Tech-stuff</a
-    >
-    <a href="/research" class="px-2">Whitepaper &amp; Research</a>
-    <a href="/faqs" class="px-2">FAQs</a>
-    <a href="https://wartscan.io/" target="_blank" class="px-2">Explorer</a>
-    <a href="/defi-demo">Defi Demo</a>
-  </section>
-  <section class="px-20">
-    <p class="border-dotted border-b-2 mb-7 mt-3 max-w-[40rem]"></p>
-  </section>
-  <div class="mx-10 mb-10">
-    <p class="my-3">Join our community!</p>
-    <div class="inline-flex items-center socials justify-start">
-      <a href="https://discord.com/invite/QMDV8bGTdQ" class="mx-3"
-        ><img src={Discord.src} alt="Discord" /></a
-      >
-      <a href="https://t.me/warthognetwork" class="mx-3"
-        ><img src={Telegram.src} alt="Telegram" /></a
-      >
-      <a href="https://github.com/warthog-network" class="mx-3"
-        ><img src={Github.src} alt="GitHub" /></a
-      >
-      <a href="https://x.com/warthognetwork" class="mx-3"
-        ><img src={Twitter.src} alt="Twitter" /></a
-      >
+<style>
+  .footer-inner {
+    max-width: var(--container-max);
+    margin-inline: auto;
+    padding: clamp(2.5rem, 5vw, 4rem) clamp(1rem, 4vw, 3rem) clamp(1.5rem, 3vw, 2rem);
+  }
+
+  .footer-grid {
+    display: grid;
+    gap: clamp(1.5rem, 3vw, 2.5rem);
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 720px) {
+    .footer-grid {
+      grid-template-columns: 1.4fr 1fr 1fr 1fr;
+    }
+  }
+
+  .footer-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .footer-brand img {
+    width: 12rem;
+    height: auto;
+  }
+
+  .footer-brand p {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    line-height: 1.55;
+    max-width: 28rem;
+  }
+
+  .footer-col h3 {
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-text);
+    margin: 0 0 0.85rem 0;
+  }
+
+  .footer-col ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .footer-col a {
+    color: var(--color-text-muted);
+    text-decoration: none;
+    font-size: 0.92rem;
+    transition: color 0.18s ease;
+  }
+
+  .footer-col a:hover {
+    color: var(--color-accent);
+  }
+
+  .footer-socials {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .footer-socials a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .footer-socials a:hover {
+    background: rgba(56, 189, 248, 0.12);
+    border-color: rgba(56, 189, 248, 0.45);
+    transform: translateY(-1px);
+  }
+
+  .footer-socials img {
+    width: 1.15rem;
+    height: 1.15rem;
+    object-fit: contain;
+    opacity: 0.75;
+    transition: opacity 0.2s ease, filter 0.2s ease;
+  }
+
+  .footer-socials a:hover img {
+    opacity: 1;
+    filter: brightness(1.4);
+  }
+
+  .footer-bottom {
+    margin-top: clamp(2rem, 4vw, 3rem);
+    padding-top: 1.25rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .footer-bottom p {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.8rem;
+  }
+
+  .footer-credit {
+    opacity: 0.7;
+  }
+</style>
+
+<div class="footer-inner">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <a href="/" aria-label="Warthog home">
+        <img src="/images/Warthog_2024_Full Logo.svg" alt="Warthog" />
+      </a>
+      <p>
+        Warthog is a Proof-of-Balanced-Work cryptocurrency with native DeFi
+        powered by Fair Batch Matching. Mine with any modern CPU + GPU.
+      </p>
+    </div>
+
+    <div class="footer-col">
+      <h3>Product</h3>
+      <ul>
+        <li><a href="/#get-started">Get Started</a></li>
+        <li><a href="/defi-demo">DeFi Demo</a></li>
+        <li><a href="https://wartscan.io/" target="_blank" rel="noopener">Explorer</a></li>
+        <li><a href="https://docs.warthog.network/guides/wallet/" target="_blank" rel="noopener">Wallets</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <h3>Resources</h3>
+      <ul>
+        <li><a href="/#research">Whitepaper &amp; Research</a></li>
+        <li><a href="https://docs.warthog.network/" target="_blank" rel="noopener">Documentation</a></li>
+        <li><a href="/faqs">FAQs</a></li>
+        <li><a href="/news">News</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <h3>Community</h3>
+      <div class="footer-socials">
+        <a href="https://github.com/warthog-network" target="_blank" rel="noopener" aria-label="GitHub">
+          <img src="/images/github_gray.svg" alt="" />
+        </a>
+        <a href="https://discord.com/invite/QMDV8bGTdQ" target="_blank" rel="noopener" aria-label="Discord">
+          <img src="/images/discord_gray.svg" alt="" />
+        </a>
+        <a href="https://t.me/warthognetwork" target="_blank" rel="noopener" aria-label="Telegram">
+          <img src="/images/telegram_gray.svg" alt="" />
+        </a>
+        <a href="https://x.com/warthognetwork" target="_blank" rel="noopener" aria-label="X">
+          <img src="/images/x_gray.svg" alt="" />
+        </a>
+      </div>
     </div>
   </div>
-  <p class="text-[0.6rem] mx-2 mt-5 pb-5 text-slate-200">
-    Copyright © Warthog 2025 Website Design by Losthymns TheFunVampire Logo by
-    BalkyBot.
-  </p>
+
+  <div class="footer-bottom">
+    <p>Copyright © Warthog {year}</p>
+  </div>
 </div>
