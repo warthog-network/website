@@ -3,10 +3,8 @@ import Wallet from "../BalkyImages/getstartedimgs/wallet.svg";
 import Nodes from "../BalkyImages/getstartedimgs/blockchain_nodes.svg";
 import GPU from "../BalkyImages/getstartedimgs/gpu.svg";
 import Pool from "../BalkyImages/getstartedimgs/pool.svg";
-import Swap from "../BalkyImages/getstartedimgs/swap.svg";
 import Pickaxe from "../BalkyImages/getstartedimgs/pickaxe.svg";
 import Book from "../BalkyImages/getstartedimgs/book.svg";
-import WhereToBuy from "./WhereToBuy.astro";
 
 const webWalletUrl = "/webwallet";
 const mobileWalletApk = "/app-releaseV1_7.apk";
@@ -117,8 +115,7 @@ const wallets = [
 
   #tab-wallets:checked ~ #panel-wallets,
   #tab-node:checked ~ #panel-node,
-  #tab-mining:checked ~ #panel-mining,
-  #tab-buying:checked ~ #panel-buying {
+  #tab-mining:checked ~ #panel-mining {
     display: block;
   }
 
@@ -205,11 +202,11 @@ const wallets = [
 <section class="get-started-section" id="get-started">
   <div class="site-shell">
     <div class="section__header">
-      <p class="section__eyebrow">Getting Started</p>
-      <h1 class="section__title">All the tools you need</h1>
+      <p class="section__eyebrow">First Steps</p>
+      <h1 class="section__title">Getting Started</h1>
       <p class="section__lede">
-        Pick a wallet, run a node, start mining, or buy WART — everything you
-        need to begin using the Warthog network.
+        Pick a wallet, run a node, or start mining — everything you need to
+        begin using the Warthog network.
       </p>
     </div>
 
@@ -230,12 +227,6 @@ const wallets = [
       <label for="tab-mining" class="tab-label">
         <img src={GPU.src} alt="" />
         <span>Mining</span>
-      </label>
-
-      <input type="radio" name="tabs" id="tab-buying" />
-      <label for="tab-buying" class="tab-label">
-        <img src={Swap.src} alt="" />
-        <span>Trade</span>
       </label>
 
       <div class="tab-panel" id="panel-wallets">
@@ -339,10 +330,6 @@ const wallets = [
             </div>
           </div>
         </div>
-      </div>
-
-      <div class="tab-panel" id="panel-buying">
-        <WhereToBuy />
       </div>
     </div>
   </div>

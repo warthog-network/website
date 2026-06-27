@@ -1,0 +1,131 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const pdf = Astro.url.searchParams.get("pdf");
+const title = Astro.url.searchParams.get("title") ?? "Paper Viewer";
+
+// Remote URLs (e.g. GitHub releases) often serve PDFs with
+// `Content-Disposition: attachment`, which prevents the browser from rendering
+// them inside an <object>. Route those through Google Docs viewer directly so
+// we still get an in-browser view with controls.
+const isRemote = pdf ? /^https?:\/\//.test(pdf) : false;
+const googleViewerSrc = pdf
+  ? `https://docs.google.com/gview?url=${encodeURIComponent(pdf)}&embedded=true`
+  : null;
+---
+
+<BaseLayout title={title}>
+  <div class="paper-viewer">
+    <header class="paper-viewer-header">
+      <a href="/#research" class="back-btn">&larr; Back to Research</a>
+      <h1 class="paper-viewer-title">{title}</h1>
+      <div class="paper-viewer-actions">
+        {pdf && <a href={pdf} target="_blank" rel="noopener" class="action-btn">Open in new tab</a>}
+        {pdf && <a href={pdf} download class="action-btn">Download</a>}
+      </div>
+    </header>
+
+    {pdf ? (
+      isRemote ? (
+        <iframe class="paper-viewer-frame" src={googleViewerSrc}></iframe>
+      ) : (
+        <object class="paper-viewer-frame" data={pdf} type="application/pdf">
+          {/* Fallback: Google viewer for browsers without a native PDF plugin
+              (e.g. Chrome on Android). */}
+          <iframe class="paper-viewer-frame" src={googleViewerSrc}></iframe>
+        </object>
+      )
+    ) : (
+      <div class="paper-viewer-empty">
+        <p>No paper specified.</p>
+        <a href="/#research" class="action-btn">Back to Research</a>
+      </div>
+    )}
+  </div>
+</BaseLayout>
+
+<style>
+  .paper-viewer {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 4rem);
+    width: 100%;
+  }
+
+  .paper-viewer-header {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 0.85rem clamp(1rem, 4vw, 2.5rem);
+    background: rgba(8, 12, 24, 0.85);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .back-btn {
+    color: var(--color-accent, #56c2ff);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    white-space: nowrap;
+  }
+
+  .back-btn:hover {
+    text-decoration: underline;
+  }
+
+  .paper-viewer-title {
+    flex: 1;
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text, #e5e7eb);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .paper-viewer-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .action-btn {
+    display: inline-block;
+    padding: 0.45rem 0.95rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: var(--color-text, #e5e7eb);
+    text-decoration: none;
+    transition: border-color 0.2s, color 0.2s;
+    white-space: nowrap;
+  }
+
+  .action-btn:hover {
+    border-color: var(--color-accent, #56c2ff);
+    color: var(--color-accent, #56c2ff);
+  }
+
+  .paper-viewer-frame {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    border: 0;
+    background: #1f2937;
+  }
+
+  .paper-viewer-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    gap: 1.5rem;
+    color: var(--color-text-muted, #9ca3af);
+  }
+</style>
