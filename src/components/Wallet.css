@@ -14,8 +14,8 @@
   min-height: 100vh;
   max-width: 800px;
   margin: 0 auto;
-  border: 3px solid #FFC107;
-  box-shadow: 0 0 10px #FFC107;
+  border: 3px solid var(--color-brand);
+  box-shadow: 0 0 10px var(--color-brand);
   overflow-x: hidden; /* Ensure no horizontal overflow */
   box-sizing: border-box;
 }
@@ -23,7 +23,7 @@
 .container h1,
 .container h2 {
   font-family: 'Montserrat';
-  color: #FFC107;
+  color: var(--color-brand);
   text-shadow: 2px 2px 4px #000000;
   margin-bottom: 20px;
 }
@@ -42,8 +42,8 @@
   padding: 20px;
   margin-bottom: 20px;
   border-radius: 8px;
-  border: 2px solid #FFC107;
-  box-shadow: 0 0 5px #FFC107;
+  border: 2px solid var(--color-brand);
+  box-shadow: 0 0 5px var(--color-brand);
   max-width: 100%;
   overflow-x: hidden; /* Prevent section overflow */
   box-sizing: border-box;
@@ -56,7 +56,7 @@
 .container .form-group label {
   display: block;
   font-family: 'Montserrat';
-  color: #FFECB3;
+  color: var(--color-brand);
   margin-bottom: 5px;
   font-size: 14px;
 }
@@ -67,7 +67,7 @@
   padding: 10px;
   background-color: #1C2526;
   color: #FFFFFF;
-  border: 2px solid #FFC107;
+  border: 2px solid var(--color-brand);
   border-radius: 4px;
   font-family: 'Montserrat', sans-serif;
   font-size: 16px;
@@ -78,12 +78,12 @@
 .container .input:focus,
 .container input[type="file"]:focus {
   outline: none;
-  border-color: #FFECB3;
-  box-shadow: 0 0 8px #FFECB3;
+  border-color: var(--color-brand);
+  box-shadow: 0 0 8px var(--color-brand);
 }
 
 .container button {
-  background: linear-gradient(45deg, #FFC107, #FFECB3);
+  background: linear-gradient(135deg, var(--color-brand), var(--color-brand-strong));
   color: #1C2526;
   font-family: 'Montserrat';
   font-weight: 700;
@@ -99,7 +99,7 @@
 
 .container button:hover {
   transform: scale(1.05);
-  box-shadow: 0 0 10px #FFC107;
+  box-shadow: 0 0 10px var(--color-brand);
 }
 
 .container button:active {
@@ -110,7 +110,7 @@
 .container .error {
   background-color: #1C2526;
   padding: 15px;
-  border: 2px solid #FFC107;
+  border: 2px solid var(--color-brand);
   border-radius: 4px;
   margin-top: 15px;
   font-family: 'Roboto', sans-serif;
@@ -118,7 +118,7 @@
 
 .container .result p,
 .container .error {
-  color: #FFECB3;
+  color: var(--color-brand);
   font-size: 14px;
   word-break: break-all;
   overflow-wrap: break-word;
@@ -141,14 +141,14 @@
 }
 
 .container .warning {
-  color: #FFC107;
+  color: var(--color-brand);
   font-size: 12px;
   font-style: italic;
   margin-top: 10px;
 }
 
 .container .wallet-address {
-  color: #FFECB3;
+  color: var(--color-brand);
   font-size: 14px;
   word-break: break-all;
   overflow-wrap: break-word;
@@ -161,7 +161,7 @@
 /* Optional: Truncate wallet address instead of wrapping */
 /*
 .container .wallet-address {
-  color: #FFECB3;
+  color: var(--color-brand);
   font-size: 14px;
   white-space: nowrap;
   overflow: hidden;
@@ -177,7 +177,7 @@
 }
 */
 .wallet-info-value {
-  color: #FFECB3;
+  color: var(--color-brand);
   word-break: break-all;
   overflow-wrap: break-word;
   white-space: normal;
@@ -357,7 +357,7 @@ pre {
   margin-bottom: 20px;
 }
 .wallet-info-value {
-  color: #FFECB3;
+  color: var(--color-brand);
   word-break: break-all;
   overflow-wrap: break-word;
   white-space: normal;
@@ -386,7 +386,7 @@ pre {
   min-width: 7rem !important;
   line-height: 1.5 !important;
   text-align: center !important;
-  background: linear-gradient(45deg, #FFC107, #FFECB3) !important;
+  background: linear-gradient(135deg, var(--color-brand), var(--color-brand-strong)) !important;
   color: #1C2526 !important;
   border: 2px solid #1C2526 !important;
   border-radius: 4px !important;
