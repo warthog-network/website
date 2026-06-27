@@ -11,7 +11,7 @@ const features = [
     id: "sync",
     title: "Chain descriptor sync",
     description:
-      "Light-weight sync that lets nodes understand each other's forks, cutting bandwidth and CPU requirements for everyone.",
+      "Warthog\u2019s sync model is built on a thread-based engine that addresses blocks by \u201Cchain descriptors\u201D \u2014 height plus branch identifier, rather than the block hash used by most chains. Nodes can describe entire branches as compact sequences and reconcile their views in a single round-trip, which dramatically cuts bandwidth and CPU compared to block-by-block sync. Result: even a phone on a slow connection can fully verify the chain without re-downloading what it already has.",
     icon: Sync.src,
     status: "live",
   },
@@ -19,7 +19,7 @@ const features = [
     id: "pobw",
     title: "Proof of Balanced Work",
     description:
-      "The first PoBW algorithm where CPU matters again. It moves us closer to the \u201Cone machine, one vote\u201D principle.",
+      "Warthog\u2019s Janushash is the first production Proof of Balanced Work algorithm: it multiplies two independent hash functions \u2014 Sha256t (GPU) and Verushash v2.2 (CPU) \u2014 so efficient mining requires solving both. This makes pure GPU farms uncompetitive (their CPUs bottleneck) and pure CPU farms or botnets uncompetitive (no accelerated Sha256t). The result is a network where typical gaming PCs can hold their own against large operations, edging closer to Satoshi\u2019s original \u201Cone CPU, one vote\u201D vision.",
     icon: Balance.src,
     status: "live",
   },
@@ -27,7 +27,7 @@ const features = [
     id: "browsers",
     title: "In-browser full nodes",
     description:
-      "OPFS + SQLite enable persistent browser nodes. Close the tab and pick up where you left off\u2014no chain wipe.",
+      "Warthog is the first cryptocurrency project to ship a full node that runs entirely in the browser. The native C++ node is compiled to WebAssembly, and the entire chain database (~1.3 GB) is persisted in the browser\u2019s Origin Private File System (OPFS) as a SQLite file. Close the tab, reopen it tomorrow \u2014 your node is still synced, still validating, still part of the network. No installation, no firewall configuration, no chain wipe on every refresh.",
     icon: Browsers.src,
     status: "live",
   },
@@ -35,7 +35,7 @@ const features = [
     id: "p2p",
     title: "P2P browser nodes",
     description:
-      "First cryptocurrency to port full nodes to the browser using OPFS + SQLite. When you close the tab, the chain stays.",
+      "Today browser nodes connect through bridge nodes via WebSocket. The next step is direct browser-to-browser communication over WebRTC, with a signaling protocol for peer discovery, NAT traversal for punching through firewalls, and handshake negotiation for connection parameters. When P2P is live, two tabs in the same room can sync the chain between each other without a server in the middle \u2014 turning every browser into a first-class network peer and removing the centralizing dependency on bridge nodes.",
     icon: P2P.src,
     status: "upcoming",
   },
@@ -43,7 +43,7 @@ const features = [
     id: "defi",
     title: "Hard-coded DeFi",
     description:
-      "We're embedding proven DeFi logic directly inside nodes to reduce exploits, fees, and scammy tokenomics.",
+      "Instead of running DeFi as second-layer smart contracts on top of an insecure base chain, Warthog embeds the DeFi primitives directly into the consensus layer. Every node runs the same battle-tested matching and accounting code, so a \u201Cbug\u201D in DeFi logic is automatically a consensus failure \u2014 not a 51% exploit opportunity. No upgradeable proxies, no rug-pull admin keys, no token-approval footguns. Just code that the whole network already agrees on.",
     icon: DeFi.src,
     status: "upcoming",
   },
@@ -51,7 +51,7 @@ const features = [
     id: "anti-sandwich",
     title: "Anti-sandwich matching",
     description:
-      "By controlling the matching engine, transaction ordering no longer leaks alpha to MEV bots, solving DeFi's biggest attack.",
+      "Sandwich attacks work because traditional exchanges process orders one at a time and a front-runner can see the mempool. Fair Batch Matching (FBM) eliminates the attack surface entirely: all limit swaps and pool liquidity in a block are evaluated jointly, and the algorithm finds a single fair price that all participants share. Every buyer pays the same price, every seller receives the same price, and there is no remaining buy/sell pair that could have been matched against the pool. The math proves the matching is unique (a Nash equilibrium) \u2014 ordering no longer leaks alpha because ordering no longer matters.",
     icon: AntiSandwich.src,
     status: "upcoming",
   },
