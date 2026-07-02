@@ -906,7 +906,7 @@ const Wallet = () => {
                   Clear Wallet
                 </button>
               </div>
-              <p className="text-yellow-600 dark:text-yellow-400 text-sm mb-4">
+              <p className="text-sm mb-4" style={{ color: 'var(--color-brand)' }}>
                 Warning: Private key is encrypted in localStorage. Keep your password secure.
               </p>
               <TransactionHistory address={wallet.address} node={selectedNode} onCountsUpdate={setBlockCounts} blockCounts={blockCounts} refreshTrigger={refreshHistory} />
@@ -1302,7 +1302,7 @@ const Wallet = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Wallet Information</h2>
-            <p className="text-yellow-600 dark:text-yellow-400 mb-4">
+            <p className="mb-4" style={{ color: 'var(--color-brand)' }}>
               Warning: Please write down your seed phrase (if available) and private key on a piece of paper and store them securely. Do not share them with anyone.
             </p>
             <p className="text-gray-700 dark:text-gray-300 mb-2">Options for securing your wallet:</p>
@@ -1318,8 +1318,11 @@ const Wallet = () => {
             {walletData.mnemonic && (
               <div className="mb-4">
                 <strong className="text-gray-700 dark:text-gray-300">Seed Phrase:</strong>
-                <p className="bg-yellow-50 dark:bg-yellow-900 p-4 rounded-md mt-2 border border-yellow-200 dark:border-yellow-700">
-                  <span className="text-yellow-800 dark:text-yellow-200 font-mono text-lg font-bold">{walletData.mnemonic}</span>
+                <p
+                  className="p-4 rounded-md mt-2 border"
+                  style={{ background: 'rgba(253, 185, 19, 0.12)', borderColor: 'rgba(253, 185, 19, 0.35)' }}
+                >
+                  <span className="font-mono text-lg font-bold" style={{ color: 'var(--color-brand)' }}>{walletData.mnemonic}</span>
                 </p>
               </div>
             )}

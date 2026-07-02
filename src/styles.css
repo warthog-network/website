@@ -17,8 +17,8 @@
   --color-border-strong: rgba(255, 255, 255, 0.15);
   --color-text: #f8fafc;
   --color-text-muted: rgba(226, 232, 240, 0.75);
-  --color-brand: #fcd34d;
-  --color-brand-strong: #fbbf24;
+  --color-brand: #FDB913;
+  --color-brand-strong: #E79300;
   --color-accent: #38bdf8;
   --color-accent-2: #c084fc;
   --shadow-soft: 0 25px 45px rgba(1, 5, 15, 0.55);
@@ -216,7 +216,7 @@ button {
 .btn--primary {
   background: linear-gradient(135deg, var(--color-brand), var(--color-brand-strong));
   color: #1f2937;
-  box-shadow: 0 15px 30px rgba(251, 191, 36, 0.25);
+  box-shadow: 0 15px 30px rgba(253, 185, 19, 0.25);
 }
 
 .btn--ghost {
@@ -228,6 +228,11 @@ button {
 .btn:hover,
 .btn:focus-visible {
   transform: translateY(-1px);
+}
+
+.btn--primary:hover,
+.btn--primary:focus-visible {
+  filter: brightness(0.95);
 }
 
 .stat-card {

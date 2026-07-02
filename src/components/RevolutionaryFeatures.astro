@@ -2,25 +2,58 @@
 import Sync from "../BalkyImages/Rev.Featureimgs/SYNC.svg";
 import Balance from "../BalkyImages/Rev.Featureimgs/BALANCE.svg";
 import Browsers from "../BalkyImages/Rev.Featureimgs/BROWERS.svg";
+import P2P from "../BalkyImages/upcomingFeatureimgs/P2P-Browser-Upcoming.svg";
+import DeFi from "../BalkyImages/upcomingFeatureimgs/Hard-Coded-DeFi-Upcoming.svg";
+import AntiSandwich from "../BalkyImages/upcomingFeatureimgs/Anti-Sandwich-Matching-Upcoming.svg";
 
 const features = [
   {
+    id: "sync",
     title: "Chain descriptor sync",
     description:
-      "Light-weight sync that lets nodes understand each other’s forks, cutting bandwidth and CPU requirements for everyone.",
+      "Warthog\u2019s sync model is built on a thread-based engine that addresses blocks by \u201Cchain descriptors\u201D \u2014 height plus branch identifier, rather than the block hash used by most chains. Nodes can describe entire branches as compact sequences and reconcile their views in a single round-trip, which dramatically cuts bandwidth and CPU compared to block-by-block sync. Result: even a phone on a slow connection can fully verify the chain without re-downloading what it already has.",
     icon: Sync.src,
+    status: "live",
   },
   {
+    id: "pobw",
     title: "Proof of Balanced Work",
     description:
-      "The first PoBW algorithm where CPU matters again. It moves us closer to the “one machine, one vote” principle.",
+      "Warthog\u2019s Janushash is the first production Proof of Balanced Work algorithm: it multiplies two independent hash functions \u2014 Sha256t (GPU) and Verushash v2.2 (CPU) \u2014 so efficient mining requires solving both. This makes pure GPU farms uncompetitive (their CPUs bottleneck) and pure CPU farms or botnets uncompetitive (no accelerated Sha256t). The result is a network where typical gaming PCs can hold their own against large operations, edging closer to Satoshi\u2019s original \u201Cone CPU, one vote\u201D vision.",
     icon: Balance.src,
+    status: "live",
   },
   {
+    id: "browsers",
     title: "In-browser full nodes",
     description:
-      "OPFS + SQLite enable persistent browser nodes. Close the tab and pick up where you left off—no chain wipe.",
+      "Warthog is the first cryptocurrency project to ship a full node that runs entirely in the browser. The native C++ node is compiled to WebAssembly, and the entire chain database (~1.3 GB) is persisted in the browser\u2019s Origin Private File System (OPFS) as a SQLite file. Close the tab, reopen it tomorrow \u2014 your node is still synced, still validating, still part of the network. No installation, no firewall configuration, no chain wipe on every refresh.",
     icon: Browsers.src,
+    status: "live",
+  },
+  {
+    id: "p2p",
+    title: "P2P browser nodes",
+    description:
+      "Today browser nodes connect through bridge nodes via WebSocket. The next step is direct browser-to-browser communication over WebRTC, with a signaling protocol for peer discovery, NAT traversal for punching through firewalls, and handshake negotiation for connection parameters. When P2P is live, two tabs in the same room can sync the chain between each other without a server in the middle \u2014 turning every browser into a first-class network peer and removing the centralizing dependency on bridge nodes.",
+    icon: P2P.src,
+    status: "upcoming",
+  },
+  {
+    id: "defi",
+    title: "Hard-coded DeFi",
+    description:
+      "Instead of running DeFi as second-layer smart contracts on top of an insecure base chain, Warthog embeds the DeFi primitives directly into the consensus layer. Every node runs the same battle-tested matching and accounting code, so a \u201Cbug\u201D in DeFi logic is automatically a consensus failure \u2014 not a 51% exploit opportunity. No upgradeable proxies, no rug-pull admin keys, no token-approval footguns. Just code that the whole network already agrees on.",
+    icon: DeFi.src,
+    status: "upcoming",
+  },
+  {
+    id: "anti-sandwich",
+    title: "Anti-sandwich matching",
+    description:
+      "Sandwich attacks work because traditional exchanges process orders one at a time and a front-runner can see the mempool. Fair Batch Matching (FBM) eliminates the attack surface entirely: all limit swaps and pool liquidity in a block are evaluated jointly, and the algorithm finds a single fair price that all participants share. Every buyer pays the same price, every seller receives the same price, and there is no remaining buy/sell pair that could have been matched against the pool. The math proves the matching is unique (a Nash equilibrium) \u2014 ordering no longer leaks alpha because ordering no longer matters.",
+    icon: AntiSandwich.src,
+    status: "upcoming",
   },
 ];
 ---
@@ -29,51 +62,178 @@ const features = [
   .rev-section {
     background: linear-gradient(180deg, rgba(5, 9, 20, 0.6), rgba(2, 4, 10, 0.95));
     position: relative;
-    padding: clamp(2rem, 5vw, 4rem) 0; /* Added: Vertical padding for section separation */
+    padding: clamp(2rem, 5vw, 4rem) 0;
   }
 
-  .rev-grid {
-    display: grid;
-    gap: clamp(1.5rem, 3vw, 2.75rem);
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
+  /* CSS-only tabs: each radio input is a direct child of <section>, so the
+     general-sibling combinator (~) can reach labels and panels nested inside
+     .features-grid (which is also a direct child of <section>). */
+  .rev-section > input[type="radio"][name="rev-feature"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 
-  @media (min-width: 768px) and (max-width: 1024px) {
-    .rev-grid {
-      grid-template-columns: 1fr;
-      gap: clamp(2rem, 4vw, 3rem);
-    }
-
-    .rev-intro {
-      margin-bottom: 1.5rem;
-    }
+  .features-intro {
+    text-align: center;
+    margin: 0 auto clamp(2rem, 4vw, 3rem);
+    max-width: 800px;
+    padding-inline: clamp(1rem, 4vw, 2.5rem);
   }
 
-  @media (min-width: 1025px) {
-    .rev-grid {
-      grid-template-columns: 0.75fr 1.25fr;
-      align-items: start;
-    }
+  .features-intro h2 {
+    margin: 0.35rem 0 1rem;
   }
 
-  .content-grid {
+  .features-grid {
     display: grid;
     gap: clamp(1rem, 2vw, 1.5rem);
     width: 100%;
-    max-width: 100%;
+    box-sizing: border-box;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding-inline: clamp(1rem, 4vw, 2.5rem);
   }
 
-  /* Add a mobile-specific gap increase if needed */
-  @media (max-width: 767px) {
-    .content-grid {
-      gap: clamp(1.5rem, 3vw, 2rem); /* Slightly larger gap on mobile to prevent card crowding */
+  @media (min-width: 1025px) {
+    .features-grid {
+      grid-template-columns: minmax(260px, 0.85fr) 1.15fr;
+      align-items: start;
+      gap: clamp(1.5rem, 3vw, 2.5rem);
     }
   }
 
-  .rev-intro h2 {
-    margin: 0.35rem 0 1rem;
+  /* ----- Tab list ----- */
+  .features-tabs {
+    display: flex;
+    flex-direction: row;
+    gap: 0.6rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    padding-bottom: 0.5rem;
+    margin: -0.25rem;
+    padding-inline: 0.25rem;
+  }
+
+  @media (min-width: 1025px) {
+    .features-tabs {
+      flex-direction: column;
+      overflow: visible;
+      scroll-snap-type: none;
+      padding-bottom: 0;
+      padding-inline: 0;
+      margin: 0;
+      gap: 0.75rem;
+    }
+  }
+
+  .feature-tab {
+    flex: 0 0 auto;
+    min-width: 11rem;
+    scroll-snap-align: start;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(8, 12, 24, 0.85);
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    user-select: none;
+  }
+
+  @media (min-width: 1025px) {
+    .feature-tab {
+      width: 100%;
+      min-width: 0;
+    }
+  }
+
+  .feature-tab:hover {
+    border-color: rgba(56, 189, 248, 0.35);
+  }
+
+  .feature-tab__icon {
+    width: 1.75rem;
+    height: 1.75rem;
+    flex-shrink: 0;
+    display: block;
+  }
+
+  .feature-tab__title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-text);
+    line-height: 1.3;
+    flex: 1;
+  }
+
+  .feature-tab__badge {
+    margin-left: auto;
+    padding: 0.15rem 0.55rem;
+    background: rgba(253, 185, 19, 0.15);
+    color: var(--color-brand);
+    border: 1px solid rgba(253, 185, 19, 0.35);
+    border-radius: 999px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+
+  /* ----- Active tab (CSS only) ----- */
+  #tab-sync:checked ~ .features-grid label[for="tab-sync"],
+  #tab-pobw:checked ~ .features-grid label[for="tab-pobw"],
+  #tab-browsers:checked ~ .features-grid label[for="tab-browsers"],
+  #tab-p2p:checked ~ .features-grid label[for="tab-p2p"],
+  #tab-defi:checked ~ .features-grid label[for="tab-defi"],
+  #tab-anti-sandwich:checked ~ .features-grid label[for="tab-anti-sandwich"] {
+    border-color: rgba(56, 189, 248, 0.6);
+    background: rgba(56, 189, 248, 0.12);
+    box-shadow: 0 4px 18px rgba(56, 189, 248, 0.18);
+  }
+
+  #tab-sync:focus-visible ~ .features-grid label[for="tab-sync"],
+  #tab-pobw:focus-visible ~ .features-grid label[for="tab-pobw"],
+  #tab-browsers:focus-visible ~ .features-grid label[for="tab-browsers"],
+  #tab-p2p:focus-visible ~ .features-grid label[for="tab-p2p"],
+  #tab-defi:focus-visible ~ .features-grid label[for="tab-defi"],
+  #tab-anti-sandwich:focus-visible ~ .features-grid label[for="tab-anti-sandwich"] {
+    outline: 2px solid rgba(56, 189, 248, 0.6);
+    outline-offset: 2px;
+  }
+
+  /* ----- Detail panel ----- */
+  .features-detail {
+    position: relative;
+    min-height: 16rem;
+  }
+
+  .feature-panel {
+    display: none;
+    animation: fade-in 0.25s ease;
+  }
+
+  #tab-sync:checked ~ .features-grid #panel-sync,
+  #tab-pobw:checked ~ .features-grid #panel-pobw,
+  #tab-browsers:checked ~ .features-grid #panel-browsers,
+  #tab-p2p:checked ~ .features-grid #panel-p2p,
+  #tab-defi:checked ~ .features-grid #panel-defi,
+  #tab-anti-sandwich:checked ~ .features-grid #panel-anti-sandwich {
+    display: block;
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   .rev-card {
@@ -88,46 +248,97 @@ const features = [
     overflow: hidden;
   }
 
-  .rev-card__title {
+  .feature-panel__header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .feature-panel__icon {
+    width: 3rem;
+    height: auto;
+    display: block;
+    flex-shrink: 0;
+  }
+
+  .feature-panel__badge {
+    padding: 0.2rem 0.65rem;
+    background: rgba(253, 185, 19, 0.15);
+    color: var(--color-brand);
+    border: 1px solid rgba(253, 185, 19, 0.35);
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .rev-card h3 {
     margin: 0;
     font-size: 1.25rem;
     line-height: 1.4;
     word-wrap: break-word;
   }
 
-  .rev-card__desc {
+  .rev-card p {
     margin: 0;
     color: var(--color-text-muted);
     line-height: 1.6;
     word-wrap: break-word;
   }
-
-  .rev-card img {
-    width: 3rem;
-    height: auto;
-    display: block;
-  }
 </style>
 
 <section class="section rev-section">
-  <div class="site-shell rev-grid">
-    <div class="rev-intro">
-      <p class="section__eyebrow">Tech</p>
-      <h2 class="section__title">Revolutionary features</h2>
-      <p class="section__lede">
-        Browser-native nodes, smarter sync, and a consensus algorithm that values balanced work—
-        Warthog is engineering the tools a modern decentralized network actually needs.
-      </p>
-    </div>
+  {/* Radios are direct children of <section> so they're real DOM siblings of
+      .features-grid. This is what makes the ~ combinator in the CSS reach
+      the labels and panels. */}
+  {
+    features.map((feature, i) => (
+      <input
+        type="radio"
+        name="rev-feature"
+        id={`tab-${feature.id}`}
+        checked={i === 0}
+        aria-controls={`panel-${feature.id}`}
+      />
+    ))
+  }
 
-    <div class="content-grid">
+  <div class="features-intro">
+    <p class="section__eyebrow">Tech</p>
+    <h2 class="section__title">Revolutionary features</h2>
+    <p class="section__lede">
+      Browser-native nodes, smarter sync, and a consensus algorithm that values balanced work—
+      Warthog is engineering the tools a modern decentralized network actually needs.
+    </p>
+  </div>
+
+  <div class="features-grid">
+    <div class="features-tabs" role="tablist" aria-label="Revolutionary features">
       {
         features.map((feature) => (
-          <article class="rev-card">
-            <img src={feature.icon} alt="" loading="lazy" />
-            <h3 class="rev-card__title">{feature.title}</h3>
-            <p class="rev-card__desc">{feature.description}</p>
-          </article>
+          <label class="feature-tab" for={`tab-${feature.id}`}>
+            <img src={feature.icon} alt="" class="feature-tab__icon" loading="lazy" />
+            <span class="feature-tab__title">{feature.title}</span>
+            {feature.status === "upcoming" && <span class="feature-tab__badge">Upcoming</span>}
+          </label>
+        ))
+      }
+    </div>
+
+    <div class="features-detail" role="tabpanel" aria-live="polite">
+      {
+        features.map((feature) => (
+          <div class="feature-panel" id={`panel-${feature.id}`} role="tabpanel" aria-labelledby={`tab-${feature.id}`}>
+            <article class="rev-card">
+              <div class="feature-panel__header">
+                <img src={feature.icon} alt="" class="feature-panel__icon" loading="lazy" />
+                {feature.status === "upcoming" && <span class="feature-panel__badge">Upcoming</span>}
+              </div>
+              <h3>{feature.title}</h3>
+              <p>{feature.description}</p>
+            </article>
+          </div>
         ))
       }
     </div>

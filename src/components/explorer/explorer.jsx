@@ -445,7 +445,7 @@ function Explorer() {
                                         className="bg-white border border-gray-200 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 dark:bg-gray-800 dark:border-gray-700"
                                     >
                                         <div className="flex justify-between items-center px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                                            <span className="px-3 py-1 text-sm font-medium text-yellow-700 bg-yellow-100 rounded-full">Block {format_height(block.height)}</span>
+                                            <span className="px-3 py-1 text-sm font-medium rounded-full" style={{ background: 'var(--color-brand)', color: '#1f2937' }}>Block {format_height(block.height)}</span>
                                             <span className="text-sm text-gray-500">{formatTimeAgo(block.header.timestamp)}</span>
                                         </div>
                                         <div className="px-4 py-3">

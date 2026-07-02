@@ -98,16 +98,21 @@ import { imageConfig } from 'astro:assets'
     position: absolute;
     bottom: 1.5rem;
     right: 0.5rem;
-    background-color: gold;
+    background-color: var(--color-brand);
     color: rgb(0, 0, 0);
     font-size: 16px;
     padding: 15px 50px;
     border: none;
     cursor: pointer;
     border-radius: 5px;
-    box-shadow: 10px 17px 10px -10px;
+    box-shadow: 10px 17px 10px -10px rgba(253, 185, 19, 0.4);
     z-index: 3; /* Ensure above overlay */
-    transition: position 0.3s ease, bottom 0.3s ease;
+    transition: position 0.3s ease, bottom 0.3s ease, filter 0.2s ease;
+  }
+
+  .hero-img-btn:hover,
+  .hero-img-btn:focus-visible {
+    filter: brightness(0.95);
   }
 
   /* Image styles */
@@ -323,7 +328,7 @@ import { imageConfig } from 'astro:assets'
       transform: translate(-50%, -50%);
       max-width: 12rem;
       
-      background-color: gold;
+      background-color: var(--color-brand);
       color: rgb(0, 0, 0);
       text-align: center;
       font-size: 16px;

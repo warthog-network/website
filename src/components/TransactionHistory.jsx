@@ -221,11 +221,11 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
   const hasNext = (endIndex < allHistory.length) || hasMore;
 
   // Colors based on theme
-  const sectionColor = isDarkMode ? '#FFECB3' : '#333';
-  const txBackground = isDarkMode ? '#ffecb33d' : '#ddd';
-  const txBorder = isDarkMode ? '#caa21eff' : '#888';
+  const sectionColor = isDarkMode ? 'var(--color-brand)' : '#333';
+  const txBackground = isDarkMode ? 'rgba(253, 185, 19, 0.24)' : '#ddd';
+  const txBorder = isDarkMode ? 'var(--color-brand-strong)' : '#888';
   const txColor = isDarkMode ? '#e9e6dbff' : '#333';
-  const labelColor = isDarkMode ? '#caa21eff' : '#333';
+  const labelColor = isDarkMode ? 'var(--color-brand-strong)' : '#333';
 
   return (
     <>
@@ -275,7 +275,7 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
         <h2 className="text-base font-semibold text-orange-400 flex items-center gap-2 flex-wrap order-2 md:order-1">
           Transaction History <span className="text-sm">(Page {currentPage})</span>
           <span
-            className={`inline-block w-2 h-2 rounded-full ${loading ? 'bg-yellow-400 animate-pulse' : 'bg-green-500'}`}
+            className={`inline-block w-2 h-2 rounded-full ${loading ? 'bg-[var(--color-brand)] animate-pulse' : 'bg-green-500'}`}
           ></span>
         </h2>
       </div>
