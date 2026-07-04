@@ -106,6 +106,7 @@ copy: "Mining requirements were carefully picked to place consumer gaming PCs in
   {
     id: "defi",
     title: "Native DeFi",
+    status: "testnet",
     lede: "Instead of implementing DeFi on top of smart contracts, Warthog embeds the DeFi code directly into the consensus layer to open the door to unprecedented features.",
     points: [
       {
@@ -128,6 +129,7 @@ copy: "Smart Contract based DeFi is inherently unsecure and attacked almost week
   {
     id: "fbm",
     title: "Fair Batch Matching",
+    status: "testnet",
 lede: "A ground-breaking algorithm to match buy orders, sell orders and pool liquidity batch-wise in a fair way without intrinsic transaction ordering.",
     points: [
       {
@@ -150,6 +152,7 @@ copy: "Orders are matched batch-wise without any ordering that can be exploited 
   {
     id: "browser-nodes",
     title: "Browser Nodes",
+    status: "planned",
     lede: "Run a full Warthog node from any modern browser. No install, no firewall, no chain wipe when you close the tab.",
     points: [
       {
@@ -219,6 +222,37 @@ copy: "Careful code design allows swapping the transport layer between TCP, Webs
     color: var(--color-text);
   }
 
+  .category-card__title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .category-card__badge {
+    flex-shrink: 0;
+    padding: 0.2rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border: 1px solid transparent;
+  }
+
+  .category-card__badge--testnet {
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+    border-color: rgba(56, 189, 248, 0.35);
+  }
+
+  .category-card__badge--planned {
+    background: rgba(160, 160, 170, 0.15);
+    color: #a0a0aa;
+    border-color: rgba(160, 160, 170, 0.35);
+  }
+
   .category-card__lede {
     margin: 0;
     color: var(--color-text-muted);
@@ -277,7 +311,10 @@ copy: "Careful code design allows swapping the transport layer between TCP, Webs
       categories.map((category) => (
         <article class="category-card">
           <header class="category-card__header">
-            <h3 class="category-card__title">{category.title}</h3>
+            <div class="category-card__title-row">
+              <h3 class="category-card__title">{category.title}</h3>
+              {category.status && <span class={`category-card__badge category-card__badge--${category.status}`}>{category.status}</span>}
+            </div>
             <p class="category-card__lede">{category.lede}</p>
           </header>
           <div class="category-points">
