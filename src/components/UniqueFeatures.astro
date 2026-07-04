@@ -7,38 +7,167 @@ import Profile from "../BalkyImages/004-profile.svg";
 import Programming from "../BalkyImages/006-programming.svg";
 import Trolly from "../BalkyImages/005-trolley.svg";
 import Group from "../BalkyImages/Group 5.svg";
-import ContentDiv from "./ContentDiv.jsx";
+import Sync from "../BalkyImages/Rev.Featureimgs/SYNC.svg";
+import Balance from "../BalkyImages/Rev.Featureimgs/BALANCE.svg";
+import Browsers from "../BalkyImages/Rev.Featureimgs/BROWERS.svg";
+import P2P from "../BalkyImages/upcomingFeatureimgs/P2P-Browser-Upcoming.svg";
+import DeFi from "../BalkyImages/upcomingFeatureimgs/Hard-Coded-DeFi-Upcoming.svg";
+import AntiSandwich from "../BalkyImages/upcomingFeatureimgs/Anti-Sandwich-Matching-Upcoming.svg";
 
-const highlights = [
+const categories = [
   {
-    title: "No pre-mine",
-    copy: "Fair launch on Bitcointalk with verifiable PoBW distribution.",
-    icon: Goal.src,
+    id: "tokenomics",
+    title: "Fair Tokenomics",
+    lede: "Fair launch, fair supply, fair distribution, scarcer than Bitcoin. Every WART in existence is originating from public mining without insider shortcuts.",
+    points: [
+      {
+        title: "Fair Launch",
+        copy: "Warthog's launch was publicly announced on Bitcointalk without any preallocation, premine, premint, unlocks or other vesting cliffs.",
+        icon: Goal.src,
+      },
+      {
+        title: "0% Team Allocation",
+        copy: "There are no reserved dev funds, dev fees, hidden allocations or advisor carve-outs. Development is based on enthusiasts, community and donations.",
+        icon: Profile.src,
+      },
+      {
+        title: "100% Minable",
+copy: "Every WART is publicly mineable by the community. The hard cap of no more than 19 million coins to ever be mined makes Warthog scarcer than Bitcoin.",
+        icon: Trolly.src,
+      },
+    ],
   },
   {
-    title: "Written from scratch",
-    copy: "No forks. Purpose-built stack designed for browser-native miners.",
-    icon: Sprout.src,
+    id: "original-code",
+    title: "Original Code",
+    lede: "No Bitcoin fork. No copy-paste stack. Warthog was written from scratch with a modern toolchain, and the choices that fall out of that decision are visible in every corner of the codebase.",
+    points: [
+      {
+        title: "Written from Scratch",
+        copy: "Warthog is no fork of any other project. The code was carefully from ground up by humans with real commitment, love and dedication. This is no burner project.",
+        icon: Sprout.src,
+      },
+      {
+        title: "Modern Codebase",
+copy: "We picked a modern stack consisting combining C++23, clangd, Meson, and Ninja keep the stack auditable and fast. Compilation does not require additional system libraries.",
+        icon: Programming.src,
+      },
+      {
+        title: "Open Source",
+        copy: "All code is open source and permissively licensed under MIT license. We welcome and appreciate contributors across C++, Rust, TypeScript, and design. Please join!",
+        icon: Group.src,
+      },
+    ],
   },
   {
-    title: "No reserved team fund",
-    copy: "Zero hidden allocations or advisor carve-outs. Everyone mines.",
-    icon: Profile.src,
+    id: "chain-descriptor-sync",
+    title: "BlitzSync",
+    lede: "A novel superior sync model understanding all peers' chain forks and identifying branches by nothing more than simple integers.",
+    points: [
+      {
+        title: "Efficient",
+        copy: "Our synchronization model is by far more light-weight in terms of RAM usage, computational effort and required network bandwidth as no hashes need to be looked up, indexed or transmitted over the network.",
+        icon: Sync.src,
+      },
+      {
+        title: "Fast",
+        copy: "The protocol supports addressing block ranges by height ranges which allows batch downloads of blocks without any list of hashes to be transmitted or processed. This greatly optimizes and speeds up synchronization.",
+        icon: Sync.src,
+      },
+      {
+        title: "Intelligent",
+        copy: "Nodes understand where their own chain diverges from peers' chains and make logical conclusions to cut unnecessary network requests and detect rogue peers for an improved banning strategy.",
+        icon: Sync.src,
+      },
+    ],
   },
   {
-    title: "Modern codebase",
-    copy: "C++23, clangd, Meson, and Ninja keep the stack auditable & fast.",
-    icon: Programming.src,
+    id: "pobw",
+    title: "Janushash",
+    lede: "Our mathematical Proof of Balanced Work (PoBW) theory cleanly combines Verushash v2.2 and Sha256t into Warthog's unique Janushash algorithm desgined to bring back the golden days of mining.",
+    points: [
+      {
+        title: "Repelling Farms",
+copy: "The required balanced combination of Verushash v2.2 and SHA256t bottlenecks pure GPU farms, pure CPU farms and botnets. Efficient mining requires decent CPU and GPU hashrates, which farms rarely support.",
+        icon: Balance.src,
+      },
+      {
+        title: "Favoring Gamers",
+copy: "Mining requirements were carefully picked to place consumer gaming PCs in the efficiency sweetspot. Paired with the fact that farms can't grab major profits, these go to the little guy. ",
+        icon: TinyWart.src,
+      },
+      {
+        title: "Democratized Mining",
+        copy: "Our mining algorithm brings us close to Satoshi's original vision of \"one-cpu-one-vote\": Mining rewards consumer hardware, not whoever can throw the most ASICs at the network.",
+        icon: Coin.src,
+      },
+    ],
   },
   {
-    title: "100% mineable",
-    copy: "Every token is accessible to the community—no premint, no unlocks.",
-    icon: Trolly.src,
+    id: "defi",
+    title: "Native DeFi",
+    lede: "Instead of implementing DeFi on top of smart contracts, Warthog embeds the DeFi code directly into the consensus layer to open the door to unprecedented features.",
+    points: [
+      {
+        title: "User Protection",
+        copy: "Dirty tricks such as post-creation supply inflation, MEV extraction or other rug-pull backdoors are impossible by design. Tokenomics will be reported by Warthog itself and not by sketchy meme coin websites.",
+        icon: DeFi.src,
+      },
+      {
+        title: "Unique Features",
+        copy: "Implementing DeFi natively unlocks features the world has not seen before such as our Fair Batch Matching algorithm or token forks where new tokens are created with balance cloned from existing tokens (planned).",
+        icon: AntiSandwich.src,
+      },
+      {
+        title: "Hardened Safety",
+copy: "Smart Contract based DeFi is inherently unsecure and attacked almost weekly. Without an intermediate smart contract layer implmentation is much safer to write, easier to reason about and has less corner cases.",
+        icon: Programming.src,
+      },
+    ],
   },
   {
-    title: "Open source",
-    copy: "Welcoming contributors across C++, Rust, TypeScript, and design.",
-    icon: Group.src,
+    id: "fbm",
+    title: "Fair Batch Matching",
+lede: "A ground-breaking algorithm to match buy orders, sell orders and pool liquidity batch-wise in a fair way without intrinsic transaction ordering.",
+    points: [
+      {
+        title: "Research-Backed",
+copy: "Our algorithm is based on a mathematical research on which we have written a paper. We prove fairness, existence and uniqueness of a solution which guarantees correctness and convergence for our implementation.",
+        icon: DeFi.src,
+      },
+      {
+        title: "Hybrid Liquidity",
+copy: "In traditional exchanges orders are matched agains discrete liquidity from an oder book. In liquidity pools orders are matched against continous liquidity. We match against both, order book and liquidity pool.",
+        icon: Programming.src,
+      },
+      {
+        title: "No MEV",
+copy: "Orders are matched batch-wise without any ordering that can be exploited by block creators. This fully protects users from MEV extraction. Sandwich attacks? We don't do that here.",
+        icon: AntiSandwich.src,
+      },
+    ],
+  },
+  {
+    id: "browser-nodes",
+    title: "Browser Nodes",
+    lede: "Run a full Warthog node from any modern browser. No install, no firewall, no chain wipe when you close the tab.",
+    points: [
+      {
+        title: "In-Browser",
+copy: "Careful code design allows swapping the transport layer between TCP, Websocket and WebRTC such that Emscripten easily compiles the full node to Webassembly to run within the browser as simple as opening a website.",
+        icon: Browsers.src,
+      },
+      {
+        title: "Persistence",
+        copy: "Modern Browsers support the Origin Private File System (OPFS) to save gigabytes of data. We make use of SQLite's recently added OPFS support to directly operate and save the block chain in the browser.",
+            icon: P2P.src,
+          },
+          {
+        title: "P2P Support",
+        copy: "Direct browser-to-browser communication is be done over WebRTC. After the handshake, no intermediate server is required. Bridge nodes interconnect WebRTC browser nodes to the TCP based rest of the network.",
+            icon: P2P.src,
+          },
+        ],
   },
 ];
 ---
@@ -46,141 +175,126 @@ const highlights = [
 <style>
   .unique-section {
     background: linear-gradient(145deg, rgba(15, 17, 34, 0.95), rgba(3, 6, 17, 0.95));
-    overflow: hidden;
-    padding: clamp(2rem, 5vw, 4rem) 0; /* Added: Vertical padding for section separation */
+    padding: clamp(2rem, 5vw, 4rem) 0;
   }
 
-  .unique-grid {
+  .features-intro {
+    text-align: center;
+    margin: 0 auto clamp(2rem, 4vw, 3rem);
+    max-width: 800px;
+    padding-inline: clamp(1rem, 4vw, 2.5rem);
+  }
+
+  .features-intro h2 {
+    margin: 0.35rem 0 1rem;
+  }
+
+  .categories {
     display: grid;
-    gap: clamp(1.5rem, 4vw, 3rem);
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    align-items: start;
+    gap: clamp(1.5rem, 3vw, 2.5rem);
     width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding-inline: clamp(1rem, 4vw, 2.5rem);
   }
 
-  @media (min-width: 768px) and (max-width: 1024px) {
-    /* Removed: grid-template-columns: 1fr; — let auto-fit handle it */
-    .unique-features {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1.25rem;
-    }
-  }
-
-  /* Add mobile-specific adjustments */
-  @media (max-width: 767px) {
-    .unique-grid {
-      gap: clamp(2rem, 5vw, 3rem); /* Larger gap on mobile */
-    }
-    .unique-features {
-      gap: 1.5rem;
-    }
-  }
-
-  .unique-card {
+  .category-card {
     border-radius: var(--radius-lg);
-    background: rgba(5, 8, 18, 0.8);
-    padding: clamp(1.5rem, 3vw, 2.25rem);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    box-shadow: 0 35px 60px rgba(2, 6, 23, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(8, 12, 24, 0.7);
+    padding: clamp(1.25rem, 3vw, 2rem);
+    box-shadow: var(--shadow-soft);
   }
 
-  .unique-card__list {
-    margin-top: 1.5rem;
+  .category-card__header {
+    margin-bottom: clamp(1rem, 2vw, 1.5rem);
+    padding-bottom: clamp(0.75rem, 2vw, 1rem);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .category-card__title {
+    margin: 0 0 0.5rem;
+    font-size: clamp(1.25rem, 2.5vw, 1.5rem);
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  .category-card__lede {
+    margin: 0;
+    color: var(--color-text-muted);
+    line-height: 1.55;
+    font-size: 0.95rem;
+  }
+
+  .category-points {
     display: grid;
-    gap: 0.75rem;
+    gap: clamp(0.75rem, 1.5vw, 1rem);
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   }
 
-  .unique-card__list li {
+  .point {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: clamp(0.85rem, 1.5vw, 1rem);
+    border-radius: var(--radius-md);
+    background: rgba(10, 15, 28, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .point__title {
     display: flex;
     align-items: center;
     gap: 0.55rem;
-    color: var(--color-text-muted);
-  }
-
-  .unique-card__list li::before {
-    content: "";
-    width: 0.85rem;
-    height: 0.85rem;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #facc15, #f97316);
-  }
-
-  .unique-features {
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  }
-
-  .unique-item {
-    padding: 1.2rem;
-    border-radius: 1.25rem;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(10, 15, 28, 0.85);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
-  }
-
-  .unique-item__title {
     margin: 0;
     font-size: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
+    font-weight: 600;
+    color: var(--color-text);
   }
 
-  .unique-item__copy {
-    margin: 0.5rem 0 0;
+  .point__icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .point__copy {
+    margin: 0;
     color: var(--color-text-muted);
-  }
-
-  .unique-item img {
-    width: 1.85rem;
+    line-height: 1.55;
+    font-size: 0.9rem;
   }
 </style>
 
-<section class="section unique-section">
-  <ContentDiv>
-    <div class="unique-grid">
-      <div class="unique-card">
-        <span class="unique-pill">Innovation</span>
-        <h2 class="section__title mt-3 mb-4 inline-flex items-center gap-3">
-          What makes us unique?
-          <img src={TinyWart.src} alt="" width="44" height="44" loading="lazy" />
-        </h2>
-        <p class="muted">
-          We engineered Warthog as a fair-launch blockchain with no shortcuts: no premine,
-          no hidden team wallets, and a modern PoBW algorithm that everyone with a modern PC can mine. Paird with Sandwich-proof hard-coded DeFi.
-        </p>
-        <div class="stat-card mt-6">
-          <p class="stat-card__label">Tokenomics</p>
-          <p class="stat-card__value text-3xl flex items-center gap-3">
-            0%<img src={Coin.src} alt="" width="28" height="28" loading="lazy" />
-          </p>
-          <p class="muted mt-2">
-            Nothing minted or reserved for insiders—100% of WART is discoverable through public mining.
-          </p>
-        </div>
-        <ul class="unique-card__list">
-          <li>Zero pre-mine and no hidden allocations</li>
-          <li>Proof of Balanced Work rewards real contribution</li>
-          <li>Contributor-friendly stack across C++, Rust, and TS</li>
-        </ul>
-      </div>
+<section class="section unique-section" id="unique">
+  <div class="features-intro">
+    <p class="section__eyebrow">What makes us unique</p>
+    <h2 class="section__title">Built different, on purpose</h2>
+  </div>
 
-      <div class="unique-features">
-        {
-          highlights.map((feature) => (
-            <article class="unique-item">
-              <h3 class="unique-item__title">
-                <img src={feature.icon} alt="" loading="lazy" />
-                {feature.title}
-              </h3>
-              <p class="unique-item__copy">{feature.copy}</p>
-            </article>
-          ))
-        }
-      </div>
-    </div>
-  </ContentDiv>
+  <div class="categories">
+    {
+      categories.map((category) => (
+        <article class="category-card">
+          <header class="category-card__header">
+            <h3 class="category-card__title">{category.title}</h3>
+            <p class="category-card__lede">{category.lede}</p>
+          </header>
+          <div class="category-points">
+            {
+              category.points.map((point) => (
+                <div class="point">
+                  <h4 class="point__title">
+                    <img src={point.icon} alt="" class="point__icon" loading="lazy" />
+                    {point.title}
+                  </h4>
+                  <p class="point__copy">{point.copy}</p>
+                </div>
+              ))
+            }
+          </div>
+        </article>
+      ))
+    }
+  </div>
 </section>
