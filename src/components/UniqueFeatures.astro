@@ -199,6 +199,7 @@ const categories = [
       this.navClickHandlers = [];
       this.pointClickHandlers = [];
       this.lastActiveIndex = -1;
+      this.suppressLayoutRefresh = false;
       this.resizeObserver = null;
       this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
       this.mobileLayout = window.matchMedia(MOBILE_MQ);
@@ -306,6 +307,7 @@ const categories = [
 
       const blockCount = blocks.length;
       let blockOffsets = [];
+      let layoutBlockHeights = [];
       let tailLift = 0;
       let chainTrigger = null;
       let exitTrigger = null;
@@ -356,9 +358,11 @@ const categories = [
 
         const width = Math.round(Math.min(availableWidth * (isMobile ? 0.96 : 0.98), isMobile ? 620 : 1000));
 
+        layoutBlockHeights = Array.from(blocks, (block) => block.offsetHeight);
+
         let maxBlockHeight = 0;
-        blocks.forEach((block) => {
-          maxBlockHeight = Math.max(maxBlockHeight, block.offsetHeight);
+        layoutBlockHeights.forEach((height) => {
+          maxBlockHeight = Math.max(maxBlockHeight, height);
         });
 
         const contentBuffer = isMobile ? (isNarrow ? 20 : 72) : 196;
@@ -389,7 +393,7 @@ const categories = [
         let cumulativeOffset = 0;
         blocks.forEach((block, index) => {
           blockOffsets.push(cumulativeOffset);
-          cumulativeOffset += block.offsetHeight;
+          cumulativeOffset += layoutBlockHeights[index] ?? block.offsetHeight;
           const connector = connectors[index];
           if (connector) {
             cumulativeOffset += connector.offsetHeight;
@@ -461,7 +465,7 @@ const categories = [
         const blockOffset = getTrackOffset(floatIndex);
         const blockHeight = getInterpolatedValue(
           Math.min(floatIndex, blockCount - 1),
-          (i) => blocks[i]?.offsetHeight || 0
+          (i) => layoutBlockHeights[i] ?? (blocks[i]?.offsetHeight || 0)
         );
 
         let centerY = Math.max(0, viewportHeight / 2 - blockHeight / 2);
@@ -565,6 +569,7 @@ const categories = [
       });
 
       this.resizeObserver = new ResizeObserver(() => {
+        if (this.suppressLayoutRefresh) return;
         updateLayout();
         ScrollTrigger.refresh();
         syncCurrentScrollState();
@@ -632,6 +637,8 @@ const categories = [
           const block = point.closest(".chain-block");
           if (!block?.classList.contains("is-active")) return;
 
+          this.suppressLayoutRefresh = true;
+
           const wasExpanded = point.classList.contains("is-expanded");
           block.querySelectorAll(".point.is-expanded").forEach((el) => {
             el.classList.remove("is-expanded");
@@ -644,9 +651,10 @@ const categories = [
           }
 
           requestAnimationFrame(() => {
-            updateLayout();
-            ScrollTrigger.refresh();
             syncCurrentScrollState();
+            requestAnimationFrame(() => {
+              this.suppressLayoutRefresh = false;
+            });
           });
         };
         point.addEventListener("click", handler);
@@ -1361,6 +1369,14 @@ const categories = [
       padding: 0.7rem 0.85rem;
       gap: 0.5rem;
       isolation: isolate;
+      overflow: hidden;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    unique-features-chain:not(.is-static) .category-points {
+      max-width: 100%;
+      min-width: 0;
     }
 
     unique-features-chain:not(.is-static) .category-card__title {
@@ -1377,11 +1393,12 @@ const categories = [
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
       transition:
-        transform 0.2s ease,
         padding 0.2s ease,
         border-color 0.2s ease,
         background 0.2s ease,
-        box-shadow 0.2s ease;
+        box-shadow 0.2s ease,
+        max-height 0.2s ease,
+        opacity 0.2s ease;
     }
 
     unique-features-chain:not(.is-static) .point__title {
@@ -1399,23 +1416,27 @@ const categories = [
       line-height: 1.4;
     }
 
-    unique-features-chain:not(.is-static) .chain-block.has-expanded-point {
-      margin-inline: -0.65rem;
-      width: calc(100% + 1.3rem);
-      max-width: none;
+    unique-features-chain:not(.is-static) .chain-block.has-expanded-point .point:not(.is-expanded) {
+      max-height: 2.4rem;
+      opacity: 0.45;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    unique-features-chain:not(.is-static) .chain-block.has-expanded-point .point:not(.is-expanded) .point__copy {
+      display: none;
     }
 
     unique-features-chain:not(.is-static) .point.is-expanded {
       position: relative;
-      z-index: 5;
-      margin-inline: -0.15rem;
-      padding: 0.95rem 1rem;
-      border-color: rgba(253, 185, 19, 0.5);
+      z-index: 2;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      padding: 0.85rem 0.8rem;
+      border-color: rgba(253, 185, 19, 0.45);
       background: rgba(14, 22, 40, 0.98);
-      box-shadow:
-        0 16px 36px rgba(2, 6, 23, 0.55),
-        0 0 0 1px rgba(253, 185, 19, 0.18);
-      transform: scale(1.03);
+      box-shadow: inset 0 0 0 1px rgba(253, 185, 19, 0.12);
     }
 
     unique-features-chain:not(.is-static) .point.is-expanded .point__title {
