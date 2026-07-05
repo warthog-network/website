@@ -227,21 +227,67 @@ import { createChart } from 'lightweight-charts';
     
 </script>
 <script>
+  import { gsap } from "gsap";
+  import ScrollTrigger from "gsap/ScrollTrigger";
+
+  gsap.registerPlugin(ScrollTrigger);
+
   class MarketDataComponent extends HTMLElement {
     constructor() {
       super();
       this.refreshInterval = 60000;
       this.timer = null;
       this.estimatedHalvingPointsByMinedAmount = [];
+      this.entranceTrigger = null;
+      this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     }
 
     connectedCallback() {
       this.fetchMarketData();
       this.startTimer();
+      this.setupEntrance();
+      this.reducedMotion.addEventListener("change", this.onReducedMotionChange);
     }
 
     disconnectedCallback() {
       clearInterval(this.timer);
+      this.teardownEntrance();
+      this.reducedMotion.removeEventListener("change", this.onReducedMotionChange);
+    }
+
+    onReducedMotionChange = () => this.setupEntrance();
+
+    teardownEntrance() {
+      this.entranceTrigger?.kill();
+      this.entranceTrigger = null;
+    }
+
+    setupEntrance() {
+      this.teardownEntrance();
+
+      const section = this.querySelector(".market-section");
+      if (!section) return;
+
+      if (this.reducedMotion.matches) {
+        gsap.set(section, { clearProps: "opacity,transform" });
+        return;
+      }
+
+      gsap.set(section, { opacity: 0, y: 24 });
+
+      this.entranceTrigger = ScrollTrigger.create({
+        trigger: section,
+        start: "top 92%",
+        end: "top 82%",
+        scrub: true,
+        invalidateOnRefresh: true,
+        onUpdate: (self) => {
+          gsap.set(section, {
+            opacity: self.progress,
+            y: 24 * (1 - self.progress),
+          });
+        },
+      });
     }
 
     async fetchMarketData() {
@@ -360,6 +406,12 @@ import { createChart } from 'lightweight-charts';
     position: relative;
     isolation: isolate;
     background: transparent;
+    scroll-margin-top: 4.5rem;
+  }
+
+  .market-section.section {
+    padding-top: clamp(4.5rem, 11vw, 6rem);
+    padding-bottom: clamp(3rem, 6vw, 5.5rem);
   }
 
   .market-section::before {

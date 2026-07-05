@@ -182,8 +182,8 @@ const categories = [
   gsap.registerPlugin(ScrollTrigger);
 
   const SCROLL_PER_BLOCK = 0.88;
-  const END_HOLD = 1.25;
-  const END_EXIT = 0.5;
+  const END_HOLD = 0.65;
+  const END_EXIT = 0.28;
   const END_DWELL = END_HOLD + END_EXIT;
   const BLOCK_GAP = 28;
 
@@ -246,6 +246,8 @@ const categories = [
       this.classList.remove("is-static");
 
       const scrollPin = this.querySelector(".chain-scroll-pin");
+      const pinTrack = this.querySelector(".chain-pin-track");
+      const exitTrack = this.querySelector(".chain-exit-track");
       const stage = this.querySelector(".chain-stage");
       const stageBody = this.querySelector(".chain-stage__body");
       const viewport = this.querySelector(".chain-viewport");
@@ -256,11 +258,23 @@ const categories = [
       const nodes = this.querySelectorAll(".chain-rail__node");
       const indicators = this.querySelectorAll(".chain-nav__item");
 
-      if (!scrollPin || !stage || !stageBody || !viewport || !track || !blocks.length) return;
+      if (
+        !scrollPin ||
+        !pinTrack ||
+        !exitTrack ||
+        !stage ||
+        !stageBody ||
+        !viewport ||
+        !track ||
+        !blocks.length
+      ) {
+        return;
+      }
 
       const blockCount = blocks.length;
       let blockOffsets = [];
       let chainTrigger = null;
+      let exitTrigger = null;
 
       const updateLayout = () => {
         const bodyStyles = getComputedStyle(stageBody);
@@ -275,15 +289,16 @@ const categories = [
           280
         );
         const availableHeight = Math.max(stageBody.clientHeight - padY, 280);
+        const isMobile = window.innerWidth < 900;
 
-        const width = Math.round(Math.min(availableWidth * 0.98, 1000));
+        const width = isMobile
+          ? Math.round(availableWidth)
+          : Math.round(Math.min(availableWidth * 0.98, 1000));
 
         let maxBlockHeight = 0;
         blocks.forEach((block) => {
           maxBlockHeight = Math.max(maxBlockHeight, block.offsetHeight);
         });
-
-        const isMobile = window.innerWidth < 900;
         const viewportHeight = isMobile
           ? Math.round(Math.min(maxBlockHeight + 8, availableHeight * 0.92))
           : Math.round(Math.min(availableHeight * 0.82, 620));
@@ -413,7 +428,7 @@ const categories = [
           if (isLastBlock && isExiting) {
             const syncedOpacity = Math.max(0.2, 0.55 - 0.28);
             const syncedScale = Math.max(0.92, 1 - 0.04);
-            const clearProgress = Math.min(1, exitProgress * 1.35);
+            const clearProgress = Math.min(1, exitProgress * 1.15);
             opacity = syncedOpacity * (1 - clearProgress);
             scale = syncedScale - (syncedScale - 0.92) * clearProgress;
           }
@@ -440,47 +455,53 @@ const categories = [
       this.resizeObserver = new ResizeObserver(() => {
         updateLayout();
         ScrollTrigger.refresh();
-        if (chainTrigger) {
+        if (exitTrigger?.isActive) {
+          const contentRatio = getContentRatio();
           updateScrollState(
-            mapScrollProgress(chainTrigger.progress),
-            chainTrigger.progress
+            1,
+            contentRatio + exitTrigger.progress * (1 - contentRatio)
+          );
+        } else if (chainTrigger) {
+          const contentRatio = getContentRatio();
+          updateScrollState(
+            chainTrigger.progress,
+            chainTrigger.progress * contentRatio
           );
         }
       });
       this.resizeObserver.observe(stageBody);
 
-      const scrollDistance = () =>
-        ((blockCount - 1) * SCROLL_PER_BLOCK + END_DWELL) * window.innerHeight;
-
-      const snapPoints = () => {
-        const contentRatio = getContentRatio();
-        const points = Array.from({ length: blockCount }, (_, i) =>
-          blockCount === 1 ? 0 : (i / (blockCount - 1)) * contentRatio
-        );
-        if (blockCount > 1 && END_DWELL > 0) {
-          points.push(1);
-        }
-        return points;
-      };
+      const contentScrollDistance = () =>
+        (blockCount - 1) * SCROLL_PER_BLOCK * window.innerHeight;
+      const exitScrollDistance = () => END_DWELL * window.innerHeight;
 
       chainTrigger = ScrollTrigger.create({
-        trigger: scrollPin,
+        trigger: pinTrack,
         start: "top top",
-        end: () => `+=${scrollDistance()}`,
+        end: () => `+=${contentScrollDistance()}`,
         pin: stage,
-        scrub: 0.6,
-        anticipatePin: 1,
+        scrub: true,
+        anticipatePin: 0,
         invalidateOnRefresh: true,
-        snap: {
-          snapTo: snapPoints(),
-          duration: { min: 0.2, max: 0.4 },
-          ease: "power2.inOut",
-          directional: false,
+        onUpdate: (self) => {
+          const contentRatio = getContentRatio();
+          updateScrollState(self.progress, self.progress * contentRatio);
         },
-        onUpdate: (self) =>
-          updateScrollState(mapScrollProgress(self.progress), self.progress),
       });
       this.scrollTriggers.push(chainTrigger);
+
+      exitTrigger = ScrollTrigger.create({
+        trigger: exitTrack,
+        start: "top top",
+        end: () => `+=${exitScrollDistance()}`,
+        scrub: true,
+        invalidateOnRefresh: true,
+        onUpdate: (self) => {
+          const contentRatio = getContentRatio();
+          updateScrollState(1, contentRatio + self.progress * (1 - contentRatio));
+        },
+      });
+      this.scrollTriggers.push(exitTrigger);
 
       updateScrollState(0);
     }
@@ -562,9 +583,16 @@ const categories = [
   .chain-scroll-pin {
     --block-count: 7;
     --scroll-per-block: 88svh;
-    --end-dwell: 175svh;
+    --end-dwell: 93svh;
     position: relative;
-    height: calc((var(--block-count) - 1) * var(--scroll-per-block) + var(--end-dwell));
+  }
+
+  .chain-pin-track {
+    height: calc((var(--block-count) - 1) * var(--scroll-per-block));
+  }
+
+  .chain-exit-track {
+    height: var(--end-dwell);
   }
 
   .chain-stage {
@@ -833,7 +861,7 @@ const categories = [
     align-items: start;
   }
 
-  @media (min-width: 640px) {
+  @media (min-width: 900px) {
     .category-points {
       grid-template-columns: repeat(3, 1fr);
     }
@@ -858,7 +886,7 @@ const categories = [
 
   @media (hover: hover) {
     .point:hover {
-      transform: scale(1.05);
+      transform: scale(1.03);
       z-index: 2;
       border-color: rgba(253, 185, 19, 0.5);
       background: rgba(14, 22, 40, 0.98);
@@ -876,7 +904,7 @@ const categories = [
     }
 
     .point:hover .point__icon {
-      transform: scale(1.12);
+      transform: scale(1.08);
     }
   }
 
@@ -907,8 +935,13 @@ const categories = [
   }
 
   /* ── Static / reduced-motion fallback ── */
-  .is-static .chain-scroll-pin {
+  .is-static .chain-pin-track,
+  .is-static .chain-exit-track {
     height: auto;
+  }
+
+  .is-static .chain-exit-track {
+    display: none;
   }
 
   .is-static .chain-stage {
@@ -967,9 +1000,14 @@ const categories = [
   }
 
   @media (max-width: 899px) {
+    .chain-stage {
+      padding-inline: clamp(0.25rem, 1.5vw, 0.5rem);
+    }
+
     .chain-stage__body {
       grid-template-columns: 1fr;
       justify-items: center;
+      align-items: center;
     }
 
     .chain-rail,
@@ -980,10 +1018,63 @@ const categories = [
     .chain-viewport {
       mask-image: none;
       -webkit-mask-image: none;
+      width: 100% !important;
+      overflow: visible;
     }
 
     .features-intro {
-      margin-bottom: clamp(1rem, 2.5vw, 1.5rem);
+      margin-bottom: clamp(0.5rem, 1.5vw, 0.85rem);
+      padding-inline: clamp(0.5rem, 2vw, 1rem);
+    }
+
+    .chain-block {
+      padding: clamp(0.55rem, 2vw, 0.7rem);
+      gap: 0.35rem;
+      width: 100%;
+      overflow: visible;
+    }
+
+    .category-card__header {
+      padding-bottom: 0.4rem;
+    }
+
+    .category-card__lede {
+      font-size: 0.78rem;
+      line-height: 1.35;
+    }
+
+    .category-points {
+      gap: 0.35rem;
+      padding: 3px 2px;
+    }
+
+    .point {
+      padding: 0.45rem 0.5rem;
+      transform-origin: center center;
+    }
+
+    @media (hover: hover) {
+      .point:hover {
+        transform: scale(1.04);
+        z-index: 2;
+        border-color: rgba(253, 185, 19, 0.5);
+        background: rgba(14, 22, 40, 0.98);
+        box-shadow:
+          0 10px 24px rgba(2, 6, 23, 0.4),
+          0 0 0 1px rgba(253, 185, 19, 0.12);
+      }
+
+      .point:hover .point__title {
+        color: var(--color-brand);
+      }
+
+      .point:hover .point__copy {
+        color: var(--color-text);
+      }
+
+      .point:hover .point__icon {
+        transform: scale(1.08);
+      }
     }
   }
 
@@ -1001,6 +1092,7 @@ const categories = [
 
   <div class="unique-section__content">
     <div class="chain-scroll-pin">
+      <div class="chain-pin-track">
       <div class="chain-stage">
         <div class="features-intro">
           <p class="section__eyebrow">What makes us unique</p>
@@ -1067,6 +1159,8 @@ const categories = [
         </nav>
         </div>
       </div>
+      </div>
+      <div class="chain-exit-track" aria-hidden="true"></div>
     </div>
   </div>
 </unique-features-chain>
