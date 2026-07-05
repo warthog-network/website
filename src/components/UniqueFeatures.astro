@@ -1,19 +1,16 @@
 ---
 import { Fragment } from "astro/jsx-runtime";
-import TinyWart from "../BalkyImages/Isolation_Mode.svg";
-import Coin from "../BalkyImages/001-coin.svg";
 import Goal from "../BalkyImages/goal 1.svg";
 import Sprout from "../BalkyImages/002-sprout.svg";
 import Profile from "../BalkyImages/004-profile.svg";
 import Programming from "../BalkyImages/006-programming.svg";
 import Trolly from "../BalkyImages/005-trolley.svg";
 import Group from "../BalkyImages/Group 5.svg";
-import Sync from "../BalkyImages/Rev.Featureimgs/SYNC.svg";
-import Balance from "../BalkyImages/Rev.Featureimgs/BALANCE.svg";
-import Browsers from "../BalkyImages/Rev.Featureimgs/BROWERS.svg";
-import P2P from "../BalkyImages/upcomingFeatureimgs/P2P-Browser-Upcoming.svg";
-import DeFi from "../BalkyImages/upcomingFeatureimgs/Hard-Coded-DeFi-Upcoming.svg";
 import AntiSandwich from "../BalkyImages/upcomingFeatureimgs/Anti-Sandwich-Matching-Upcoming.svg";
+import {
+  featurePointIcons,
+  type FeaturePointIconName,
+} from "../icons/featurePointIcons";
 
 const categories = [
   {
@@ -24,17 +21,17 @@ const categories = [
       {
         title: "Fair Launch",
         copy: "Warthog's launch was publicly announced on Bitcointalk without any preallocation, premine, premint, unlocks or other vesting cliffs.",
-        icon: Goal.src,
+        iconSrc: Goal.src,
       },
       {
         title: "0% Team Allocation",
         copy: "There are no reserved dev funds, dev fees, hidden allocations or advisor carve-outs. Development is based on enthusiasts, community and donations.",
-        icon: Profile.src,
+        iconSrc: Profile.src,
       },
       {
         title: "100% Minable",
         copy: "Every WART is publicly mineable by the community. The hard cap of no more than 19 million coins to ever be mined makes Warthog scarcer than Bitcoin.",
-        icon: Trolly.src,
+        iconSrc: Trolly.src,
       },
     ],
   },
@@ -46,17 +43,17 @@ const categories = [
       {
         title: "Written from Scratch",
         copy: "Warthog is no fork of any other project. The code was carefully from ground up by humans with real commitment, love and dedication. This is no burner project.",
-        icon: Sprout.src,
+        iconSrc: Sprout.src,
       },
       {
         title: "Modern Codebase",
         copy: "We picked a modern stack consisting combining C++23, clangd, Meson, and Ninja keep the stack auditable and fast. Compilation does not require additional system libraries.",
-        icon: Programming.src,
+        iconSrc: Programming.src,
       },
       {
         title: "Open Source",
         copy: "All code is open source and permissively licensed under MIT license. We welcome and appreciate contributors across C++, Rust, TypeScript, and design. Please join!",
-        icon: Group.src,
+        iconSrc: Group.src,
       },
     ],
   },
@@ -68,17 +65,17 @@ const categories = [
       {
         title: "Efficient",
         copy: "Our synchronization model is by far more light-weight in terms of RAM usage, computational effort and required network bandwidth as no hashes need to be looked up, indexed or transmitted over the network.",
-        icon: Sync.src,
+        icon: "efficient",
       },
       {
         title: "Fast",
         copy: "The protocol supports addressing block ranges by height ranges which allows batch downloads of blocks without any list of hashes to be transmitted or processed. This greatly optimizes and speeds up synchronization.",
-        icon: Sync.src,
+        icon: "fast",
       },
       {
         title: "Intelligent",
         copy: "Nodes understand where their own chain diverges from peers' chains and make logical conclusions to cut unnecessary network requests and detect rogue peers for an improved banning strategy.",
-        icon: Sync.src,
+        icon: "intelligent",
       },
     ],
   },
@@ -90,17 +87,17 @@ const categories = [
       {
         title: "Repelling Farms",
         copy: "The required balanced combination of Verushash v2.2 and SHA256t bottlenecks pure GPU farms, pure CPU farms and botnets. Efficient mining requires decent CPU and GPU hashrates, which farms rarely support.",
-        icon: Balance.src,
+        icon: "repelFarms",
       },
       {
         title: "Favoring Gamers",
         copy: "Mining requirements were carefully picked to place consumer gaming PCs in the efficiency sweetspot. Paired with the fact that farms can't grab major profits, these go to the little guy. ",
-        icon: TinyWart.src,
+        icon: "gamers",
       },
       {
         title: "Democratized Mining",
         copy: "Our mining algorithm brings us close to Satoshi's original vision of \"one-cpu-one-vote\": Mining rewards consumer hardware, not whoever can throw the most ASICs at the network.",
-        icon: Coin.src,
+        icon: "democratized",
       },
     ],
   },
@@ -113,17 +110,17 @@ const categories = [
       {
         title: "User Protection",
         copy: "Dirty tricks such as post-creation supply inflation, MEV extraction or other rug-pull backdoors are impossible by design. Tokenomics will be reported by Warthog itself and not by sketchy meme coin websites.",
-        icon: DeFi.src,
+        icon: "userProtection",
       },
       {
         title: "Unique Features",
         copy: "Implementing DeFi natively unlocks features the world has not seen before such as our Fair Batch Matching algorithm or token forks where new tokens are created with balance cloned from existing tokens (planned).",
-        icon: AntiSandwich.src,
+        icon: "uniqueFeature",
       },
       {
         title: "Hardened Safety",
         copy: "Smart Contract based DeFi is inherently unsecure and attacked almost weekly. Without an intermediate smart contract layer implmentation is much safer to write, easier to reason about and has less corner cases.",
-        icon: Programming.src,
+        icon: "hardenedSafety",
       },
     ],
   },
@@ -136,17 +133,18 @@ const categories = [
       {
         title: "Research-Backed",
         copy: "Our algorithm is based on a mathematical research on which we have written a paper. We prove fairness, existence and uniqueness of a solution which guarantees correctness and convergence for our implementation.",
-        icon: DeFi.src,
+        icon: "researchBacked",
       },
       {
         title: "Hybrid Liquidity",
         copy: "In traditional exchanges orders are matched agains discrete liquidity from an oder book. In liquidity pools orders are matched against continous liquidity. We match against both, order book and liquidity pool.",
-        icon: Programming.src,
+        icon: "hybridLiquidity",
       },
       {
         title: "No MEV",
         copy: "Orders are matched batch-wise without any ordering that can be exploited by block creators. This fully protects users from MEV extraction. Sandwich attacks? We don't do that here.",
-        icon: AntiSandwich.src,
+        iconSrc: AntiSandwich.src,
+        iconSlashed: true,
       },
     ],
   },
@@ -159,17 +157,17 @@ const categories = [
       {
         title: "In-Browser",
         copy: "Careful code design allows swapping the transport layer between TCP, Websocket and WebRTC such that Emscripten easily compiles the full node to Webassembly to run within the browser as simple as opening a website.",
-        icon: Browsers.src,
+        icon: "inBrowser",
       },
       {
         title: "Persistence",
         copy: "Modern Browsers support the Origin Private File System (OPFS) to save gigabytes of data. We make use of SQLite's recently added OPFS support to directly operate and save the block chain in the browser.",
-        icon: P2P.src,
+        icon: "persistence",
       },
       {
         title: "P2P Support",
         copy: "Direct browser-to-browser communication is be done over WebRTC. After the handshake, no intermediate server is required. Bridge nodes interconnect WebRTC browser nodes to the TCP based rest of the network.",
-        icon: P2P.src,
+        icon: "p2pSupport",
       },
     ],
   },
@@ -1148,10 +1146,45 @@ const categories = [
   }
 
   .point__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     width: 1.35rem;
     height: 1.35rem;
     flex-shrink: 0;
     transition: transform 0.22s ease;
+  }
+
+  .point__icon :global(svg) {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .point__icon--asset {
+    object-fit: contain;
+  }
+
+  .point__icon--slashed {
+    position: relative;
+  }
+
+  .point__icon--slashed .point__icon--asset {
+    width: 100%;
+    height: 100%;
+  }
+
+  .point__icon--slashed::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 145%;
+    height: 2px;
+    background: #fdb913;
+    border-radius: 1px;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    pointer-events: none;
   }
 
   .point__copy {
@@ -1546,7 +1579,34 @@ const categories = [
                         {category.points.map((point) => (
                           <div class="point" role="button" tabindex="-1">
                             <h4 class="point__title">
-                              <img src={point.icon} alt="" class="point__icon" width="22" height="22" loading="lazy" />
+                              {"iconSrc" in point && point.iconSrc ? (
+                                "iconSlashed" in point && point.iconSlashed ? (
+                                  <span class="point__icon point__icon--slashed">
+                                    <img
+                                      src={point.iconSrc}
+                                      alt=""
+                                      class="point__icon--asset"
+                                      width="22"
+                                      height="22"
+                                      loading="lazy"
+                                    />
+                                  </span>
+                                ) : (
+                                  <img
+                                    src={point.iconSrc}
+                                    alt=""
+                                    class="point__icon point__icon--asset"
+                                    width="22"
+                                    height="22"
+                                    loading="lazy"
+                                  />
+                                )
+                              ) : (
+                                <span
+                                  class="point__icon"
+                                  set:html={featurePointIcons[point.icon as FeaturePointIconName]}
+                                />
+                              )}
                               {point.title}
                             </h4>
                             <p class="point__copy">{point.copy}</p>
