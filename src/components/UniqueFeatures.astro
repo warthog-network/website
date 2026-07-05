@@ -188,6 +188,7 @@ const categories = [
   const END_DWELL = END_HOLD + END_EXIT;
   const BLOCK_GAP = 32;
   const MOBILE_MQ = "(max-width: 899px)";
+  const NARROW_MQ = "(max-width: 600px)";
 
   class UniqueFeaturesChain extends HTMLElement {
     constructor() {
@@ -197,18 +198,21 @@ const categories = [
       this.resizeObserver = null;
       this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
       this.mobileLayout = window.matchMedia(MOBILE_MQ);
+      this.narrowLayout = window.matchMedia(NARROW_MQ);
       this.onLayoutModeChange = () => this.setup();
     }
 
     connectedCallback() {
       this.reducedMotion.addEventListener("change", this.onLayoutModeChange);
       this.mobileLayout.addEventListener("change", this.onLayoutModeChange);
+      this.narrowLayout.addEventListener("change", this.onLayoutModeChange);
       this.setup();
     }
 
     disconnectedCallback() {
       this.reducedMotion.removeEventListener("change", this.onLayoutModeChange);
       this.mobileLayout.removeEventListener("change", this.onLayoutModeChange);
+      this.narrowLayout.removeEventListener("change", this.onLayoutModeChange);
       this.teardown();
     }
 
@@ -224,7 +228,7 @@ const categories = [
     }
 
     useStaticLayout() {
-      return this.reducedMotion.matches || this.mobileLayout.matches;
+      return this.reducedMotion.matches;
     }
 
     applyStaticLayout(blocks) {
@@ -247,7 +251,13 @@ const categories = [
         viewport.style.width = "";
         viewport.style.height = "";
         viewport.style.paddingBottom = "";
+        viewport.classList.remove("is-last-active");
       }
+      const stageBody = this.querySelector(".chain-stage__body");
+      if (stageBody) stageBody.style.removeProperty("--chain-viewport-height");
+      const tailSpacer = this.querySelector(".chain-tail-spacer");
+      if (tailSpacer) tailSpacer.style.height = "0";
+      if (stage) stage.classList.remove("is-last-active");
     }
 
     setup() {
@@ -303,33 +313,56 @@ const categories = [
 
       const blockCount = blocks.length;
       let blockOffsets = [];
+      let tailLift = 0;
       let chainTrigger = null;
       let exitTrigger = null;
+      const tailSpacer = this.querySelector(".chain-tail-spacer");
+
+      const getScrollSteps = () => (this.mobileLayout.matches ? blockCount : blockCount - 1);
 
       const updateLayout = () => {
         const bodyStyles = getComputedStyle(stageBody);
         const padX = parseFloat(bodyStyles.paddingLeft) + parseFloat(bodyStyles.paddingRight);
         const padY = parseFloat(bodyStyles.paddingTop) + parseFloat(bodyStyles.paddingBottom);
-        const navSpace = 120;
-        const railSpace = 48;
-        const availableWidth = Math.max(stageBody.clientWidth - padX - navSpace - railSpace, 280);
+
+        const isMobile = this.mobileLayout.matches;
+        const isNarrow = this.narrowLayout.matches;
+        const navSpace = isMobile ? 0 : 120;
+        const railSpace = isMobile ? 32 : 48;
+        const minAvailable = isMobile ? 240 : 280;
+        const availableWidth = Math.max(stageBody.clientWidth - padX - navSpace - railSpace, minAvailable);
         const availableHeight = Math.max(stageBody.clientHeight - padY, 280);
 
-        const width = Math.round(Math.min(availableWidth * 0.98, 1000));
+        const width = Math.round(Math.min(availableWidth * (isMobile ? 0.96 : 0.98), isMobile ? 620 : 1000));
 
         let maxBlockHeight = 0;
         blocks.forEach((block) => {
           maxBlockHeight = Math.max(maxBlockHeight, block.offsetHeight);
         });
 
+        const contentBuffer = isMobile ? (isNarrow ? 20 : 72) : 196;
+        const heightCap = isMobile ? (isNarrow ? 0.98 : 0.92) : 0.95;
         const viewportHeight = Math.round(Math.min(
-          Math.max(maxBlockHeight + 196, availableHeight * 0.86),
-          availableHeight * 0.95
+          Math.max(maxBlockHeight + contentBuffer, availableHeight * (isMobile ? (isNarrow ? 0.84 : 0.78) : 0.86)),
+          availableHeight * heightCap
         ));
 
         viewport.style.width = `${width}px`;
         viewport.style.height = `${viewportHeight}px`;
-        viewport.style.paddingBottom = "3rem";
+        viewport.style.paddingBottom = isNarrow ? "0.5rem" : isMobile ? "1.25rem" : "3rem";
+        stageBody.style.setProperty("--chain-viewport-height", `${viewportHeight}px`);
+
+        const lastBlock = blocks[blockCount - 1];
+        const lastHeight = lastBlock?.offsetHeight || 0;
+        const centeredTop = viewportHeight / 2 - lastHeight / 2;
+        const targetTop = Math.min(isNarrow ? 6 : 10, viewportHeight - lastHeight - (isNarrow ? 14 : 22));
+        tailLift = isMobile
+          ? Math.max(0, Math.round(centeredTop - targetTop), isNarrow ? 100 : 60)
+          : 0;
+
+        if (tailSpacer) {
+          tailSpacer.style.height = isMobile ? `${tailLift}px` : "0px";
+        }
 
         blockOffsets = [];
         let cumulativeOffset = 0;
@@ -345,14 +378,24 @@ const categories = [
         });
 
         scrollPin.style.setProperty("--block-count", String(blockCount));
+        scrollPin.style.setProperty("--scroll-steps", String(getScrollSteps()));
         scrollPin.style.setProperty("--scroll-per-block", `${Math.round(SCROLL_PER_BLOCK * 100)}svh`);
         scrollPin.style.setProperty("--end-dwell", `${Math.round(END_DWELL * 100)}svh`);
       };
 
       const getContentRatio = () => {
-        const contentDistance = (blockCount - 1) * SCROLL_PER_BLOCK;
+        const contentDistance = getScrollSteps() * SCROLL_PER_BLOCK;
         const totalDistance = contentDistance + END_DWELL;
         return totalDistance > 0 ? contentDistance / totalDistance : 1;
+      };
+
+      const getTrackOffset = (floatIndex) => {
+        const lastIdx = blockCount - 1;
+        if (!this.mobileLayout.matches || floatIndex <= lastIdx) {
+          return getInterpolatedValue(Math.min(floatIndex, lastIdx), (i) => blockOffsets[i] ?? 0);
+        }
+        const phantomT = Math.min(1, floatIndex - lastIdx);
+        return blockOffsets[lastIdx] + tailLift * phantomT;
       };
 
       const getInterpolatedValue = (floatIndex, getValue) => {
@@ -375,23 +418,36 @@ const categories = [
       };
 
       const updateScrollState = (progress, rawProgress = progress) => {
-        const floatIndex = progress * (blockCount - 1);
+        const scrollSteps = getScrollSteps();
+        const floatIndex = progress * scrollSteps;
         const activeIndex = Math.min(Math.round(floatIndex), blockCount - 1);
         const exitProgress = getExitProgress(rawProgress);
         const isExiting = exitProgress > 0;
+        const isMobile = this.mobileLayout.matches;
+        const isNarrow = this.narrowLayout.matches;
 
         const viewportHeight = viewport.clientHeight;
-        const blockOffset = getInterpolatedValue(floatIndex, (i) => blockOffsets[i] ?? 0);
-        const blockHeight = getInterpolatedValue(floatIndex, (i) => blocks[i]?.offsetHeight || 0);
+        const blockOffset = getTrackOffset(floatIndex);
+        const blockHeight = getInterpolatedValue(
+          Math.min(floatIndex, blockCount - 1),
+          (i) => blocks[i]?.offsetHeight || 0
+        );
 
         let centerY = Math.max(0, viewportHeight / 2 - blockHeight / 2);
-        if (activeIndex === blockCount - 1 && !isExiting) {
-          centerY = Math.max(0, centerY - 80);
+        const isLastBlockActive = floatIndex >= blockCount - 1 && !isExiting;
+
+        if (isLastBlockActive) {
+          const topInset = isNarrow ? 6 : 10;
+          const bottomInset = isNarrow ? 14 : 22;
+          centerY = Math.min(topInset, viewportHeight - blockHeight - bottomInset);
         }
+
+        viewport.classList.toggle("is-last-active", isLastBlockActive);
+        stage?.classList.toggle("is-last-active", isLastBlockActive);
 
         gsap.set(track, { y: centerY - blockOffset });
 
-        const railProgress = progress * (1 - exitProgress);
+        const railProgress = Math.min(1, floatIndex / (blockCount - 1)) * (1 - exitProgress);
         if (railFill) railFill.style.height = `${railProgress * 100}%`;
         if (trackFill) trackFill.style.height = `${railProgress * 100}%`;
 
@@ -484,7 +540,7 @@ const categories = [
       });
       this.resizeObserver.observe(stageBody);
 
-      const contentScrollDistance = () => (blockCount - 1) * SCROLL_PER_BLOCK * window.innerHeight;
+      const contentScrollDistance = () => getScrollSteps() * SCROLL_PER_BLOCK * window.innerHeight;
       const exitScrollDistance = () => END_DWELL * window.innerHeight;
 
       chainTrigger = ScrollTrigger.create({
@@ -520,7 +576,15 @@ const categories = [
         if (!chainTrigger || blockCount <= 1) return;
 
         const clampedIndex = Math.max(0, Math.min(index, blockCount - 1));
-        const progress = clampedIndex / (blockCount - 1);
+        const steps = getScrollSteps();
+        let progress;
+        if (this.mobileLayout.matches && clampedIndex === blockCount - 1) {
+          progress = 1;
+        } else if (this.mobileLayout.matches) {
+          progress = clampedIndex / blockCount;
+        } else {
+          progress = clampedIndex / (blockCount - 1);
+        }
         ScrollTrigger.refresh();
         const targetScroll =
           chainTrigger.start + progress * (chainTrigger.end - chainTrigger.start);
@@ -623,7 +687,14 @@ const categories = [
   }
 
   .chain-pin-track {
-    height: calc((var(--block-count) - 1) * var(--scroll-per-block));
+    height: calc(var(--scroll-steps, calc(var(--block-count) - 1)) * var(--scroll-per-block));
+  }
+
+  .chain-tail-spacer {
+    flex-shrink: 0;
+    height: 0;
+    pointer-events: none;
+    visibility: hidden;
   }
 
   .chain-exit-track {
@@ -658,9 +729,10 @@ const categories = [
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    height: min(72vh, 520px);
+    height: var(--chain-viewport-height, min(72vh, 520px));
     width: 2rem;
     flex-shrink: 0;
+    align-self: center;
   }
 
   .chain-rail__track {
@@ -717,8 +789,8 @@ const categories = [
     position: relative;
     overflow: hidden;
     justify-self: center;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 5%, #000 91%, transparent 100%);
-    mask-image: linear-gradient(to bottom, transparent 0%, #000 5%, #000 91%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 4%, #000 94%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 4%, #000 94%, transparent 100%);
     padding-bottom: 3rem;
   }
 
@@ -1172,6 +1244,91 @@ const categories = [
       font-size: 0.84rem;
       line-height: 1.45;
     }
+
+    /* === Animated mobile layout === */
+    unique-features-chain:not(.is-static) .chain-stage__body {
+      grid-template-columns: 1.75rem 1fr;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    unique-features-chain:not(.is-static) .chain-nav {
+      display: none;
+    }
+
+    unique-features-chain:not(.is-static) .chain-rail {
+      width: 1.75rem;
+    }
+
+    unique-features-chain:not(.is-static) .chain-viewport {
+      padding-bottom: 1.25rem;
+    }
+
+    unique-features-chain:not(.is-static) .features-intro {
+      margin-bottom: 0.75rem;
+      padding-inline: 1rem;
+    }
+
+    unique-features-chain:not(.is-static) .chain-block {
+      padding: 0.7rem 0.85rem;
+      gap: 0.5rem;
+    }
+
+    unique-features-chain:not(.is-static) .category-card__title {
+      font-size: 1.1rem;
+      line-height: 1.3;
+    }
+
+    unique-features-chain:not(.is-static) .category-card__lede {
+      font-size: 0.82rem;
+    }
+
+    unique-features-chain:not(.is-static) .point {
+      padding: 0.55rem 0.7rem;
+    }
+
+    unique-features-chain:not(.is-static) .point__title {
+      font-size: 0.82rem;
+      gap: 0.4rem;
+    }
+
+    unique-features-chain:not(.is-static) .point__icon {
+      width: 1.15rem;
+      height: 1.15rem;
+    }
+
+    unique-features-chain:not(.is-static) .point__copy {
+      font-size: 0.76rem;
+      line-height: 1.4;
+    }
+
+    unique-features-chain:not(.is-static) .chain-viewport.is-last-active {
+      overflow: visible;
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 3%, #000 100%);
+      mask-image: linear-gradient(to bottom, transparent 0%, #000 3%, #000 100%);
+    }
+
+    /* === Extra fix for very narrow screens (< 600px) === */
+    @media (max-width: 600px) {
+      unique-features-chain:not(.is-static) .features-intro {
+        margin-bottom: 0.5rem;
+      }
+
+      unique-features-chain:not(.is-static) .chain-stage {
+        padding-bottom: 0.75rem;
+      }
+
+      unique-features-chain:not(.is-static) .chain-viewport {
+        -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 2%, #000 97%, transparent 100%);
+        mask-image: linear-gradient(to bottom, transparent 0%, #000 2%, #000 97%, transparent 100%);
+      }
+
+      unique-features-chain:not(.is-static) .chain-viewport.is-last-active {
+        -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 2%, #000 100%);
+        mask-image: linear-gradient(to bottom, transparent 0%, #000 2%, #000 100%);
+        padding-bottom: 0.25rem;
+      }
+    }
   }
 
   @media (min-width: 900px) {
@@ -1251,6 +1408,7 @@ const categories = [
                     )}
                   </Fragment>
                 ))}
+                <div class="chain-tail-spacer" aria-hidden="true"></div>
               </div>
             </div>
 
