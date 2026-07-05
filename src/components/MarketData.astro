@@ -240,17 +240,38 @@ import { createChart } from 'lightweight-charts';
       this.estimatedHalvingPointsByMinedAmount = [];
       this.entranceTrigger = null;
       this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+      this.onViewportResize = () => ScrollTrigger.refresh();
     }
 
     connectedCallback() {
       this.fetchMarketData();
       this.startTimer();
-      this.setupEntrance();
+      this.prepareEntrance();
       this.reducedMotion.addEventListener("change", this.onReducedMotionChange);
+    }
+
+    prepareEntrance() {
+      const init = () => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            this.setupEntrance();
+            ScrollTrigger.refresh();
+          });
+        });
+      };
+
+      window.visualViewport?.addEventListener("resize", this.onViewportResize);
+
+      if (document.readyState === "complete") {
+        init();
+      } else {
+        window.addEventListener("load", init, { once: true });
+      }
     }
 
     disconnectedCallback() {
       clearInterval(this.timer);
+      window.visualViewport?.removeEventListener("resize", this.onViewportResize);
       this.teardownEntrance();
       this.reducedMotion.removeEventListener("change", this.onReducedMotionChange);
     }
@@ -276,17 +297,18 @@ import { createChart } from 'lightweight-charts';
       gsap.set(section, { opacity: 0, y: 24 });
 
       const isMobile = window.innerWidth < 900;
+      const uniqueSection = document.getElementById("unique");
 
       this.entranceTrigger = ScrollTrigger.create({
         trigger: section,
-        start: isMobile ? "top 78%" : "top 92%",
-        end: isMobile ? "top 62%" : "top 82%",
+        start: isMobile && uniqueSection ? "top bottom" : "top 92%",
+        end: isMobile && uniqueSection ? "top 90%" : "top 82%",
         scrub: true,
         invalidateOnRefresh: true,
         onUpdate: (self) => {
           gsap.set(section, {
             opacity: self.progress,
-            y: 24 * (1 - self.progress),
+            y: isMobile ? 12 * (1 - self.progress) : 24 * (1 - self.progress),
           });
         },
       });

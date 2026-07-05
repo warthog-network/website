@@ -194,21 +194,39 @@ const categories = [
       this.scrollTriggers = [];
       this.navClickHandlers = [];
       this.resizeObserver = null;
+      this.resizeDebounce = null;
+      this.mobileCompactLayout = null;
+      this.mobileLastLocked = false;
+      this.syncScrollState = null;
       this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+      this.viewportResizeDebounce = null;
       this.onReducedMotionChange = () => this.setup();
+      this.onWindowLoad = () => this.finalizeMeasurements();
+      this.onViewportResize = () => {
+        clearTimeout(this.viewportResizeDebounce);
+        this.viewportResizeDebounce = setTimeout(() => this.finalizeMeasurements(), 80);
+      };
     }
 
     connectedCallback() {
       this.reducedMotion.addEventListener("change", this.onReducedMotionChange);
-      this.setup();
+      window.addEventListener("load", this.onWindowLoad, { once: true });
+      window.visualViewport?.addEventListener("resize", this.onViewportResize);
+      this.prepareSetup();
     }
 
     disconnectedCallback() {
       this.reducedMotion.removeEventListener("change", this.onReducedMotionChange);
+      window.removeEventListener("load", this.onWindowLoad);
+      window.visualViewport?.removeEventListener("resize", this.onViewportResize);
       this.teardown();
     }
 
     teardown() {
+      clearTimeout(this.resizeDebounce);
+      clearTimeout(this.viewportResizeDebounce);
+      this.resizeDebounce = null;
+      this.viewportResizeDebounce = null;
       this.scrollTriggers.forEach((trigger) => trigger.kill());
       this.scrollTriggers = [];
       this.navClickHandlers.forEach(({ el, handler }) =>
@@ -217,10 +235,106 @@ const categories = [
       this.navClickHandlers = [];
       this.resizeObserver?.disconnect();
       this.resizeObserver = null;
+      this.syncScrollState = null;
+    }
+
+    prepareSetup() {
+      const start = () => this.setup();
+
+      document.fonts.ready
+        .then(() => {
+          const images = this.querySelectorAll(".point__icon");
+          return Promise.all(
+            Array.from(images).map(
+              (img) =>
+                img.complete
+                  ? Promise.resolve()
+                  : new Promise((resolve) => {
+                      img.addEventListener("load", resolve, { once: true });
+                      img.addEventListener("error", resolve, { once: true });
+                    })
+            )
+          );
+        })
+        .then(() => {
+          start();
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => this.finalizeMeasurements());
+          });
+        });
+    }
+
+    finalizeMeasurements() {
+      if (this.reducedMotion.matches || !this.isConnected) return;
+
+      const stage = this.querySelector(".chain-stage");
+      if (!stage) return;
+
+      if (window.innerWidth < 900) {
+        this.mobileCompactLayout = this.measureMobileCompactLayout(stage);
+      }
+
+      ScrollTrigger.refresh();
+      this.syncScrollState?.();
+    }
+
+    measureMobileCompactLayout(stage) {
+      const stageBody = this.querySelector(".chain-stage__body");
+      const viewport = this.querySelector(".chain-viewport");
+      const blocks = this.querySelectorAll(".chain-block");
+      const connectors = this.querySelectorAll(".chain-connector");
+
+      if (!stageBody || !viewport || !blocks.length) return null;
+
+      const wasLastActive = stage.classList.contains("is-last-active");
+      stage.classList.add("is-last-active");
+      void stage.offsetHeight;
+
+      const bodyStyles = getComputedStyle(stageBody);
+      const padX = parseFloat(bodyStyles.paddingLeft) + parseFloat(bodyStyles.paddingRight);
+      const padY = parseFloat(bodyStyles.paddingTop) + parseFloat(bodyStyles.paddingBottom);
+      const availableWidth = Math.max(stageBody.clientWidth - padX, 280);
+      const availableHeight = Math.max(stageBody.clientHeight - padY, 280);
+
+      viewport.style.width = `${Math.round(availableWidth)}px`;
+      viewport.style.height = `${Math.round(availableHeight)}px`;
+      viewport.style.paddingBottom = "12px";
+      void viewport.offsetHeight;
+
+      const blockOffsets = [];
+      let cumulativeOffset = 0;
+      const blockHeights = [];
+
+      blocks.forEach((block, index) => {
+        blockOffsets.push(cumulativeOffset);
+        const height = block.offsetHeight;
+        blockHeights.push(height);
+        cumulativeOffset += height;
+
+        const connector = connectors[index];
+        if (connector) {
+          cumulativeOffset += connector.offsetHeight;
+        } else if (index < blocks.length - 1) {
+          cumulativeOffset += BLOCK_GAP;
+        }
+      });
+
+      const layout = {
+        blockOffsets,
+        blockHeights,
+        viewportHeight: viewport.clientHeight,
+        paddingBottom: 12,
+      };
+
+      stage.classList.toggle("is-last-active", wasLastActive);
+      void stage.offsetHeight;
+
+      return layout;
     }
 
     setup() {
       this.teardown();
+      this.mobileLastLocked = false;
 
       const backdrop = this.querySelector(".unique-section__backdrop");
       if (backdrop) {
@@ -349,21 +463,58 @@ const categories = [
         return Math.min(1, (dwellProgress - holdFraction) / exitSpan);
       };
 
+      const getActiveOffsets = (useCompact) =>
+        useCompact && this.mobileCompactLayout
+          ? this.mobileCompactLayout.blockOffsets
+          : blockOffsets;
+
+      const getActiveBlockHeight = (index, useCompact) => {
+        if (useCompact && this.mobileCompactLayout?.blockHeights) {
+          return this.mobileCompactLayout.blockHeights[index] ?? 0;
+        }
+        return blocks[index]?.offsetHeight || 0;
+      };
+
+      const applyCompactViewport = (useCompact) => {
+        if (!useCompact || !this.mobileCompactLayout) return;
+        viewport.style.height = `${this.mobileCompactLayout.viewportHeight}px`;
+        viewport.style.paddingBottom = `${this.mobileCompactLayout.paddingBottom}px`;
+      };
+
       const updateScrollState = (progress, rawProgress = progress) => {
         const floatIndex = progress * (blockCount - 1);
         const activeIndex = Math.min(Math.round(floatIndex), blockCount - 1);
         const exitProgress = getExitProgress(rawProgress);
         const isExiting = exitProgress > 0;
         const isMobile = window.innerWidth < 900;
-        const isLastActive =
-          isMobile && activeIndex === blockCount - 1 && exitProgress < 0.98;
+
+        if (isMobile && floatIndex >= blockCount - 1.08 && exitProgress < 0.98) {
+          this.mobileLastLocked = true;
+        } else if (isMobile && activeIndex < blockCount - 2) {
+          this.mobileLastLocked = false;
+        }
+
         const wasLastActive = stage.classList.contains("is-last-active");
+        const isLastActive = isMobile && this.mobileLastLocked;
         stage.classList.toggle("is-last-active", isLastActive);
         stage.classList.toggle("is-exiting", isExiting);
 
-        const viewportHeight = viewport.clientHeight;
-        const blockOffset = getInterpolatedValue(floatIndex, (i) => blockOffsets[i] ?? 0);
-        const blockHeight = getInterpolatedValue(floatIndex, (i) => blocks[i]?.offsetHeight || 0);
+        if (isLastActive !== wasLastActive) {
+          if (isLastActive) {
+            applyCompactViewport(true);
+          } else {
+            updateLayout();
+          }
+        }
+
+        const activeOffsets = getActiveOffsets(isLastActive);
+        const viewportHeight = isLastActive && this.mobileCompactLayout
+          ? this.mobileCompactLayout.viewportHeight
+          : viewport.clientHeight;
+        const blockOffset = getInterpolatedValue(floatIndex, (i) => activeOffsets[i] ?? 0);
+        const blockHeight = getInterpolatedValue(floatIndex, (i) =>
+          getActiveBlockHeight(i, isLastActive)
+        );
 
         let centerY;
         if (isLastActive) {
@@ -374,23 +525,8 @@ const categories = [
             centerY = Math.max(0, centerY - 80);
           }
         }
-        const targetY = centerY - blockOffset;
 
-        gsap.set(track, { y: targetY });
-
-        if (isLastActive !== wasLastActive) {
-          updateLayout();
-          const refreshedHeight = viewport.clientHeight;
-          const refreshedOffset = getInterpolatedValue(floatIndex, (i) => blockOffsets[i] ?? 0);
-          const refreshedHeight2 = getInterpolatedValue(
-            floatIndex,
-            (i) => blocks[i]?.offsetHeight || 0
-          );
-          const refreshedCenterY = isLastActive
-            ? 0
-            : Math.max(0, refreshedHeight / 2 - refreshedHeight2 / 2 - 80);
-          gsap.set(track, { y: refreshedCenterY - refreshedOffset });
-        }
+        gsap.set(track, { y: centerY - blockOffset });
 
         const railProgress = progress * (1 - exitProgress);
         if (railFill) railFill.style.height = `${railProgress * 100}%`;
@@ -460,27 +596,51 @@ const categories = [
         if (sectionOverlay) gsap.set(sectionOverlay, { opacity: uiOpacity });
       };
 
-      updateLayout();
-      requestAnimationFrame(() => {
-        updateLayout();
-        updateScrollState(0);
-      });
-
-      this.resizeObserver = new ResizeObserver(() => {
-        updateLayout();
-        ScrollTrigger.refresh();
+      const syncCurrentScrollState = () => {
         if (exitTrigger?.isActive) {
           const contentRatio = getContentRatio();
           updateScrollState(1, contentRatio + exitTrigger.progress * (1 - contentRatio));
         } else if (chainTrigger) {
           const contentRatio = getContentRatio();
           updateScrollState(chainTrigger.progress, chainTrigger.progress * contentRatio);
+        } else {
+          updateScrollState(0);
         }
+      };
+      this.syncScrollState = syncCurrentScrollState;
+
+      updateLayout();
+      if (window.innerWidth < 900) {
+        this.mobileCompactLayout = this.measureMobileCompactLayout(stage);
+        updateLayout();
+      }
+
+      this.resizeObserver = new ResizeObserver(() => {
+        clearTimeout(this.resizeDebounce);
+        this.resizeDebounce = setTimeout(() => {
+          if (window.innerWidth < 900) {
+            this.mobileCompactLayout = this.measureMobileCompactLayout(stage);
+          } else {
+            this.mobileCompactLayout = null;
+            this.mobileLastLocked = false;
+          }
+
+          updateLayout();
+          const isPinned = chainTrigger?.isActive || exitTrigger?.isActive;
+          if (!isPinned) {
+            ScrollTrigger.refresh();
+          }
+          syncCurrentScrollState();
+        }, 200);
       });
       this.resizeObserver.observe(stageBody);
 
-      const contentScrollDistance = () => (blockCount - 1) * SCROLL_PER_BLOCK * window.innerHeight;
-      const exitScrollDistance = () => END_DWELL * window.innerHeight;
+      const getViewportHeight = () =>
+        window.visualViewport?.height ?? window.innerHeight;
+
+      const contentScrollDistance = () =>
+        (blockCount - 1) * SCROLL_PER_BLOCK * getViewportHeight();
+      const exitScrollDistance = () => END_DWELL * getViewportHeight();
 
       chainTrigger = ScrollTrigger.create({
         trigger: pinTrack,
@@ -533,7 +693,7 @@ const categories = [
         this.navClickHandlers.push({ el: indicator, handler });
       });
 
-      updateScrollState(0);
+      syncCurrentScrollState();
     }
   }
 
@@ -1105,10 +1265,21 @@ const categories = [
       padding-inline: clamp(0.25rem, 1.5vw, 0.5rem);
     }
 
+    .features-intro {
+      position: absolute;
+      top: 0.35rem;
+      left: 0;
+      right: 0;
+      z-index: 3;
+      margin-bottom: 0;
+      padding-inline: clamp(0.5rem, 2vw, 1rem);
+    }
+
     .chain-stage__body {
       grid-template-columns: 1fr;
       justify-items: center;
       align-items: center;
+      height: 100%;
     }
 
     .chain-nav, .chain-rail {
@@ -1189,11 +1360,6 @@ const categories = [
     .chain-stage.is-last-active .chain-block:last-child .point__copy {
       font-size: 0.76rem;
       line-height: 1.35;
-    }
-
-    .features-intro {
-      margin-bottom: clamp(0.5rem, 1.5vw, 0.85rem);
-      padding-inline: clamp(0.5rem, 2vw, 1rem);
     }
 
     .chain-block {
