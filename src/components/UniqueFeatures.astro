@@ -182,7 +182,9 @@ const categories = [
   gsap.registerPlugin(ScrollTrigger);
 
   const SCROLL_PER_BLOCK = 0.88;
-  const END_DWELL = SCROLL_PER_BLOCK;
+  const END_HOLD = 1.25;
+  const END_EXIT = 0.5;
+  const END_DWELL = END_HOLD + END_EXIT;
   const BLOCK_GAP = 28;
 
   class UniqueFeaturesChain extends HTMLElement {
@@ -245,31 +247,34 @@ const categories = [
 
       const scrollPin = this.querySelector(".chain-scroll-pin");
       const stage = this.querySelector(".chain-stage");
+      const stageBody = this.querySelector(".chain-stage__body");
       const viewport = this.querySelector(".chain-viewport");
       const track = this.querySelector(".chain-track");
+      const sectionBackdrop = this.querySelector(".unique-section__backdrop");
+      const sectionOverlay = this.querySelector(".unique-section__overlay");
       const railFill = this.querySelector(".chain-rail__fill");
       const nodes = this.querySelectorAll(".chain-rail__node");
       const indicators = this.querySelectorAll(".chain-nav__item");
 
-      if (!scrollPin || !stage || !viewport || !track || !blocks.length) return;
+      if (!scrollPin || !stage || !stageBody || !viewport || !track || !blocks.length) return;
 
       const blockCount = blocks.length;
       let blockOffsets = [];
       let chainTrigger = null;
 
       const updateLayout = () => {
-        const stageStyles = getComputedStyle(stage);
+        const bodyStyles = getComputedStyle(stageBody);
         const padX =
-          parseFloat(stageStyles.paddingLeft) + parseFloat(stageStyles.paddingRight);
+          parseFloat(bodyStyles.paddingLeft) + parseFloat(bodyStyles.paddingRight);
         const padY =
-          parseFloat(stageStyles.paddingTop) + parseFloat(stageStyles.paddingBottom);
+          parseFloat(bodyStyles.paddingTop) + parseFloat(bodyStyles.paddingBottom);
         const navSpace = window.innerWidth >= 900 ? 120 : 0;
         const railSpace = window.innerWidth >= 640 ? 48 : 0;
         const availableWidth = Math.max(
-          stage.clientWidth - padX - navSpace - railSpace,
+          stageBody.clientWidth - padX - navSpace - railSpace,
           280
         );
-        const availableHeight = Math.max(stage.clientHeight - padY, 320);
+        const availableHeight = Math.max(stageBody.clientHeight - padY, 280);
 
         const width = Math.round(Math.min(availableWidth * 0.98, 1000));
 
@@ -324,9 +329,27 @@ const categories = [
         return getValue(lower) + (getValue(upper) - getValue(lower)) * t;
       };
 
-      const updateScrollState = (progress) => {
+      const getExitProgress = (rawProgress) => {
+        const contentRatio = getContentRatio();
+        const dwellSpan = 1 - contentRatio;
+        if (dwellSpan <= 0 || END_EXIT <= 0) return 0;
+
+        const dwellProgress = Math.min(
+          1,
+          Math.max(0, (rawProgress - contentRatio) / dwellSpan)
+        );
+        const holdFraction = END_HOLD / END_DWELL;
+        if (dwellProgress <= holdFraction) return 0;
+
+        const exitSpan = 1 - holdFraction;
+        return Math.min(1, (dwellProgress - holdFraction) / exitSpan);
+      };
+
+      const updateScrollState = (progress, rawProgress = progress) => {
         const floatIndex = progress * (blockCount - 1);
         const activeIndex = Math.min(Math.round(floatIndex), blockCount - 1);
+        const exitProgress = getExitProgress(rawProgress);
+        const isExiting = exitProgress > 0;
         const viewportHeight = viewport.clientHeight;
         const blockOffset = getInterpolatedValue(
           floatIndex,
@@ -341,37 +364,71 @@ const categories = [
 
         gsap.set(track, { y: targetY });
 
+        const railProgress = progress * (1 - exitProgress);
         if (railFill) {
-          railFill.style.height = `${progress * 100}%`;
+          railFill.style.height = `${railProgress * 100}%`;
         }
 
+        const uiOpacity = 1 - exitProgress;
+
         nodes.forEach((node, i) => {
-          node.classList.toggle("is-lit", i <= activeIndex);
-          node.classList.toggle("is-active", i === activeIndex);
+          const isLit = i <= activeIndex && !isExiting;
+          const isNodeActive = i === activeIndex && !isExiting;
+          node.classList.toggle("is-lit", isLit);
+          node.classList.toggle("is-active", isNodeActive);
+          gsap.set(node, { opacity: uiOpacity });
         });
 
         indicators.forEach((indicator, i) => {
-          indicator.classList.toggle("is-active", i === activeIndex);
+          const isIndicatorActive = i === activeIndex && !isExiting;
+          indicator.classList.toggle("is-active", isIndicatorActive);
+          gsap.set(indicator, { opacity: uiOpacity });
         });
 
         blocks.forEach((block, i) => {
           const dist = Math.abs(i - floatIndex);
-          const isActive = i === activeIndex;
+          const isLastBlock = i === blockCount - 1;
+          const isActive = i === activeIndex && !isExiting;
+          const isSynced = i < activeIndex || (isLastBlock && isExiting);
 
           block.classList.toggle("is-active", isActive);
-          block.classList.toggle("is-synced", i < activeIndex);
+          block.classList.toggle("is-synced", isSynced);
           block.classList.toggle("is-pending", i > activeIndex);
           block.setAttribute("aria-hidden", isActive ? "false" : "true");
 
           const statusEl = block.querySelector(".chain-block__status");
           if (statusEl) {
-            statusEl.textContent = isActive ? "LIVE" : i < activeIndex ? "SYNCED" : "PENDING";
+            if (isActive) {
+              statusEl.textContent = "LIVE";
+            } else if (isSynced) {
+              statusEl.textContent = "SYNCED";
+            } else {
+              statusEl.textContent = "PENDING";
+            }
           }
 
-          const opacity = isActive ? 1 : Math.max(0.2, 0.55 - dist * 0.28);
-          const scale = isActive ? 1 : Math.max(0.92, 1 - dist * 0.04);
+          let opacity = isActive ? 1 : Math.max(0.2, 0.55 - dist * 0.28);
+          let scale = isActive ? 1 : Math.max(0.92, 1 - dist * 0.04);
+
+          if (isLastBlock && isExiting) {
+            const syncedOpacity = Math.max(0.2, 0.55 - 0.28);
+            const syncedScale = Math.max(0.92, 1 - 0.04);
+            const clearProgress = Math.min(1, exitProgress * 1.35);
+            opacity = syncedOpacity * (1 - clearProgress);
+            scale = syncedScale - (syncedScale - 0.92) * clearProgress;
+          }
+
           gsap.set(block, { opacity, scale, pointerEvents: isActive ? "auto" : "none" });
         });
+
+        gsap.set(stage, { opacity: uiOpacity });
+
+        if (sectionBackdrop) {
+          gsap.set(sectionBackdrop, { opacity: uiOpacity });
+        }
+        if (sectionOverlay) {
+          gsap.set(sectionOverlay, { opacity: uiOpacity });
+        }
       };
 
       updateLayout();
@@ -384,10 +441,13 @@ const categories = [
         updateLayout();
         ScrollTrigger.refresh();
         if (chainTrigger) {
-          updateScrollState(mapScrollProgress(chainTrigger.progress));
+          updateScrollState(
+            mapScrollProgress(chainTrigger.progress),
+            chainTrigger.progress
+          );
         }
       });
-      this.resizeObserver.observe(stage);
+      this.resizeObserver.observe(stageBody);
 
       const scrollDistance = () =>
         ((blockCount - 1) * SCROLL_PER_BLOCK + END_DWELL) * window.innerHeight;
@@ -417,7 +477,8 @@ const categories = [
           ease: "power2.inOut",
           directional: false,
         },
-        onUpdate: (self) => updateScrollState(mapScrollProgress(self.progress)),
+        onUpdate: (self) =>
+          updateScrollState(mapScrollProgress(self.progress), self.progress),
       });
       this.scrollTriggers.push(chainTrigger);
 
@@ -434,7 +495,11 @@ const categories = [
     isolation: isolate;
     overflow: hidden;
     margin-block: clamp(-2.5rem, -5vw, -4rem);
-    padding: clamp(3.5rem, 7vw, 5.5rem) 0 0;
+    padding-block: clamp(2rem, 4vw, 3.25rem) 0;
+  }
+
+  .unique-section.section {
+    padding-block: clamp(2rem, 4vw, 3.25rem) 0;
   }
 
   .unique-section__backdrop {
@@ -483,28 +548,21 @@ const categories = [
 
   .features-intro {
     text-align: center;
-    margin: 0 auto clamp(2rem, 4vw, 3rem);
+    margin: 0 auto clamp(1.25rem, 2.5vw, 2rem);
     max-width: 800px;
     padding-inline: clamp(1rem, 4vw, 2.5rem);
+    flex-shrink: 0;
   }
 
   .features-intro h2 {
     margin: 0.35rem 0 0.5rem;
   }
 
-  .features-intro__hint {
-    margin: 0;
-    font-size: 0.85rem;
-    color: var(--color-text-muted);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
   /* ── Chain scroll pin ── */
   .chain-scroll-pin {
     --block-count: 7;
     --scroll-per-block: 88svh;
-    --end-dwell: 88svh;
+    --end-dwell: 175svh;
     position: relative;
     height: calc((var(--block-count) - 1) * var(--scroll-per-block) + var(--end-dwell));
   }
@@ -513,14 +571,21 @@ const categories = [
     position: relative;
     height: 100svh;
     min-height: 100vh;
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    align-items: center;
-    gap: clamp(0.5rem, 1.5vw, 1rem);
+    display: flex;
+    flex-direction: column;
     width: 100%;
     max-width: 1180px;
     margin-inline: auto;
     padding: clamp(0.5rem, 1.5vw, 1rem);
+  }
+
+  .chain-stage__body {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: clamp(0.5rem, 1.5vw, 1rem);
   }
 
   .chain-rail {
@@ -775,6 +840,7 @@ const categories = [
   }
 
   .point {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 0.3rem;
@@ -783,6 +849,35 @@ const categories = [
     border-radius: var(--radius-md);
     background: rgba(10, 15, 28, 0.9);
     border: 1px solid rgba(255, 255, 255, 0.08);
+    transition:
+      transform 0.22s ease,
+      border-color 0.22s ease,
+      background 0.22s ease,
+      box-shadow 0.22s ease;
+  }
+
+  @media (hover: hover) {
+    .point:hover {
+      transform: scale(1.05);
+      z-index: 2;
+      border-color: rgba(253, 185, 19, 0.5);
+      background: rgba(14, 22, 40, 0.98);
+      box-shadow:
+        0 14px 32px rgba(2, 6, 23, 0.45),
+        0 0 0 1px rgba(253, 185, 19, 0.15);
+    }
+
+    .point:hover .point__title {
+      color: var(--color-brand);
+    }
+
+    .point:hover .point__copy {
+      color: var(--color-text);
+    }
+
+    .point:hover .point__icon {
+      transform: scale(1.12);
+    }
   }
 
   .point__title {
@@ -793,12 +888,14 @@ const categories = [
     font-size: 0.92rem;
     font-weight: 600;
     color: var(--color-text);
+    transition: color 0.22s ease;
   }
 
   .point__icon {
     width: 1.35rem;
     height: 1.35rem;
     flex-shrink: 0;
+    transition: transform 0.22s ease;
   }
 
   .point__copy {
@@ -806,6 +903,7 @@ const categories = [
     color: var(--color-text-muted);
     line-height: 1.45;
     font-size: 0.82rem;
+    transition: color 0.22s ease;
   }
 
   /* ── Static / reduced-motion fallback ── */
@@ -817,6 +915,10 @@ const categories = [
     height: auto;
     display: block;
     padding-bottom: clamp(2rem, 4vw, 3rem);
+  }
+
+  .is-static .chain-stage__body {
+    display: block;
   }
 
   .is-static .chain-rail,
@@ -845,12 +947,27 @@ const categories = [
     pointer-events: auto;
   }
 
-  .is-static .features-intro__hint {
-    display: none;
+  @media (prefers-reduced-motion: reduce) {
+    .point,
+    .point__title,
+    .point__icon,
+    .point__copy {
+      transition: none;
+    }
+
+    @media (hover: hover) {
+      .point:hover {
+        transform: none;
+      }
+
+      .point:hover .point__icon {
+        transform: none;
+      }
+    }
   }
 
   @media (max-width: 899px) {
-    .chain-stage {
+    .chain-stage__body {
       grid-template-columns: 1fr;
       justify-items: center;
     }
@@ -866,7 +983,7 @@ const categories = [
     }
 
     .features-intro {
-      margin-bottom: clamp(1rem, 3vw, 1.5rem);
+      margin-bottom: clamp(1rem, 2.5vw, 1.5rem);
     }
   }
 
@@ -883,14 +1000,14 @@ const categories = [
   <div class="unique-section__overlay" aria-hidden="true"></div>
 
   <div class="unique-section__content">
-    <div class="features-intro">
-      <p class="section__eyebrow">What makes us unique</p>
-      <h2 class="section__title">Built different, on purpose</h2>
-      <p class="features-intro__hint">Scroll to sync each block onto the chain</p>
-    </div>
-
     <div class="chain-scroll-pin">
       <div class="chain-stage">
+        <div class="features-intro">
+          <p class="section__eyebrow">What makes us unique</p>
+          <h2 class="section__title">Built different, on purpose</h2>
+        </div>
+
+        <div class="chain-stage__body">
         <div class="chain-rail" aria-hidden="true">
           <div class="chain-rail__track"><div class="chain-rail__fill"></div></div>
           <div class="chain-rail__nodes">
@@ -948,6 +1065,7 @@ const categories = [
             </div>
           ))}
         </nav>
+        </div>
       </div>
     </div>
   </div>
