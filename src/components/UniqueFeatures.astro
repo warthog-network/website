@@ -355,9 +355,11 @@ const categories = [
         const exitProgress = getExitProgress(rawProgress);
         const isExiting = exitProgress > 0;
         const isMobile = window.innerWidth < 900;
-        const isLastActive = isMobile && activeIndex === blockCount - 1 && !isExiting;
+        const isLastActive =
+          isMobile && activeIndex === blockCount - 1 && exitProgress < 0.98;
         const wasLastActive = stage.classList.contains("is-last-active");
         stage.classList.toggle("is-last-active", isLastActive);
+        stage.classList.toggle("is-exiting", isExiting);
 
         const viewportHeight = viewport.clientHeight;
         const blockOffset = getInterpolatedValue(floatIndex, (i) => blockOffsets[i] ?? 0);
@@ -368,7 +370,7 @@ const categories = [
           centerY = 0;
         } else {
           centerY = Math.max(0, viewportHeight / 2 - blockHeight / 2);
-          if (activeIndex === blockCount - 1 && !isExiting) {
+          if (activeIndex === blockCount - 1 && exitProgress < 0.98) {
             centerY = Math.max(0, centerY - 80);
           }
         }
@@ -377,18 +379,17 @@ const categories = [
         gsap.set(track, { y: targetY });
 
         if (isLastActive !== wasLastActive) {
-          requestAnimationFrame(() => {
-            updateLayout();
-            const refreshedHeight = viewport.clientHeight;
-            const lastBlock = blocks[blockCount - 1];
-            const lastOffset = blockOffsets[blockCount - 1] ?? 0;
-            const lastHeight = lastBlock?.offsetHeight || 0;
-            const lastCenterY = isLastActive
-              ? 0
-              : Math.max(0, refreshedHeight / 2 - lastHeight / 2 - 80);
-            gsap.set(track, { y: lastCenterY - lastOffset });
-            ScrollTrigger.refresh();
-          });
+          updateLayout();
+          const refreshedHeight = viewport.clientHeight;
+          const refreshedOffset = getInterpolatedValue(floatIndex, (i) => blockOffsets[i] ?? 0);
+          const refreshedHeight2 = getInterpolatedValue(
+            floatIndex,
+            (i) => blocks[i]?.offsetHeight || 0
+          );
+          const refreshedCenterY = isLastActive
+            ? 0
+            : Math.max(0, refreshedHeight / 2 - refreshedHeight2 / 2 - 80);
+          gsap.set(track, { y: refreshedCenterY - refreshedOffset });
         }
 
         const railProgress = progress * (1 - exitProgress);
@@ -486,6 +487,7 @@ const categories = [
         start: "top top",
         end: () => `+=${contentScrollDistance()}`,
         pin: stage,
+        pinSpacing: true,
         scrub: true,
         anticipatePin: 0,
         invalidateOnRefresh: true,
@@ -543,7 +545,8 @@ const categories = [
     position: relative;
     isolation: isolate;
     overflow: hidden;
-    margin-block: clamp(-2.5rem, -5vw, -4rem);
+    margin-top: clamp(-2.5rem, -5vw, -4rem);
+    margin-bottom: 0;
     padding-block: clamp(2rem, 4vw, 3.25rem) 0;
   }
 
@@ -1094,6 +1097,10 @@ const categories = [
   }
 
   @media (max-width: 899px) {
+    .unique-section {
+      z-index: 1;
+    }
+
     .chain-stage {
       padding-inline: clamp(0.25rem, 1.5vw, 0.5rem);
     }
@@ -1126,12 +1133,16 @@ const categories = [
     }
 
     .chain-viewport {
-      overflow: visible !important;
+      overflow: hidden;
       mask-image: none;
       -webkit-mask-image: none;
       width: 100%;
       max-width: 100%;
       padding-bottom: 1rem;
+    }
+
+    .chain-stage.is-exiting {
+      pointer-events: none;
     }
 
     .chain-stage.is-last-active {

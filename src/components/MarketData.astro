@@ -275,10 +275,12 @@ import { createChart } from 'lightweight-charts';
 
       gsap.set(section, { opacity: 0, y: 24 });
 
+      const isMobile = window.innerWidth < 900;
+
       this.entranceTrigger = ScrollTrigger.create({
         trigger: section,
-        start: "top 92%",
-        end: "top 82%",
+        start: isMobile ? "top 78%" : "top 92%",
+        end: isMobile ? "top 62%" : "top 82%",
         scrub: true,
         invalidateOnRefresh: true,
         onUpdate: (self) => {
@@ -407,11 +409,18 @@ import { createChart } from 'lightweight-charts';
     isolation: isolate;
     background: transparent;
     scroll-margin-top: 4.5rem;
+    z-index: 2;
   }
 
   .market-section.section {
     padding-top: clamp(4.5rem, 11vw, 6rem);
     padding-bottom: clamp(3rem, 6vw, 5.5rem);
+  }
+
+  @media (max-width: 899px) {
+    .market-section.section {
+      padding-top: clamp(2.5rem, 7vw, 3.5rem);
+    }
   }
 
   .market-section::before {
