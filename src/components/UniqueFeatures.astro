@@ -294,9 +294,9 @@ const categories = [
           maxBlockHeight = Math.max(maxBlockHeight, block.offsetHeight);
         });
 
-        // Generous vertical breathing room — extra 1rem bottom clearance added for the last card
+        // Generous vertical breathing room — extra clearance on mobile for last card
         const viewportHeight = isMobile
-          ? Math.round(Math.min(maxBlockHeight + 236, availableHeight * 0.97))
+          ? Math.round(Math.min(maxBlockHeight + 280, availableHeight * 0.97))
           : Math.round(Math.min(
               Math.max(maxBlockHeight + 196, availableHeight * 0.86),
               availableHeight * 0.95
@@ -304,7 +304,7 @@ const categories = [
 
         viewport.style.width = `${width}px`;
         viewport.style.height = `${viewportHeight}px`;
-        viewport.style.paddingBottom = isMobile ? "3.5rem" : "3rem";
+        viewport.style.paddingBottom = isMobile ? "6rem" : "3rem";
 
         blockOffsets = [];
         let cumulativeOffset = 0;
@@ -358,10 +358,11 @@ const categories = [
         const blockOffset = getInterpolatedValue(floatIndex, (i) => blockOffsets[i] ?? 0);
         const blockHeight = getInterpolatedValue(floatIndex, (i) => blocks[i]?.offsetHeight || 0);
 
-        // Extra upward bias for the LAST block ("Browser Nodes") — now with +1rem more bottom clearance
+        // Extra upward bias for the LAST block ("Browser Nodes")
+        // Much larger on mobile for the tall stacked card
         let centerY = Math.max(0, viewportHeight / 2 - blockHeight / 2);
         if (activeIndex === blockCount - 1 && !isExiting) {
-          centerY = Math.max(0, centerY - 48);
+          centerY = Math.max(0, centerY - 80);
         }
         const targetY = centerY - blockOffset;
 
@@ -1103,7 +1104,7 @@ const categories = [
       -webkit-mask-image: none;
       width: 100%;
       max-width: 100%;
-      padding-bottom: 3.5rem;
+      padding-bottom: 6rem;
     }
 
     .features-intro {
