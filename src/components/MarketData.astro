@@ -357,7 +357,37 @@ import { createChart } from 'lightweight-charts';
 
 <style>
   .market-section {
-    background: rgba(5, 9, 20, 0.5);
+    position: relative;
+    isolation: isolate;
+    background: transparent;
+  }
+
+  .market-section::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background:
+      radial-gradient(ellipse 80% 40% at 50% 0%, rgba(88, 28, 135, 0.12), transparent 70%),
+      linear-gradient(to bottom, transparent, rgba(5, 9, 20, 0.25) 40%, transparent);
+    pointer-events: none;
+  }
+
+  .market-section::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: clamp(3rem, 8vw, 6rem);
+    background: linear-gradient(to top, var(--color-bg), transparent);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .market-section > * {
+    position: relative;
+    z-index: 1;
   }
 
   .market-grid {

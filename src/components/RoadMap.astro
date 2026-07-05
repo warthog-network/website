@@ -120,10 +120,39 @@ const milestones = [
 
 <style>
   .roadmap-blanket {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
     padding-block: clamp(3rem, 6vw, 6rem);
     padding-inline: clamp(1rem, 4vw, 5rem);
     background: radial-gradient(circle at 20% 20%, #1f2937 0%, #050810 65%);
     color: #f8fafc;
+  }
+
+  .roadmap-blanket::before,
+  .roadmap-blanket::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: clamp(3rem, 8vw, 6rem);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .roadmap-blanket::before {
+    top: 0;
+    background: linear-gradient(to bottom, var(--color-bg), transparent);
+  }
+
+  .roadmap-blanket::after {
+    bottom: 0;
+    background: linear-gradient(to top, var(--color-bg), transparent);
+  }
+
+  .roadmap-blanket > * {
+    position: relative;
+    z-index: 1;
   }
 
   .roadmap__shell {

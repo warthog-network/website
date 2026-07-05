@@ -32,7 +32,7 @@ const categories = [
       },
       {
         title: "100% Minable",
-copy: "Every WART is publicly mineable by the community. The hard cap of no more than 19 million coins to ever be mined makes Warthog scarcer than Bitcoin.",
+        copy: "Every WART is publicly mineable by the community. The hard cap of no more than 19 million coins to ever be mined makes Warthog scarcer than Bitcoin.",
         icon: Trolly.src,
       },
     ],
@@ -49,7 +49,7 @@ copy: "Every WART is publicly mineable by the community. The hard cap of no more
       },
       {
         title: "Modern Codebase",
-copy: "We picked a modern stack consisting combining C++23, clangd, Meson, and Ninja keep the stack auditable and fast. Compilation does not require additional system libraries.",
+        copy: "We picked a modern stack consisting combining C++23, clangd, Meson, and Ninja keep the stack auditable and fast. Compilation does not require additional system libraries.",
         icon: Programming.src,
       },
       {
@@ -88,12 +88,12 @@ copy: "We picked a modern stack consisting combining C++23, clangd, Meson, and N
     points: [
       {
         title: "Repelling Farms",
-copy: "The required balanced combination of Verushash v2.2 and SHA256t bottlenecks pure GPU farms, pure CPU farms and botnets. Efficient mining requires decent CPU and GPU hashrates, which farms rarely support.",
+        copy: "The required balanced combination of Verushash v2.2 and SHA256t bottlenecks pure GPU farms, pure CPU farms and botnets. Efficient mining requires decent CPU and GPU hashrates, which farms rarely support.",
         icon: Balance.src,
       },
       {
         title: "Favoring Gamers",
-copy: "Mining requirements were carefully picked to place consumer gaming PCs in the efficiency sweetspot. Paired with the fact that farms can't grab major profits, these go to the little guy. ",
+        copy: "Mining requirements were carefully picked to place consumer gaming PCs in the efficiency sweetspot. Paired with the fact that farms can't grab major profits, these go to the little guy. ",
         icon: TinyWart.src,
       },
       {
@@ -121,7 +121,7 @@ copy: "Mining requirements were carefully picked to place consumer gaming PCs in
       },
       {
         title: "Hardened Safety",
-copy: "Smart Contract based DeFi is inherently unsecure and attacked almost weekly. Without an intermediate smart contract layer implmentation is much safer to write, easier to reason about and has less corner cases.",
+        copy: "Smart Contract based DeFi is inherently unsecure and attacked almost weekly. Without an intermediate smart contract layer implmentation is much safer to write, easier to reason about and has less corner cases.",
         icon: Programming.src,
       },
     ],
@@ -130,21 +130,21 @@ copy: "Smart Contract based DeFi is inherently unsecure and attacked almost week
     id: "fbm",
     title: "Fair Batch Matching",
     status: "testnet",
-lede: "A ground-breaking algorithm to match buy orders, sell orders and pool liquidity batch-wise in a fair way without intrinsic transaction ordering.",
+    lede: "A ground-breaking algorithm to match buy orders, sell orders and pool liquidity batch-wise in a fair way without intrinsic transaction ordering.",
     points: [
       {
         title: "Research-Backed",
-copy: "Our algorithm is based on a mathematical research on which we have written a paper. We prove fairness, existence and uniqueness of a solution which guarantees correctness and convergence for our implementation.",
+        copy: "Our algorithm is based on a mathematical research on which we have written a paper. We prove fairness, existence and uniqueness of a solution which guarantees correctness and convergence for our implementation.",
         icon: DeFi.src,
       },
       {
         title: "Hybrid Liquidity",
-copy: "In traditional exchanges orders are matched agains discrete liquidity from an oder book. In liquidity pools orders are matched against continous liquidity. We match against both, order book and liquidity pool.",
+        copy: "In traditional exchanges orders are matched agains discrete liquidity from an oder book. In liquidity pools orders are matched against continous liquidity. We match against both, order book and liquidity pool.",
         icon: Programming.src,
       },
       {
         title: "No MEV",
-copy: "Orders are matched batch-wise without any ordering that can be exploited by block creators. This fully protects users from MEV extraction. Sandwich attacks? We don't do that here.",
+        copy: "Orders are matched batch-wise without any ordering that can be exploited by block creators. This fully protects users from MEV extraction. Sandwich attacks? We don't do that here.",
         icon: AntiSandwich.src,
       },
     ],
@@ -157,28 +157,328 @@ copy: "Orders are matched batch-wise without any ordering that can be exploited 
     points: [
       {
         title: "In-Browser",
-copy: "Careful code design allows swapping the transport layer between TCP, Websocket and WebRTC such that Emscripten easily compiles the full node to Webassembly to run within the browser as simple as opening a website.",
+        copy: "Careful code design allows swapping the transport layer between TCP, Websocket and WebRTC such that Emscripten easily compiles the full node to Webassembly to run within the browser as simple as opening a website.",
         icon: Browsers.src,
       },
       {
         title: "Persistence",
         copy: "Modern Browsers support the Origin Private File System (OPFS) to save gigabytes of data. We make use of SQLite's recently added OPFS support to directly operate and save the block chain in the browser.",
-            icon: P2P.src,
-          },
-          {
+        icon: P2P.src,
+      },
+      {
         title: "P2P Support",
         copy: "Direct browser-to-browser communication is be done over WebRTC. After the handshake, no intermediate server is required. Bridge nodes interconnect WebRTC browser nodes to the TCP based rest of the network.",
-            icon: P2P.src,
-          },
-        ],
+        icon: P2P.src,
+      },
+    ],
   },
 ];
 ---
 
+<script>
+  import { gsap } from "gsap";
+  import ScrollTrigger from "gsap/ScrollTrigger";
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  const SCROLL_PER_BLOCK = 0.88;
+  const END_DWELL = SCROLL_PER_BLOCK;
+  const BLOCK_GAP = 28;
+
+  class UniqueFeaturesChain extends HTMLElement {
+    constructor() {
+      super();
+      this.scrollTriggers = [];
+      this.resizeObserver = null;
+      this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+      this.onReducedMotionChange = () => this.setup();
+    }
+
+    connectedCallback() {
+      this.reducedMotion.addEventListener("change", this.onReducedMotionChange);
+      this.setup();
+    }
+
+    disconnectedCallback() {
+      this.reducedMotion.removeEventListener("change", this.onReducedMotionChange);
+      this.teardown();
+    }
+
+    teardown() {
+      this.scrollTriggers.forEach((trigger) => trigger.kill());
+      this.scrollTriggers = [];
+      this.resizeObserver?.disconnect();
+      this.resizeObserver = null;
+    }
+
+    setup() {
+      this.teardown();
+
+      const backdrop = this.querySelector(".unique-section__backdrop");
+      if (backdrop) {
+        const backdropTween = gsap.to(backdrop, {
+          backgroundPosition: "50% 100%",
+          ease: "none",
+          scrollTrigger: {
+            trigger: this,
+            start: "top bottom",
+            end: "bottom top",
+            scrub: true,
+            invalidateOnRefresh: true,
+          },
+        });
+        this.scrollTriggers.push(backdropTween.scrollTrigger);
+      }
+
+      const blocks = this.querySelectorAll(".chain-block");
+
+      if (this.reducedMotion.matches) {
+        this.classList.add("is-static");
+        blocks.forEach((block) => {
+          block.classList.add("is-active");
+          block.setAttribute("aria-hidden", "false");
+        });
+        return;
+      }
+
+      this.classList.remove("is-static");
+
+      const scrollPin = this.querySelector(".chain-scroll-pin");
+      const stage = this.querySelector(".chain-stage");
+      const viewport = this.querySelector(".chain-viewport");
+      const track = this.querySelector(".chain-track");
+      const railFill = this.querySelector(".chain-rail__fill");
+      const nodes = this.querySelectorAll(".chain-rail__node");
+      const indicators = this.querySelectorAll(".chain-nav__item");
+
+      if (!scrollPin || !stage || !viewport || !track || !blocks.length) return;
+
+      const blockCount = blocks.length;
+      let blockOffsets = [];
+      let chainTrigger = null;
+
+      const updateLayout = () => {
+        const stageStyles = getComputedStyle(stage);
+        const padX =
+          parseFloat(stageStyles.paddingLeft) + parseFloat(stageStyles.paddingRight);
+        const padY =
+          parseFloat(stageStyles.paddingTop) + parseFloat(stageStyles.paddingBottom);
+        const navSpace = window.innerWidth >= 900 ? 120 : 0;
+        const railSpace = window.innerWidth >= 640 ? 48 : 0;
+        const availableWidth = Math.max(
+          stage.clientWidth - padX - navSpace - railSpace,
+          280
+        );
+        const availableHeight = Math.max(stage.clientHeight - padY, 320);
+
+        const width = Math.round(Math.min(availableWidth * 0.98, 1000));
+
+        let maxBlockHeight = 0;
+        blocks.forEach((block) => {
+          maxBlockHeight = Math.max(maxBlockHeight, block.offsetHeight);
+        });
+
+        const isMobile = window.innerWidth < 900;
+        const viewportHeight = isMobile
+          ? Math.round(Math.min(maxBlockHeight + 8, availableHeight * 0.92))
+          : Math.round(Math.min(availableHeight * 0.82, 620));
+
+        viewport.style.width = `${width}px`;
+        viewport.style.height = `${viewportHeight}px`;
+
+        blockOffsets = [];
+        let cumulativeOffset = 0;
+        blocks.forEach((block, index) => {
+          blockOffsets.push(cumulativeOffset);
+          cumulativeOffset += block.offsetHeight;
+          if (index < blockCount - 1) {
+            cumulativeOffset += BLOCK_GAP;
+          }
+        });
+
+        scrollPin.style.setProperty("--block-count", String(blockCount));
+        scrollPin.style.setProperty(
+          "--scroll-per-block",
+          `${Math.round(SCROLL_PER_BLOCK * 100)}svh`
+        );
+        scrollPin.style.setProperty(
+          "--end-dwell",
+          `${Math.round(END_DWELL * 100)}svh`
+        );
+      };
+
+      const getContentRatio = () => {
+        const contentDistance = (blockCount - 1) * SCROLL_PER_BLOCK;
+        const totalDistance = contentDistance + END_DWELL;
+        return totalDistance > 0 ? contentDistance / totalDistance : 1;
+      };
+
+      const mapScrollProgress = (progress) =>
+        Math.min(1, progress / getContentRatio());
+
+      const getInterpolatedValue = (floatIndex, getValue) => {
+        const lower = Math.floor(floatIndex);
+        const upper = Math.min(Math.ceil(floatIndex), blockCount - 1);
+        if (lower === upper) return getValue(lower);
+        const t = floatIndex - lower;
+        return getValue(lower) + (getValue(upper) - getValue(lower)) * t;
+      };
+
+      const updateScrollState = (progress) => {
+        const floatIndex = progress * (blockCount - 1);
+        const activeIndex = Math.min(Math.round(floatIndex), blockCount - 1);
+        const viewportHeight = viewport.clientHeight;
+        const blockOffset = getInterpolatedValue(
+          floatIndex,
+          (index) => blockOffsets[index] ?? 0
+        );
+        const blockHeight = getInterpolatedValue(
+          floatIndex,
+          (index) => blocks[index]?.offsetHeight || 0
+        );
+        const centerY = Math.max(0, viewportHeight / 2 - blockHeight / 2);
+        const targetY = centerY - blockOffset;
+
+        gsap.set(track, { y: targetY });
+
+        if (railFill) {
+          railFill.style.height = `${progress * 100}%`;
+        }
+
+        nodes.forEach((node, i) => {
+          node.classList.toggle("is-lit", i <= activeIndex);
+          node.classList.toggle("is-active", i === activeIndex);
+        });
+
+        indicators.forEach((indicator, i) => {
+          indicator.classList.toggle("is-active", i === activeIndex);
+        });
+
+        blocks.forEach((block, i) => {
+          const dist = Math.abs(i - floatIndex);
+          const isActive = i === activeIndex;
+
+          block.classList.toggle("is-active", isActive);
+          block.classList.toggle("is-synced", i < activeIndex);
+          block.classList.toggle("is-pending", i > activeIndex);
+          block.setAttribute("aria-hidden", isActive ? "false" : "true");
+
+          const statusEl = block.querySelector(".chain-block__status");
+          if (statusEl) {
+            statusEl.textContent = isActive ? "LIVE" : i < activeIndex ? "SYNCED" : "PENDING";
+          }
+
+          const opacity = isActive ? 1 : Math.max(0.2, 0.55 - dist * 0.28);
+          const scale = isActive ? 1 : Math.max(0.92, 1 - dist * 0.04);
+          gsap.set(block, { opacity, scale, pointerEvents: isActive ? "auto" : "none" });
+        });
+      };
+
+      updateLayout();
+      requestAnimationFrame(() => {
+        updateLayout();
+        updateScrollState(0);
+      });
+
+      this.resizeObserver = new ResizeObserver(() => {
+        updateLayout();
+        ScrollTrigger.refresh();
+        if (chainTrigger) {
+          updateScrollState(mapScrollProgress(chainTrigger.progress));
+        }
+      });
+      this.resizeObserver.observe(stage);
+
+      const scrollDistance = () =>
+        ((blockCount - 1) * SCROLL_PER_BLOCK + END_DWELL) * window.innerHeight;
+
+      const snapPoints = () => {
+        const contentRatio = getContentRatio();
+        const points = Array.from({ length: blockCount }, (_, i) =>
+          blockCount === 1 ? 0 : (i / (blockCount - 1)) * contentRatio
+        );
+        if (blockCount > 1 && END_DWELL > 0) {
+          points.push(1);
+        }
+        return points;
+      };
+
+      chainTrigger = ScrollTrigger.create({
+        trigger: scrollPin,
+        start: "top top",
+        end: () => `+=${scrollDistance()}`,
+        pin: stage,
+        scrub: 0.6,
+        anticipatePin: 1,
+        invalidateOnRefresh: true,
+        snap: {
+          snapTo: snapPoints(),
+          duration: { min: 0.2, max: 0.4 },
+          ease: "power2.inOut",
+          directional: false,
+        },
+        onUpdate: (self) => updateScrollState(mapScrollProgress(self.progress)),
+      });
+      this.scrollTriggers.push(chainTrigger);
+
+      updateScrollState(0);
+    }
+  }
+
+  customElements.define("unique-features-chain", UniqueFeaturesChain);
+</script>
+
 <style>
   .unique-section {
-    background: linear-gradient(145deg, rgba(15, 17, 34, 0.95), rgba(3, 6, 17, 0.95));
-    padding: clamp(2rem, 5vw, 4rem) 0;
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    margin-block: clamp(-2.5rem, -5vw, -4rem);
+    padding: clamp(3.5rem, 7vw, 5.5rem) 0 0;
+  }
+
+  .unique-section__backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background-image: url("/images/parallax/WarthogParallaxBGcolor640.jpg");
+    background-size: cover;
+    background-position: 50% 10%;
+    background-repeat: no-repeat;
+    pointer-events: none;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%);
+  }
+
+  @media (min-width: 768px) {
+    .unique-section__backdrop {
+      background-image: url("/images/parallax/WarthogParallaxBGcolor768.jpg");
+      background-position: 50% 15%;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .unique-section__backdrop {
+      background-image: url("/images/parallax/WarthogParallaxBGcolor.jpg");
+      background-position: 50% 20%;
+    }
+  }
+
+  .unique-section__overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background:
+      linear-gradient(to bottom, var(--color-bg) 0%, transparent 16%),
+      linear-gradient(to top, var(--color-bg) 0%, transparent 18%),
+      linear-gradient(180deg, rgba(5, 9, 20, 0.15), rgba(2, 4, 10, 0.45)),
+      linear-gradient(145deg, rgba(15, 17, 34, 0.25), rgba(3, 6, 17, 0.4));
+    pointer-events: none;
+  }
+
+  .unique-section__content {
+    position: relative;
+    z-index: 2;
   }
 
   .features-intro {
@@ -189,35 +489,234 @@ copy: "Careful code design allows swapping the transport layer between TCP, Webs
   }
 
   .features-intro h2 {
-    margin: 0.35rem 0 1rem;
+    margin: 0.35rem 0 0.5rem;
   }
 
-  .categories {
+  .features-intro__hint {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ── Chain scroll pin ── */
+  .chain-scroll-pin {
+    --block-count: 7;
+    --scroll-per-block: 88svh;
+    --end-dwell: 88svh;
+    position: relative;
+    height: calc((var(--block-count) - 1) * var(--scroll-per-block) + var(--end-dwell));
+  }
+
+  .chain-stage {
+    position: relative;
+    height: 100svh;
+    min-height: 100vh;
     display: grid;
-    gap: clamp(1.5rem, 3vw, 2.5rem);
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: clamp(0.5rem, 1.5vw, 1rem);
     width: 100%;
-    max-width: 1280px;
-    margin: 0 auto;
-    padding-inline: clamp(1rem, 4vw, 2.5rem);
+    max-width: 1180px;
+    margin-inline: auto;
+    padding: clamp(0.5rem, 1.5vw, 1rem);
   }
 
-  .category-card {
-    border-radius: var(--radius-lg);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(8, 12, 24, 0.7);
-    padding: clamp(1.25rem, 3vw, 2rem);
-    box-shadow: var(--shadow-soft);
+  .chain-rail {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    height: min(72vh, 520px);
+    width: 2rem;
+    flex-shrink: 0;
   }
 
+  .chain-rail__track {
+    position: absolute;
+    top: 0.5rem;
+    bottom: 0.5rem;
+    left: 50%;
+    width: 2px;
+    translate: -50% 0;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .chain-rail__fill {
+    width: 100%;
+    height: 0%;
+    background: linear-gradient(to bottom, var(--color-brand), var(--color-accent));
+    border-radius: inherit;
+    transition: height 0.15s ease;
+  }
+
+  .chain-rail__nodes {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    width: 100%;
+  }
+
+  .chain-rail__node {
+    width: 0.65rem;
+    height: 0.65rem;
+    margin-inline: auto;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, scale 0.2s ease;
+  }
+
+  .chain-rail__node.is-lit {
+    background: var(--color-brand);
+    border-color: rgba(253, 185, 19, 0.5);
+  }
+
+  .chain-rail__node.is-active {
+    scale: 1.35;
+    box-shadow: 0 0 12px rgba(253, 185, 19, 0.65);
+  }
+
+  .chain-viewport {
+    position: relative;
+    overflow: hidden;
+    justify-self: center;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 10%, #000 90%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 10%, #000 90%, transparent 100%);
+  }
+
+  .chain-track {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    will-change: transform;
+  }
+
+  .chain-block {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.5rem, 1vw, 0.75rem);
+    padding: clamp(0.85rem, 1.6vw, 1.15rem);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-left: 3px solid rgba(255, 255, 255, 0.15);
+    background: #0c1222;
+    box-shadow: 0 20px 40px rgba(2, 6, 23, 0.45);
+    transform-origin: center center;
+  }
+
+  .chain-block.is-active {
+    border-left-color: var(--color-brand);
+    box-shadow:
+      0 28px 56px rgba(2, 6, 23, 0.55),
+      0 0 0 1px rgba(253, 185, 19, 0.15);
+  }
+
+  .chain-block.is-synced {
+    border-left-color: rgba(56, 189, 248, 0.45);
+  }
+
+  .chain-block__meta {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .chain-block__height {
+    font-weight: 700;
+    color: var(--color-brand);
+    font-family: var(--font-mono);
+  }
+
+  .chain-block__hash {
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    text-transform: none;
+  }
+
+  .chain-block__status {
+    margin-left: auto;
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--radius-full);
+    font-size: 0.62rem;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--color-text-muted);
+  }
+
+  .chain-block.is-active .chain-block__status {
+    background: rgba(253, 185, 19, 0.15);
+    color: var(--color-brand);
+  }
+
+  .chain-block.is-synced .chain-block__status {
+    background: rgba(56, 189, 248, 0.12);
+    color: var(--color-accent);
+  }
+
+  .chain-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    width: 6.5rem;
+    flex-shrink: 0;
+  }
+
+  .chain-nav__item {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.3rem 0.45rem;
+    border-radius: var(--radius-full);
+    border: 1px solid transparent;
+    color: var(--color-text-muted);
+    font-size: 0.68rem;
+    font-weight: 600;
+  }
+
+  .chain-nav__dot {
+    flex-shrink: 0;
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .chain-nav__item.is-active {
+    color: var(--color-text);
+    border-color: rgba(56, 189, 248, 0.25);
+    background: rgba(8, 12, 24, 0.55);
+  }
+
+  .chain-nav__item.is-active .chain-nav__dot {
+    background: var(--color-accent);
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+  }
+
+  /* ── Card content typography ── */
   .category-card__header {
-    margin-bottom: clamp(1rem, 2vw, 1.5rem);
-    padding-bottom: clamp(0.75rem, 2vw, 1rem);
+    flex-shrink: 0;
+    margin-bottom: 0;
+    padding-bottom: clamp(0.55rem, 1.2vw, 0.75rem);
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   }
 
   .category-card__title {
     margin: 0 0 0.5rem;
-    font-size: clamp(1.25rem, 2.5vw, 1.5rem);
+    font-size: clamp(1.2rem, 2.2vw, 1.45rem);
     font-weight: 700;
     color: var(--color-text);
   }
@@ -256,82 +755,200 @@ copy: "Careful code design allows swapping the transport layer between TCP, Webs
   .category-card__lede {
     margin: 0;
     color: var(--color-text-muted);
-    line-height: 1.55;
-    font-size: 0.95rem;
+    line-height: 1.5;
+    font-size: clamp(0.82rem, 1.6vw, 0.92rem);
   }
 
   .category-points {
     display: grid;
-    gap: clamp(0.75rem, 1.5vw, 1rem);
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: clamp(0.5rem, 0.9vw, 0.65rem);
+    grid-template-columns: 1fr;
+    flex: 0 1 auto;
+    align-content: start;
+    align-items: start;
+  }
+
+  @media (min-width: 640px) {
+    .category-points {
+      grid-template-columns: repeat(3, 1fr);
+    }
   }
 
   .point {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    padding: clamp(0.85rem, 1.5vw, 1rem);
+    gap: 0.3rem;
+    height: auto;
+    padding: clamp(0.65rem, 1vw, 0.85rem);
     border-radius: var(--radius-md);
-    background: rgba(10, 15, 28, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(10, 15, 28, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .point__title {
     display: flex;
     align-items: center;
-    gap: 0.55rem;
+    gap: 0.5rem;
     margin: 0;
-    font-size: 1rem;
+    font-size: 0.92rem;
     font-weight: 600;
     color: var(--color-text);
   }
 
   .point__icon {
-    width: 1.5rem;
-    height: 1.5rem;
+    width: 1.35rem;
+    height: 1.35rem;
     flex-shrink: 0;
   }
 
   .point__copy {
     margin: 0;
     color: var(--color-text-muted);
-    line-height: 1.55;
-    font-size: 0.9rem;
+    line-height: 1.45;
+    font-size: 0.82rem;
   }
+
+  /* ── Static / reduced-motion fallback ── */
+  .is-static .chain-scroll-pin {
+    height: auto;
+  }
+
+  .is-static .chain-stage {
+    height: auto;
+    display: block;
+    padding-bottom: clamp(2rem, 4vw, 3rem);
+  }
+
+  .is-static .chain-rail,
+  .is-static .chain-nav {
+    display: none;
+  }
+
+  .is-static .chain-viewport {
+    width: 100% !important;
+    height: auto !important;
+    max-width: 980px;
+    margin: 0 auto;
+    padding-inline: clamp(1rem, 4vw, 2.5rem);
+    overflow: visible;
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+
+  .is-static .chain-track {
+    gap: clamp(1.25rem, 3vw, 2rem);
+  }
+
+  .is-static .chain-block {
+    opacity: 1 !important;
+    scale: 1 !important;
+    pointer-events: auto;
+  }
+
+  .is-static .features-intro__hint {
+    display: none;
+  }
+
+  @media (max-width: 899px) {
+    .chain-stage {
+      grid-template-columns: 1fr;
+      justify-items: center;
+    }
+
+    .chain-rail,
+    .chain-nav {
+      display: none;
+    }
+
+    .chain-viewport {
+      mask-image: none;
+      -webkit-mask-image: none;
+    }
+
+    .features-intro {
+      margin-bottom: clamp(1rem, 3vw, 1.5rem);
+    }
+  }
+
+  @media (min-width: 900px) {
+    .chain-nav {
+      width: 7rem;
+    }
+  }
+
 </style>
 
-<section class="section unique-section" id="unique">
-  <div class="features-intro">
-    <p class="section__eyebrow">What makes us unique</p>
-    <h2 class="section__title">Built different, on purpose</h2>
-  </div>
+<unique-features-chain class="section unique-section" id="unique">
+  <div class="unique-section__backdrop" aria-hidden="true"></div>
+  <div class="unique-section__overlay" aria-hidden="true"></div>
 
-  <div class="categories">
-    {
-      categories.map((category) => (
-        <article class="category-card">
-          <header class="category-card__header">
-            <div class="category-card__title-row">
-              <h3 class="category-card__title">{category.title}</h3>
-              {category.status && <span class={`category-card__badge category-card__badge--${category.status}`}>{category.status}</span>}
-            </div>
-            <p class="category-card__lede">{category.lede}</p>
-          </header>
-          <div class="category-points">
-            {
-              category.points.map((point) => (
-                <div class="point">
-                  <h4 class="point__title">
-                    <img src={point.icon} alt="" class="point__icon" loading="lazy" />
-                    {point.title}
-                  </h4>
-                  <p class="point__copy">{point.copy}</p>
-                </div>
-              ))
-            }
+  <div class="unique-section__content">
+    <div class="features-intro">
+      <p class="section__eyebrow">What makes us unique</p>
+      <h2 class="section__title">Built different, on purpose</h2>
+      <p class="features-intro__hint">Scroll to sync each block onto the chain</p>
+    </div>
+
+    <div class="chain-scroll-pin">
+      <div class="chain-stage">
+        <div class="chain-rail" aria-hidden="true">
+          <div class="chain-rail__track"><div class="chain-rail__fill"></div></div>
+          <div class="chain-rail__nodes">
+            {categories.map((_, index) => (
+              <div class:list={["chain-rail__node", { "is-lit": index === 0, "is-active": index === 0 }]} />
+            ))}
           </div>
-        </article>
-      ))
-    }
+        </div>
+
+        <div class="chain-viewport">
+          <div class="chain-track">
+            {categories.map((category, index) => (
+              <article
+                class:list={["chain-block", { "is-active": index === 0 }]}
+                data-block-index={index}
+                aria-hidden={index !== 0 ? "true" : "false"}
+              >
+                <div class="chain-block__meta">
+                  <span class="chain-block__height">#{String(index + 1).padStart(4, "0")}</span>
+                  <code class="chain-block__hash">0x{category.id.slice(0, 8)}…</code>
+                  <span class="chain-block__status">{index === 0 ? "LIVE" : "PENDING"}</span>
+                </div>
+                <header class="category-card__header">
+                  <div class="category-card__title-row">
+                    <h3 class="category-card__title">{category.title}</h3>
+                    {category.status && (
+                      <span class={`category-card__badge category-card__badge--${category.status}`}>
+                        {category.status}
+                      </span>
+                    )}
+                  </div>
+                  <p class="category-card__lede">{category.lede}</p>
+                </header>
+                <div class="category-points">
+                  {category.points.map((point) => (
+                    <div class="point">
+                      <h4 class="point__title">
+                        <img src={point.icon} alt="" class="point__icon" loading="lazy" />
+                        {point.title}
+                      </h4>
+                      <p class="point__copy">{point.copy}</p>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+
+        <nav class="chain-nav" aria-label="Feature categories">
+          {categories.map((category, index) => (
+            <div class:list={["chain-nav__item", { "is-active": index === 0 }]} data-nav={index}>
+              <span class="chain-nav__dot" aria-hidden="true"></span>
+              <span class="chain-nav__label">{category.title}</span>
+            </div>
+          ))}
+        </nav>
+      </div>
+    </div>
   </div>
-</section>
+</unique-features-chain>

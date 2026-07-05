@@ -35,7 +35,16 @@ const GetArticleImage = (category) => {
 ---
 <style>
   .news-section {
-    padding: clamp(2rem, 4vw, 3rem) 0;
+    margin-top: clamp(-4rem, -9vw, -6rem);
+    padding: clamp(4rem, 8vw, 5.5rem) 0 clamp(2rem, 4vw, 3rem);
+  }
+
+  .news-section::after {
+    background: linear-gradient(
+      to top,
+      rgba(8, 6, 22, 0.75),
+      transparent
+    );
   }
 
   .news-header {
@@ -111,7 +120,7 @@ const GetArticleImage = (category) => {
   .animation-delay-2 { animation-delay: 0.2s; }
 </style>
 
-<section class="news-section section--surface">
+<section class="news-section section--surface section-blend">
   <div class="news-header">
     <div>
       <p class="section__eyebrow">Articles</p>

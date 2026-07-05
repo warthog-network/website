@@ -115,9 +115,40 @@ button {
 }
 
 .section--surface {
-  background: rgba(255, 255, 255, 0.02);
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  background: transparent;
+  border-top: none;
+  border-bottom: none;
+}
+
+.section-blend {
+  position: relative;
+  isolation: isolate;
+}
+
+.section-blend::before,
+.section-blend::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: clamp(3rem, 8vw, 6rem);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.section-blend::before {
+  top: 0;
+  background: linear-gradient(to bottom, var(--color-bg), transparent);
+}
+
+.section-blend::after {
+  bottom: 0;
+  background: linear-gradient(to top, var(--color-bg), transparent);
+}
+
+.section-blend > * {
+  position: relative;
+  z-index: 1;
 }
 
 .section--contrast {
