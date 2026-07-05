@@ -232,6 +232,8 @@ import { createChart } from 'lightweight-charts';
 
   gsap.registerPlugin(ScrollTrigger);
 
+  const MOBILE_MQ = "(max-width: 899px)";
+
   class MarketDataComponent extends HTMLElement {
     constructor() {
       super();
@@ -240,40 +242,22 @@ import { createChart } from 'lightweight-charts';
       this.estimatedHalvingPointsByMinedAmount = [];
       this.entranceTrigger = null;
       this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-      this.onViewportResize = () => ScrollTrigger.refresh();
+      this.mobileLayout = window.matchMedia(MOBILE_MQ);
     }
 
     connectedCallback() {
       this.fetchMarketData();
       this.startTimer();
-      this.prepareEntrance();
+      this.setupEntrance();
       this.reducedMotion.addEventListener("change", this.onReducedMotionChange);
-    }
-
-    prepareEntrance() {
-      const init = () => {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            this.setupEntrance();
-            ScrollTrigger.refresh();
-          });
-        });
-      };
-
-      window.visualViewport?.addEventListener("resize", this.onViewportResize);
-
-      if (document.readyState === "complete") {
-        init();
-      } else {
-        window.addEventListener("load", init, { once: true });
-      }
+      this.mobileLayout.addEventListener("change", this.onReducedMotionChange);
     }
 
     disconnectedCallback() {
       clearInterval(this.timer);
-      window.visualViewport?.removeEventListener("resize", this.onViewportResize);
       this.teardownEntrance();
       this.reducedMotion.removeEventListener("change", this.onReducedMotionChange);
+      this.mobileLayout.removeEventListener("change", this.onReducedMotionChange);
     }
 
     onReducedMotionChange = () => this.setupEntrance();
@@ -289,26 +273,23 @@ import { createChart } from 'lightweight-charts';
       const section = this.querySelector(".market-section");
       if (!section) return;
 
-      if (this.reducedMotion.matches) {
+      if (this.reducedMotion.matches || this.mobileLayout.matches) {
         gsap.set(section, { clearProps: "opacity,transform" });
         return;
       }
 
       gsap.set(section, { opacity: 0, y: 24 });
 
-      const isMobile = window.innerWidth < 900;
-      const uniqueSection = document.getElementById("unique");
-
       this.entranceTrigger = ScrollTrigger.create({
         trigger: section,
-        start: isMobile && uniqueSection ? "top bottom" : "top 92%",
-        end: isMobile && uniqueSection ? "top 90%" : "top 82%",
+        start: "top 92%",
+        end: "top 82%",
         scrub: true,
         invalidateOnRefresh: true,
         onUpdate: (self) => {
           gsap.set(section, {
             opacity: self.progress,
-            y: isMobile ? 12 * (1 - self.progress) : 24 * (1 - self.progress),
+            y: 24 * (1 - self.progress),
           });
         },
       });
@@ -431,7 +412,6 @@ import { createChart } from 'lightweight-charts';
     isolation: isolate;
     background: transparent;
     scroll-margin-top: 4.5rem;
-    z-index: 2;
   }
 
   .market-section.section {
@@ -441,7 +421,15 @@ import { createChart } from 'lightweight-charts';
 
   @media (max-width: 899px) {
     .market-section.section {
-      padding-top: clamp(2.5rem, 7vw, 3.5rem);
+      padding-top: clamp(2.5rem, 5vw, 3rem);
+      padding-bottom: clamp(2.5rem, 5vw, 3.5rem);
+    }
+
+    .chart-card,
+    .market-stack,
+    .progress-card {
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: none;
     }
   }
 
