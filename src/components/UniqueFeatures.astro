@@ -187,6 +187,7 @@ const categories = [
   const BLOCK_GAP = 32;
   const MOBILE_MQ = "(max-width: 899px)";
   const NARROW_MQ = "(max-width: 600px)";
+  const DESKTOP_EXPAND_MQ = "(min-width: 1250px)";
   const MOBILE_PHANTOM_STEPS = 2;
   const MOBILE_PHANTOM_SCROLL = 0.22;
 
@@ -202,6 +203,7 @@ const categories = [
       this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
       this.mobileLayout = window.matchMedia(MOBILE_MQ);
       this.narrowLayout = window.matchMedia(NARROW_MQ);
+      this.desktopExpandLayout = window.matchMedia(DESKTOP_EXPAND_MQ);
       this.onLayoutModeChange = () => this.setup();
     }
 
@@ -209,6 +211,7 @@ const categories = [
       this.reducedMotion.addEventListener("change", this.onLayoutModeChange);
       this.mobileLayout.addEventListener("change", this.onLayoutModeChange);
       this.narrowLayout.addEventListener("change", this.onLayoutModeChange);
+      this.desktopExpandLayout.addEventListener("change", this.onLayoutModeChange);
       this.setup();
     }
 
@@ -216,6 +219,7 @@ const categories = [
       this.reducedMotion.removeEventListener("change", this.onLayoutModeChange);
       this.mobileLayout.removeEventListener("change", this.onLayoutModeChange);
       this.narrowLayout.removeEventListener("change", this.onLayoutModeChange);
+      this.desktopExpandLayout.removeEventListener("change", this.onLayoutModeChange);
       this.teardown();
     }
 
@@ -630,7 +634,7 @@ const categories = [
 
       this.querySelectorAll(".point").forEach((point) => {
         const handler = () => {
-          if (!this.mobileLayout.matches) return;
+          if (!this.mobileLayout.matches && !this.desktopExpandLayout.matches) return;
 
           const block = point.closest(".chain-block");
           if (!block?.classList.contains("is-active")) return;
@@ -715,7 +719,7 @@ const categories = [
     text-align: center;
     margin: 0 auto clamp(1.25rem, 2.5vw, 2rem);
     max-width: 800px;
-    padding-inline: clamp(1rem, 4vw, 2.5rem);
+    padding-inline: var(--page-gutter);
     flex-shrink: 0;
   }
 
@@ -754,7 +758,8 @@ const categories = [
     width: 100%;
     max-width: 1180px;
     margin-inline: auto;
-    padding: clamp(0.5rem, 1.5vw, 1rem);
+    padding-inline: var(--page-gutter);
+    padding-top: clamp(0.5rem, 1.5vw, 1rem);
     padding-bottom: clamp(1.25rem, 2.5vw, 2rem);
   }
 
@@ -1224,7 +1229,7 @@ const categories = [
     height: auto !important;
     max-width: 980px;
     margin: 0 auto;
-    padding-inline: clamp(1rem, 4vw, 2.5rem);
+    padding-inline: var(--page-gutter);
     overflow: visible;
     mask-image: none;
     -webkit-mask-image: none;
@@ -1520,6 +1525,97 @@ const categories = [
   @media (min-width: 900px) {
     .chain-nav {
       width: 7rem;
+    }
+  }
+
+  /* Desktop expand-on-click — larger than hover, similar to mobile */
+  @media (min-width: 1250px) {
+    unique-features-chain:not(.is-static) .point {
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition:
+        transform 0.22s ease,
+        border-color 0.22s ease,
+        background 0.22s ease,
+        box-shadow 0.22s ease,
+        padding 0.22s ease,
+        opacity 0.22s ease,
+        max-height 0.22s ease;
+    }
+
+    unique-features-chain:not(.is-static) .point__title,
+    unique-features-chain:not(.is-static) .point__copy,
+    unique-features-chain:not(.is-static) .point__icon {
+      transition:
+        color 0.22s ease,
+        font-size 0.22s ease,
+        line-height 0.22s ease,
+        width 0.22s ease,
+        height 0.22s ease,
+        transform 0.22s ease;
+    }
+
+    unique-features-chain:not(.is-static) .chain-block.has-expanded-point .point:not(.is-expanded) {
+      max-height: 2.75rem;
+      opacity: 0.45;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    unique-features-chain:not(.is-static) .chain-block.has-expanded-point .point:not(.is-expanded) .point__copy {
+      display: none;
+    }
+
+    unique-features-chain:not(.is-static) .point.is-expanded {
+      grid-column: 1 / -1;
+      z-index: 3;
+      padding: clamp(1rem, 1.4vw, 1.25rem);
+      border-color: rgba(253, 185, 19, 0.45);
+      background: rgba(14, 22, 40, 0.98);
+      box-shadow:
+        0 18px 36px rgba(2, 6, 23, 0.5),
+        inset 0 0 0 1px rgba(253, 185, 19, 0.12);
+      transform: scale(1.02);
+    }
+
+    unique-features-chain:not(.is-static) .point.is-expanded .point__title {
+      font-size: 1.15rem;
+      color: var(--color-brand);
+    }
+
+    unique-features-chain:not(.is-static) .point.is-expanded .point__icon {
+      width: 1.65rem;
+      height: 1.65rem;
+      transform: scale(1);
+    }
+
+    unique-features-chain:not(.is-static) .point.is-expanded .point__copy {
+      font-size: 1rem;
+      line-height: 1.55;
+      color: var(--color-text);
+    }
+
+    @media (hover: hover) {
+      unique-features-chain:not(.is-static) .chain-block.has-expanded-point .point:not(.is-expanded):hover {
+        transform: none;
+        border-color: rgba(255, 255, 255, 0.08);
+        background: rgba(10, 15, 28, 0.9);
+        box-shadow: none;
+      }
+
+      unique-features-chain:not(.is-static) .point.is-expanded:hover {
+        transform: scale(1.02);
+        border-color: rgba(253, 185, 19, 0.55);
+      }
+
+      unique-features-chain:not(.is-static) .point.is-expanded:hover .point__title,
+      unique-features-chain:not(.is-static) .point.is-expanded:hover .point__copy {
+        color: var(--color-brand);
+      }
+
+      unique-features-chain:not(.is-static) .point.is-expanded:hover .point__copy {
+        color: var(--color-text);
+      }
     }
   }
 </style>

@@ -64,20 +64,24 @@ const GetArticleImage = (category) => {
     z-index: 1;
   }
 
+  .news-container {
+    width: min(90rem, 100%);
+    margin-inline: auto;
+    padding-inline: var(--page-gutter);
+  }
+
   .news-header {
     display: flex;
     justify-content: space-between;
     gap: 1rem;
     flex-wrap: wrap;
     align-items: center;
-    padding-inline: clamp(1rem, 4vw, 2rem);
     margin-bottom: clamp(1.25rem, 3vw, 2rem);
   }
 
   .news-grid {
     display: grid;
     gap: clamp(1rem, 3vw, 1.5rem);
-    padding-inline: clamp(1rem, 4vw, 2rem);
   }
 
   @media (min-width: 768px) {
@@ -208,34 +212,36 @@ const GetArticleImage = (category) => {
 </style>
 
 <section class="news-section section--surface section-blend">
-  <div class="news-header">
-    <div>
-      <p class="section__eyebrow">Articles</p>
-      <h2 class="section__title">Latest from the blog & dev diary</h2>
+  <div class="news-container">
+    <div class="news-header">
+      <div>
+        <p class="section__eyebrow">Articles</p>
+        <h2 class="section__title">Latest from the blog & dev diary</h2>
+      </div>
+      <a class="see-all" href="/news">
+        See all
+        <img src={Arrow.src} alt="" width="20" height="20" loading="lazy" />
+      </a>
     </div>
-    <a class="see-all" href="/news">
-      See all
-      <img src={Arrow.src} alt="" width="20" height="20" loading="lazy" />
-    </a>
-  </div>
 
-  <div class="news-grid">
-    {
-      last3Articles.map((news, index) => (
-        <a
-          class={`article-card animation-delay-${index}`}
-          href={`/articles/${generateArticalIdentity(news.data.title, news.data.date, news.data.author)}`}
-        >
-          <div class="article-card__media">
-            <img src={GetArticleImage(news.data.category)} alt="" loading="lazy" />
-          </div>
-          <div class="article-card__body">
-            <span class="article-card__category pill">{news.data.category}</span>
-            <h3 class="article-card__title">{news.data.title}</h3>
-            <p class="article-card__date">{new Date(news.data.date).toLocaleDateString()}</p>
-          </div>
-        </a>
-      ))
-    }
+    <div class="news-grid">
+      {
+        last3Articles.map((news, index) => (
+          <a
+            class={`article-card animation-delay-${index}`}
+            href={`/articles/${generateArticalIdentity(news.data.title, news.data.date, news.data.author)}`}
+          >
+            <div class="article-card__media">
+              <img src={GetArticleImage(news.data.category)} alt="" loading="lazy" />
+            </div>
+            <div class="article-card__body">
+              <span class="article-card__category pill">{news.data.category}</span>
+              <h3 class="article-card__title">{news.data.title}</h3>
+              <p class="article-card__date">{new Date(news.data.date).toLocaleDateString()}</p>
+            </div>
+          </a>
+        ))
+      }
+    </div>
   </div>
 </section>

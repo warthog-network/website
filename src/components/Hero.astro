@@ -17,10 +17,7 @@ import Dunes from "../BalkyImages/dunes.svg";
       </h1>
 
       <p class="hero__lede">
-        Warthog's decentralized network empowers individuals with fair, balanced, and synergized CPU/GPU work.
-        It secures hardcoded DeFi and token technologies,
-        eliminating the risks of smart contracts. Our goal is a safer, more efficient blockchain,
-        aligned with the original vision of cryptocurrency: "one CPU, one vote."
+        Warthog's decentralized network empowers individuals with fair, balanced, and synergized CPU/GPU work. It secures hardcoded DeFi and token technologies, eliminating the risks of smart contracts. Our goal is a safer, more efficient blockchain, aligned with the original vision of cryptocurrency: "one CPU, one vote."
       </p>
 
       <div class="hero__wallet">
@@ -47,9 +44,9 @@ import Dunes from "../BalkyImages/dunes.svg";
 <style>
   .hero {
     width: 100%;
-    margin: 0 auto;
-    padding: clamp(0.75rem, 2vw, 1.25rem) clamp(1rem, 3vw, 2rem);
-    padding-bottom: clamp(1.5rem, 4vw, 2.5rem);
+    margin-inline: auto;
+    padding-block: clamp(0.75rem, 2vw, 1.25rem) clamp(1.5rem, 4vw, 2.5rem);
+    padding-inline: 0;
     box-sizing: border-box;
   }
 
@@ -70,6 +67,7 @@ import Dunes from "../BalkyImages/dunes.svg";
     gap: 1rem;
     width: 100%;
     max-width: 42rem;
+    box-sizing: border-box;
   }
 
   .hero__article {
@@ -130,10 +128,28 @@ import Dunes from "../BalkyImages/dunes.svg";
 
   .hero__lede {
     margin: 0;
+    width: 100%;
     font-family: "Montserrat", sans-serif;
-    font-size: clamp(1rem, 2.4vw, 1.25rem);
+    font-size: 1rem;
     line-height: 1.45;
     color: #1e1e1e;
+    text-wrap: pretty;
+  }
+
+  /* Stacked layout — wider copy, fluid type below 1250px */
+  @media (max-width: 1249px) {
+    .hero__title-em {
+      font-size: 2.25rem;
+    }
+
+    .hero__title-main {
+      font-size: 2rem;
+    }
+
+    .hero__lede {
+      font-size: clamp(1rem, 2.4vw, 1.25rem);
+      line-height: 1.45;
+    }
   }
 
   .hero__wallet {
@@ -189,7 +205,6 @@ import Dunes from "../BalkyImages/dunes.svg";
   /*
    * Pocket anchor — matched to dunes.svg cutout (831×386).
    * Scale all dimensions from the rendered image width (831px reference).
-   * Note: calc(1rem * 100cqw) is invalid CSS; divide cqw by a unitless ratio instead.
    */
   .hero__btn--buy {
     position: absolute;
@@ -203,23 +218,40 @@ import Dunes from "../BalkyImages/dunes.svg";
     border-radius: calc(100cqw / 115.4);
   }
 
-  /* Wide desktop — side-by-side, wallet under copy, buy in image pocket */
+  /* Wide desktop — fixed copy width so line breaks stay consistent */
   @media (min-width: 1250px) {
     .hero {
-      padding-bottom: clamp(0.75rem, 2vw, 1.25rem);
+      padding-block: 0.75rem;
     }
 
     .hero__inner {
-      grid-template-columns: minmax(16rem, 1fr) minmax(0, 2fr);
+      grid-template-columns: 25rem minmax(0, 1fr);
       align-items: center;
-      gap: 1.5rem 2.5rem;
+      gap: 1.25rem 2rem;
       text-align: left;
     }
 
     .hero__copy {
       align-items: flex-start;
+      width: 25rem;
       max-width: 25rem;
-      padding-left: 0.5rem;
+      min-width: 25rem;
+      flex-shrink: 0;
+      gap: 0.75rem;
+      padding-left: 0;
+    }
+
+    .hero__title-em {
+      font-size: 3.3rem;
+    }
+
+    .hero__title-main {
+      font-size: 3rem;
+    }
+
+    .hero__lede {
+      font-size: 1.25rem;
+      line-height: 27px;
     }
 
     .hero__article {
@@ -229,13 +261,14 @@ import Dunes from "../BalkyImages/dunes.svg";
     .hero__wallet {
       display: flex;
       justify-content: flex-start;
+      margin-top: 0.125rem;
     }
 
     .hero__visual {
       max-width: 50rem;
       justify-self: end;
       width: 100%;
+      min-width: 0;
     }
-
   }
 </style>
