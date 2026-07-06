@@ -207,6 +207,8 @@ const categories = [
       this.touchStartX = 0;
       this.touchLocked = false;
       this.touchUnlockTimer = 0;
+      this.mobileQuery = window.matchMedia("(max-width: 899px)");
+      this.deckHint = this.querySelector(".features-deck-hint");
 
       this.onWheel = (event) => {
         if (!this.isHovering || this.wheelLocked || this.isTransitioning) return;
@@ -221,6 +223,17 @@ const categories = [
       };
 
       this.onKeydown = (event) => {
+        if (this.isMobileLayout()) {
+          if (event.key === "ArrowRight") {
+            event.preventDefault();
+            this.stepCard(1);
+          } else if (event.key === "ArrowLeft") {
+            event.preventDefault();
+            this.stepCard(-1);
+          }
+          return;
+        }
+
         if (event.key === "ArrowDown") {
           event.preventDefault();
           this.stepCard(1);
@@ -245,6 +258,17 @@ const categories = [
         const deltaY = this.touchStartY - touch.clientY;
         const deltaX = this.touchStartX - touch.clientX;
         const swipeThreshold = 48;
+
+        if (this.isMobileLayout()) {
+          if (Math.abs(deltaX) < swipeThreshold || Math.abs(deltaY) > Math.abs(deltaX) * 0.85) return;
+
+          if (deltaX > 0 && this.activeIndex < this.cards.length - 1) {
+            this.stepCard(1);
+          } else if (deltaX < 0 && this.activeIndex > 0) {
+            this.stepCard(-1);
+          }
+          return;
+        }
 
         if (Math.abs(deltaY) < swipeThreshold || Math.abs(deltaX) > Math.abs(deltaY) * 0.85) return;
 
@@ -326,6 +350,10 @@ const categories = [
       clearTimeout(this.wheelUnlockTimer);
       clearTimeout(this.touchUnlockTimer);
       clearTimeout(this.transitionTimer);
+    }
+
+    isMobileLayout() {
+      return this.mobileQuery?.matches ?? false;
     }
 
     getIndexFromHash(hash = window.location.hash) {
@@ -425,9 +453,13 @@ const categories = [
         "is-leaving",
         "is-leaving-to-top",
         "is-leaving-to-bottom",
+        "is-leaving-to-left",
+        "is-leaving-to-right",
         "is-entering",
         "is-entering-from-top",
         "is-entering-from-bottom",
+        "is-entering-from-left",
+        "is-entering-from-right",
       );
     }
 
@@ -442,8 +474,21 @@ const categories = [
       this.isTransitioning = true;
       this.activeIndex = nextIndex;
 
-      const leaveClass = direction > 0 ? "is-leaving-to-top" : "is-leaving-to-bottom";
-      const enterClass = direction > 0 ? "is-entering-from-bottom" : "is-entering-from-top";
+      const horizontal = this.isMobileLayout();
+      const leaveClass = horizontal
+        ? direction > 0
+          ? "is-leaving-to-left"
+          : "is-leaving-to-right"
+        : direction > 0
+          ? "is-leaving-to-top"
+          : "is-leaving-to-bottom";
+      const enterClass = horizontal
+        ? direction > 0
+          ? "is-entering-from-right"
+          : "is-entering-from-left"
+        : direction > 0
+          ? "is-entering-from-bottom"
+          : "is-entering-from-top";
 
       this.clearCardMotionClasses(outgoing);
       this.clearCardMotionClasses(incoming);
@@ -556,6 +601,12 @@ const categories = [
         const atEnd = this.activeIndex >= this.cards.length - 1;
         this.cardArrowNext.disabled = atEnd;
         this.cardArrowNext.setAttribute("aria-disabled", atEnd ? "true" : "false");
+      }
+
+      if (this.deckHint) {
+        const remaining = this.cards.length - 1 - this.activeIndex;
+        this.deckHint.classList.toggle("is-exhausted", remaining <= 0);
+        this.deckHint.dataset.remaining = String(Math.min(remaining, 2));
       }
     }
 
@@ -900,6 +951,88 @@ const categories = [
     }
   }
 
+  @keyframes featureCardEnterFromRight {
+    0% {
+      opacity: 0;
+      transform: translateX(4.5rem) scale(0.94);
+      filter: blur(6px);
+    }
+    55% {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      filter: blur(0);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      filter: blur(0);
+    }
+  }
+
+  @keyframes featureCardEnterFromLeft {
+    0% {
+      opacity: 0;
+      transform: translateX(-4.5rem) scale(0.94);
+      filter: blur(6px);
+    }
+    55% {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      filter: blur(0);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      filter: blur(0);
+    }
+  }
+
+  @keyframes featureCardLeaveToLeft {
+    0% {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      filter: blur(0);
+    }
+    45% {
+      opacity: 0.92;
+      transform: translateX(-4rem) scale(0.97);
+      filter: blur(0);
+    }
+    100% {
+      opacity: 0;
+      transform: translateX(-7.5rem) scale(0.9);
+      filter: blur(7px);
+    }
+  }
+
+  @keyframes featureCardLeaveToRight {
+    0% {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      filter: blur(0);
+    }
+    45% {
+      opacity: 0.92;
+      transform: translateX(4rem) scale(0.97);
+      filter: blur(0);
+    }
+    100% {
+      opacity: 0;
+      transform: translateX(7.5rem) scale(0.9);
+      filter: blur(7px);
+    }
+  }
+
+  .features-view-wrap {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .features-deck-hint {
+    display: none;
+  }
+
   .features-view {
     display: grid;
     min-width: 0;
@@ -962,11 +1095,31 @@ const categories = [
     animation: featureCardLeaveToBottom 0.62s cubic-bezier(0.4, 0, 0.85, 0.2) forwards;
   }
 
+  .feature-card.is-entering-from-right {
+    animation: featureCardEnterFromRight 0.62s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .feature-card.is-entering-from-left {
+    animation: featureCardEnterFromLeft 0.62s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .feature-card.is-leaving-to-left {
+    animation: featureCardLeaveToLeft 0.62s cubic-bezier(0.4, 0, 0.85, 0.2) forwards;
+  }
+
+  .feature-card.is-leaving-to-right {
+    animation: featureCardLeaveToRight 0.62s cubic-bezier(0.4, 0, 0.85, 0.2) forwards;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .feature-card.is-entering-from-bottom,
     .feature-card.is-entering-from-top,
+    .feature-card.is-entering-from-left,
+    .feature-card.is-entering-from-right,
     .feature-card.is-leaving-to-top,
-    .feature-card.is-leaving-to-bottom {
+    .feature-card.is-leaving-to-bottom,
+    .feature-card.is-leaving-to-left,
+    .feature-card.is-leaving-to-right {
       animation: none;
     }
   }
@@ -1510,19 +1663,88 @@ const categories = [
     }
 
     .features-card-stack {
-      gap: 0.25rem;
+      flex-direction: row;
+      align-items: stretch;
+      gap: 0.35rem;
       padding-block: 0;
+      padding-top: 1.35rem;
+    }
+
+    .features-view-wrap {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .features-deck-hint {
+      display: block;
+      position: absolute;
+      top: -1.1rem;
+      left: 50%;
+      width: calc(100% - 1.25rem);
+      height: calc(100% + 1.1rem);
+      transform: translateX(-50%);
+      pointer-events: none;
+      z-index: 0;
+      transition: opacity 0.35s ease;
+    }
+
+    .features-deck-hint.is-exhausted {
+      opacity: 0;
+    }
+
+    .features-deck-hint__card {
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-left: 3px solid rgba(253, 185, 19, 0.35);
+      background: linear-gradient(180deg, #0a101c 0%, #070d18 100%);
+      box-shadow: 0 12px 28px rgba(2, 6, 23, 0.45);
+    }
+
+    .features-deck-hint__card--1 {
+      transform: translateY(-0.55rem) scale(0.985);
+      opacity: 0.55;
+    }
+
+    .features-deck-hint__card--2 {
+      transform: translateY(-1.05rem) scale(0.97);
+      opacity: 0.3;
+    }
+
+    .features-deck-hint[data-remaining="1"] .features-deck-hint__card--2 {
+      opacity: 0;
+    }
+
+    .features-deck-hint[data-remaining="0"] .features-deck-hint__card {
+      opacity: 0;
     }
 
     .features-view {
+      position: relative;
+      z-index: 1;
       padding-block: 0;
-      touch-action: pan-y;
+      touch-action: pan-x;
     }
 
     .features-card-arrow {
+      align-self: center;
+      flex-shrink: 0;
       width: 1.25rem;
       height: 1.25rem;
       opacity: 0.35;
+    }
+
+    .features-card-arrow--prev::before {
+      transform: rotate(-45deg);
+      margin-top: 0;
+      margin-inline-end: -0.08rem;
+    }
+
+    .features-card-arrow--next::before {
+      transform: rotate(135deg);
+      margin-bottom: 0;
+      margin-inline-start: -0.08rem;
     }
 
   }
@@ -1613,11 +1835,17 @@ const categories = [
           disabled
         ></button>
 
-        <div
-          class="features-view"
-          tabindex="0"
-          aria-label="Feature cards. Swipe up or down, use arrows, scroll, or arrow keys to change card."
-        >
+        <div class="features-view-wrap">
+          <div class="features-deck-hint" aria-hidden="true" data-remaining="2">
+            <span class="features-deck-hint__card features-deck-hint__card--2"></span>
+            <span class="features-deck-hint__card features-deck-hint__card--1"></span>
+          </div>
+
+          <div
+            class="features-view"
+            tabindex="0"
+            aria-label="Feature cards. On mobile, swipe left or right. On desktop, scroll or use arrow keys."
+          >
           {categories.map((category, index) => (
             <article
               id={`unique-${category.id}`}
@@ -1686,6 +1914,7 @@ const categories = [
               </div>
             </article>
           ))}
+          </div>
         </div>
 
         <button
