@@ -188,7 +188,6 @@ function Explorer() {
         if (mode === 'latest') {
             setCurrentBlocks(chain.blocks || []);
             setIsSearching(false);
-            setLoading(false);
             return;
         }
 

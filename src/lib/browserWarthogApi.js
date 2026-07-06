@@ -81,6 +81,30 @@ export function createBrowserWarthogApi(WarthogApi, baseUrl, { useProxy = false 
 
       return { success: true, data: json.data };
     }
+
+    /** Fetch a block by height. */
+    getBlock(height) {
+      return this.request(`/chain/block/${height}`);
+    }
+
+    /** Generic node path (explorer lookups, binary block data, etc.). */
+    getNodePath(path) {
+      const normalized = String(path || '').startsWith('/') ? path : `/${path}`;
+      return this.request(normalized);
+    }
+
+    getAccountBalance(address) {
+      return this.request(`/account/${address}/balance`);
+    }
+
+    /** Legacy alias used by some balance helpers. */
+    getAccountWartBalance(address) {
+      return this.getAccountBalance(address);
+    }
+
+    getAccountHistory(account, cursor) {
+      return this.request(`/account/${account}/history/${cursor}`);
+    }
   }
 
   const normalized = baseUrl.replace(/\/+$/, '');
