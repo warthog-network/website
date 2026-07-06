@@ -33,19 +33,32 @@ experimental: {
   }
 },
   vite: {
+    define: {
+      global: 'globalThis',
+    },
     resolve: {
       dedupe: ['react', 'react-dom'],
       alias: {
-        crypto: 'crypto-browserify',
-        stream: 'stream-browserify',
+        crypto: path.resolve(root, 'node_modules/crypto-browserify'),
+        stream: path.resolve(root, 'node_modules/stream-browserify'),
+        buffer: path.resolve(root, 'node_modules/buffer'),
+        process: path.resolve(root, 'src/shims/process.js'),
         '@': path.resolve(root, 'src'),
       },
     },
     ssr: {
-      noExternal: ['crypto-browserify', 'stream-browserify'],
+      external: ['warthog-js', 'crypto-browserify', 'stream-browserify', 'buffer', 'elliptic', 'ethers'],
     },
     optimizeDeps: {
-      include: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
+      include: [
+        'react',
+        'react-dom',
+        'react/jsx-runtime',
+        'react/jsx-dev-runtime',
+        'buffer',
+        'crypto-browserify',
+        'stream-browserify',
+      ],
       esbuildOptions: {
         define: {
           global: 'globalThis',

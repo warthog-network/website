@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { format_height, abbreviate } from './assets/util.js';
-import APIClient from './assets/api_ws.js';
 import BunkerShell from '../BunkerShell.jsx';
 import { resolveExplorerHostFromStorage } from '../../lib/explorerNodes.js';
+import { unwrapApiData } from '../../lib/warthogClient.js';
 import ExplorerAddress from './ExplorerAddress.jsx';
 import ExplorerRefreshButton from './ExplorerRefreshButton.jsx';
-import { unwrapNodeResponse } from './explorerApi.js';
+import { createWarthogApi } from './explorerClient.js';
 
 function TransactionDetails({ txid }) {
   const [transaction, setTransaction] = useState(null);
@@ -24,27 +24,40 @@ function TransactionDetails({ txid }) {
   }, []);
 
   useEffect(() => {
-    const client = new APIClient(resolveExplorerHostFromStorage());
-    if (txid) {
-      setLoading(true);
-      setError(false);
-      client.get(`/transaction/lookup/${txid}`)
-        .then(response => {
-          const payload = unwrapNodeResponse(response);
-          const transactionData = payload?.transaction ?? payload;
-          if (!transactionData || (response.code != null && response.code !== 0)) {
-            throw new Error('Transaction not found');
-          }
-          setTransaction(transactionData);
-          setLoading(false);
-          setRefreshing(false);
-        })
-        .catch(() => {
+    if (!txid) return;
+
+    let cancelled = false;
+    setLoading(true);
+    setError(false);
+
+    (async () => {
+      try {
+        const api = await createWarthogApi(resolveExplorerHostFromStorage());
+        const payload = unwrapApiData(
+          await api.getNodePath(`/transaction/lookup/${txid}`),
+        );
+        if (cancelled) return;
+
+        const transactionData = payload?.transaction ?? payload;
+        if (!transactionData) {
+          throw new Error('Transaction not found');
+        }
+        setTransaction(transactionData);
+      } catch {
+        if (!cancelled) {
           setError(true);
+        }
+      } finally {
+        if (!cancelled) {
           setLoading(false);
           setRefreshing(false);
-        });
-    }
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [txid, refreshKey]);
 
   const handleRefresh = () => {

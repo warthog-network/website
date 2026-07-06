@@ -47,12 +47,17 @@ export function parseAccountHistory(rawData) {
   return { items, fromId };
 }
 
+/** Node returns this when the account has no indexed history yet. */
+export function isEmptyHistoryError(message) {
+  return (message || '').toLowerCase() === 'not found';
+}
+
 export function formatExplorerError(err, fallback = 'Request failed') {
   const message = err?.message || '';
-  if (message.includes('HTTP error! status: 502')) {
+  if (message.includes('HTTP error! status: 502') || message.includes('Upstream fetch failed')) {
     return 'Node is temporarily unreachable. Try another node or refresh in a moment.';
   }
-  if (message.includes('HTTP error! status: 408')) {
+  if (message.includes('HTTP error! status: 408') || message.includes('Request timeout')) {
     return 'Node request timed out. Try again shortly.';
   }
   return message || fallback;

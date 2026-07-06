@@ -1,16 +1,21 @@
 import { useState, useEffect } from 'react';
 import { format_height, abbreviate } from './assets/util.js';
-import APIClient from './assets/api_ws.js';
-import { Block } from './assets/api_ws.js';
+import { Block } from './assets/block.js';
 import BunkerShell from '../BunkerShell.jsx';
 import ExplorerAddress from './ExplorerAddress.jsx';
 import ExplorerRefreshButton from './ExplorerRefreshButton.jsx';
-import { unwrapNodeResponse } from './explorerApi.js';
+import {
+    createWarthogApi,
+    fetchChainHeadHeight,
+    fetchExplorerBlock,
+    fetchRecentBlocks,
+} from './explorerClient.js';
 import {
     EXPLORER_NODE_OPTIONS,
     getExplorerHost,
     normalizeSelectedNode,
 } from '../../lib/explorerNodes.js';
+import { resolveWarthogAddress } from './explorerAddressUtils.js';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -114,7 +119,7 @@ function Explorer() {
     const perPage = 10;
 
     useEffect(() => {
-        if (!isInitialized) return; // Don't fetch until localStorage is populated
+        if (!isInitialized) return;
 
         setSubscribed(false);
         setChain({ blocks: [] });
@@ -125,72 +130,55 @@ function Explorer() {
         setLoading(true);
         setConnectionError(null);
 
-        const cl = new APIClient(host, false);
-        cl.setters = {
-            setConnections: () => {},
-            setLog: () => {},
-            setChain,
-            setSubscribed
-        };
-        setClient(cl);
-
         let hasConnected = false;
         let cancelled = false;
+        let interval;
 
-        const fetchLatest = async (isInitial = false) => {
+        (async () => {
+            const api = await createWarthogApi(host);
             if (cancelled) return;
 
-            if (isInitial) {
-                setRefreshing(true);
-            }
+            setClient(api);
 
-            try {
-                const headResponse = await fetchWithRetry(() => cl.get('/chain/head'));
+            const fetchLatest = async (isInitial = false) => {
                 if (cancelled) return;
 
-                const headData = unwrapNodeResponse(headResponse);
-                const headHeight = headData?.height;
-                if (!headHeight) {
-                    throw new Error('Unexpected response format from node head endpoint');
+                if (isInitial) {
+                    setRefreshing(true);
                 }
-                const blocks = [];
-                for (let h = headHeight; h > Math.max(1, headHeight - 10); h--) {
-                    try {
-                        const block = await cl.getBlock(h);
-                        blocks.push(block);
-                    } catch (e) {
-                        console.error(`Failed to fetch block ${h}`, e);
+
+                try {
+                    const headHeight = await fetchWithRetry(() => fetchChainHeadHeight(api));
+                    if (cancelled) return;
+
+                    const blocks = await fetchRecentBlocks(api, headHeight);
+                    if (cancelled) return;
+
+                    setChain({ blocks });
+                    setSubscribed(true);
+                    setConnectionError(null);
+                    hasConnected = true;
+                } catch (e) {
+                    if (cancelled) return;
+                    console.error('Failed to fetch head', e);
+                    if (!hasConnected) {
+                        setConnectionError('Failed to fetch data from node.');
+                    }
+                } finally {
+                    if (isInitial && !cancelled) {
+                        setLoading(false);
+                        setRefreshing(false);
                     }
                 }
-                if (cancelled) return;
+            };
 
-                setChain({ blocks });
-                setSubscribed(true);
-                setConnectionError(null);
-                hasConnected = true;
-            } catch (e) {
-                if (cancelled) return;
-                console.error('Failed to fetch head', e);
-                if (!hasConnected) {
-                    setConnectionError('Failed to fetch data from node.');
-                }
-            } finally {
-                if (isInitial && !cancelled) {
-                    setLoading(false);
-                    setRefreshing(false);
-                }
-            }
-        };
-
-        fetchLatest(true);
-
-        // Poll for updates every 10 seconds
-        const interval = setInterval(() => fetchLatest(false), 10000);
+            await fetchLatest(true);
+            interval = setInterval(() => fetchLatest(false), 10000);
+        })();
 
         return () => {
             cancelled = true;
-            cl.closeConnection();
-            clearInterval(interval);
+            if (interval) clearInterval(interval);
         };
     }, [host, isInitialized, refreshToken]);
 
@@ -222,7 +210,7 @@ function Explorer() {
                 if (existing) {
                     promises.push(Promise.resolve(existing));
                 } else {
-                    promises.push(client.getBlock(h));
+                    promises.push(fetchExplorerBlock(client, h));
                 }
             }
             try {
@@ -258,7 +246,7 @@ function Explorer() {
         const promises = items.map(async (item) => {
             if (item.type === 'height') {
                 const existing = chain.blocks.find(b => b.height === item.value);
-                return existing || await client.getBlock(item.value);
+                return existing || await fetchExplorerBlock(client, item.value);
             }
         });
         try {
@@ -283,10 +271,15 @@ function Explorer() {
         setTxSearchInput('');
     };
 
-    const handleAddressSearch = (e) => {
+    const handleAddressSearch = async (e) => {
         e.preventDefault();
         if (!addressSearchInput.trim()) return;
-        window.location.href = `/address/${encodeURIComponent(addressSearchInput)}`;
+        const resolved = await resolveWarthogAddress(addressSearchInput);
+        if (!resolved) {
+            setConnectionError('Invalid Warthog address.');
+            return;
+        }
+        window.location.href = `/address/${encodeURIComponent(resolved)}`;
         setAddressSearchInput('');
     };
 

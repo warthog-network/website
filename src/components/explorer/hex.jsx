@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import APIClient from './assets/api_ws.js';
 import BunkerShell from '../BunkerShell.jsx';
+import { resolveExplorerHostFromStorage } from '../../lib/explorerNodes.js';
+import { unwrapApiData } from '../../lib/warthogClient.js';
+import { createWarthogApi } from './explorerClient.js';
 
 export default function BlockHexView({ height }) {
   const containerRef = useRef(null);
@@ -9,15 +11,16 @@ export default function BlockHexView({ height }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const client = new APIClient();
     async function loadBinary() {
       try {
         setLoading(true);
         setError(null);
 
-        const response = await client.get(`/chain/block/${height}/binary`);
+        const api = await createWarthogApi(resolveExplorerHostFromStorage());
+        const apiData = unwrapApiData(
+          await api.getNodePath(`/chain/block/${height}/binary`),
+        );
 
-        const apiData = response?.data;
         if (!apiData?.bytes || !Array.isArray(apiData.structure)) {
           throw new Error('Invalid response: missing bytes or structure in data');
         }

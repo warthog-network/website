@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { format_height, abbreviate } from './assets/util.js';
-import APIClient from './assets/api_ws.js';
-import { Block } from './assets/api_ws.js';
+import { Block } from './assets/block.js';
 import BunkerShell from '../BunkerShell.jsx';
 import { resolveExplorerHostFromStorage } from '../../lib/explorerNodes.js';
 import ExplorerAddress from './ExplorerAddress.jsx';
 import ExplorerRefreshButton from './ExplorerRefreshButton.jsx';
+import { createWarthogApi, fetchExplorerBlock } from './explorerClient.js';
 
 function TransactionItem({ tx, index }) {
   const isRewardTx = !tx.fromAddress;
@@ -81,20 +81,31 @@ function BlockDetails({ height }) {
   };
 
   useEffect(() => {
-    const client = new APIClient(resolveExplorerHostFromStorage('local'));
+    let cancelled = false;
     setLoading(true);
     setError(false);
-    client.getBlock(height)
-      .then(fetchedBlock => {
+
+    (async () => {
+      try {
+        const api = await createWarthogApi(resolveExplorerHostFromStorage());
+        const fetchedBlock = await fetchExplorerBlock(api, height);
+        if (cancelled) return;
         setBlock(fetchedBlock instanceof Block ? fetchedBlock : new Block(fetchedBlock));
-        setLoading(false);
-        setRefreshing(false);
-      })
-      .catch(() => {
-        setError(true);
-        setLoading(false);
-        setRefreshing(false);
-      });
+      } catch {
+        if (!cancelled) {
+          setError(true);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+          setRefreshing(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [height, refreshKey]);
 
   const handleRefresh = () => {
