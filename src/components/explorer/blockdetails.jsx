@@ -3,6 +3,9 @@ import { format_height, abbreviate } from './assets/util.js';
 import APIClient from './assets/api_ws.js';
 import { Block } from './assets/api_ws.js';
 import BunkerShell from '../BunkerShell.jsx';
+import { resolveExplorerHostFromStorage } from '../../lib/explorerNodes.js';
+import ExplorerAddress from './ExplorerAddress.jsx';
+import ExplorerRefreshButton from './ExplorerRefreshButton.jsx';
 
 function TransactionItem({ tx, index }) {
   const isRewardTx = !tx.fromAddress;
@@ -37,12 +40,12 @@ function TransactionItem({ tx, index }) {
       </div>
       {tx.fromAddress && safeStr(tx.fromAddress) !== '—' && (
         <div className="bunker-meta">
-          From: {abbreviate(safeStr(tx.fromAddress))}
+          From: <ExplorerAddress address={tx.fromAddress} />
         </div>
       )}
       {tx.toAddress && safeStr(tx.toAddress) !== '—' && (
         <div className="bunker-meta">
-          To: {abbreviate(safeStr(tx.toAddress))}
+          To: <ExplorerAddress address={tx.toAddress} />
         </div>
       )}
       {tx.amount && safeStr(tx.amount) !== '—' && (
@@ -64,6 +67,8 @@ function BlockDetails({ height }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [copiedField, setCopiedField] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleCopy = async (text, field) => {
     try {
@@ -76,42 +81,34 @@ function BlockDetails({ height }) {
   };
 
   useEffect(() => {
-    const getHost = (node) => {
-      if (node === 'losthymns') return 'https://warthognode.duckdns.org';
-      if (node === 'official2' || node === 'polaire') return 'http://65.87.7.86:3001';
-      if (node === 'local') return 'http://localhost:3000';
-      return 'http://localhost:3000';
-    };
-
-    const selectedNode = typeof window !== 'undefined' ? localStorage.getItem('selectedNode') || 'local' : 'local';
-    let selectedHost;
-    if (selectedNode === 'custom') {
-      const customIP = localStorage.getItem('customIP') || 'localhost';
-      const customPort = localStorage.getItem('customPort') || '3000';
-      let fullIP = customIP;
-      if (!fullIP.includes('://')) {
-        fullIP = `http://${fullIP}`;
-      }
-      selectedHost = `${fullIP}:${customPort}`;
-    } else {
-      selectedHost = getHost(selectedNode);
-    }
-    const client = new APIClient(selectedHost);
+    const client = new APIClient(resolveExplorerHostFromStorage('local'));
     setLoading(true);
+    setError(false);
     client.getBlock(height)
       .then(fetchedBlock => {
         setBlock(fetchedBlock instanceof Block ? fetchedBlock : new Block(fetchedBlock));
         setLoading(false);
+        setRefreshing(false);
       })
       .catch(() => {
         setError(true);
         setLoading(false);
+        setRefreshing(false);
       });
-  }, [height]);
+  }, [height, refreshKey]);
+
+  const handleRefresh = () => {
+    if (refreshing || loading) return;
+    setRefreshing(true);
+    setRefreshKey((key) => key + 1);
+  };
 
   if (loading) {
     return (
-      <BunkerShell title="Block Details">
+      <BunkerShell
+        title="Block Details"
+        actions={<ExplorerRefreshButton onClick={handleRefresh} loading={refreshing} />}
+      >
         <p className="bunker-muted">Loading block...</p>
       </BunkerShell>
     );
@@ -119,7 +116,10 @@ function BlockDetails({ height }) {
 
   if (!block || error) {
     return (
-      <BunkerShell title="Block Not Found">
+      <BunkerShell
+        title="Block Not Found"
+        actions={<ExplorerRefreshButton onClick={handleRefresh} loading={refreshing} />}
+      >
         <p className="bunker-muted">The requested block could not be found.</p>
         <a href="/explorer" className="bunker-btn bunker-btn--ghost" style={{ marginTop: '1rem' }}>
           ← Back to Explorer
@@ -129,7 +129,11 @@ function BlockDetails({ height }) {
   }
 
   return (
-    <BunkerShell title="Block Details" wide>
+    <BunkerShell
+      title="Block Details"
+      wide
+      actions={<ExplorerRefreshButton onClick={handleRefresh} loading={refreshing} />}
+    >
       <h2 className="bunker-subheading">Block {format_height(block.height)}</h2>
       <div className="bunker-panel">
         <dl className="bunker-dl" style={{ marginBottom: '1rem' }}>
@@ -146,9 +150,8 @@ function BlockDetails({ height }) {
           </div>
           <div className="bunker-dl-row">
             <dt>Miner</dt>
-            <dd className="bunker-link" style={{ cursor: 'pointer' }} onClick={() => handleCopy(block.miner(), 'miner')}>
-              {block.miner()}
-              {copiedField === 'miner' && <span> (Copied!)</span>}
+            <dd>
+              <ExplorerAddress address={block.miner()} abbreviated={false} />
             </dd>
           </div>
           <div className="bunker-dl-row">

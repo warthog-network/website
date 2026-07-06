@@ -25,6 +25,7 @@ export default function WalletOverviewCard({
   onDownload,
   onExportQr,
   onClear,
+  onContacts,
   onSend,
 }) {
   const balanceLoading = balance === null;
@@ -158,6 +159,15 @@ export default function WalletOverviewCard({
               <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
+            </button>
+          ) : null}
+          {onContacts ? (
+            <button
+              type="button"
+              onClick={onContacts}
+              className="compact-btn hover:!text-[#E79300] !mx-0 !my-0 !px-3 !py-1"
+            >
+              Contacts
             </button>
           ) : null}
           {onDownload ? (

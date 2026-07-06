@@ -410,7 +410,7 @@ import { createChart } from 'lightweight-charts';
   .market-section {
     position: relative;
     isolation: isolate;
-    background: transparent;
+    background: var(--color-bg);
     scroll-margin-top: 4.5rem;
   }
 
@@ -438,9 +438,7 @@ import { createChart } from 'lightweight-charts';
     position: absolute;
     inset: 0;
     z-index: 0;
-    background:
-      radial-gradient(ellipse 80% 40% at 50% 0%, rgba(88, 28, 135, 0.12), transparent 70%),
-      linear-gradient(to bottom, transparent, rgba(5, 9, 20, 0.25) 40%, transparent);
+    background: radial-gradient(ellipse 80% 40% at 50% 30%, rgba(88, 28, 135, 0.12), transparent 70%);
     pointer-events: none;
   }
 

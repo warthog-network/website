@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { format_height, abbreviate } from './assets/util.js';
 import APIClient from './assets/api_ws.js';
 import BunkerShell from '../BunkerShell.jsx';
+import { resolveExplorerHostFromStorage } from '../../lib/explorerNodes.js';
+import ExplorerAddress from './ExplorerAddress.jsx';
+import ExplorerRefreshButton from './ExplorerRefreshButton.jsx';
+import { unwrapNodeResponse } from './explorerApi.js';
 
 function TransactionDetails({ txid }) {
   const [transaction, setTransaction] = useState(null);
@@ -9,6 +13,8 @@ function TransactionDetails({ txid }) {
   const [error, setError] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [copiedField, setCopiedField] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 800);
@@ -18,47 +24,41 @@ function TransactionDetails({ txid }) {
   }, []);
 
   useEffect(() => {
-    const getHost = (node) => {
-      if (node === 'losthymns') return 'https://warthognode.duckdns.org';
-      if (node === 'official2' || node === 'polaire') return 'http://65.87.7.86:3001';
-      if (node === 'local') return 'http://localhost:3000';
-      return 'http://localhost:3000';
-    };
-
-    const selectedNode = typeof window !== 'undefined' ? localStorage.getItem('selectedNode') || 'losthymns' : 'losthymns';
-    let selectedHost;
-    if (selectedNode === 'custom') {
-      const customIP = localStorage.getItem('customIP') || 'localhost';
-      const customPort = localStorage.getItem('customPort') || '3000';
-      let fullIP = customIP;
-      if (!fullIP.includes('://')) {
-        fullIP = `http://${fullIP}`;
-      }
-      selectedHost = `${fullIP}:${customPort}`;
-    } else {
-      selectedHost = getHost(selectedNode);
-    }
-    const client = new APIClient(selectedHost);
+    const client = new APIClient(resolveExplorerHostFromStorage());
     if (txid) {
       setLoading(true);
+      setError(false);
       client.get(`/transaction/lookup/${txid}`)
         .then(response => {
-          if (response.code !== 0 || !response.data || !response.data.transaction) {
+          const payload = unwrapNodeResponse(response);
+          const transactionData = payload?.transaction ?? payload;
+          if (!transactionData || (response.code != null && response.code !== 0)) {
             throw new Error('Transaction not found');
           }
-          setTransaction(response.data.transaction);
+          setTransaction(transactionData);
           setLoading(false);
+          setRefreshing(false);
         })
         .catch(() => {
           setError(true);
           setLoading(false);
+          setRefreshing(false);
         });
     }
-  }, [txid]);
+  }, [txid, refreshKey]);
+
+  const handleRefresh = () => {
+    if (refreshing || loading) return;
+    setRefreshing(true);
+    setRefreshKey((key) => key + 1);
+  };
 
   if (loading) {
     return (
-      <BunkerShell title="Transaction Details">
+      <BunkerShell
+        title="Transaction Details"
+        actions={<ExplorerRefreshButton onClick={handleRefresh} loading={refreshing} />}
+      >
         <p className="bunker-muted">Loading transaction...</p>
       </BunkerShell>
     );
@@ -66,7 +66,10 @@ function TransactionDetails({ txid }) {
 
   if (!transaction || error) {
     return (
-      <BunkerShell title="Transaction Not Found">
+      <BunkerShell
+        title="Transaction Not Found"
+        actions={<ExplorerRefreshButton onClick={handleRefresh} loading={refreshing} />}
+      >
         <p className="bunker-muted">The requested transaction could not be found.</p>
         <a href="/explorer" className="bunker-btn bunker-btn--ghost" style={{ marginTop: '1rem' }}>
           ← Back to Explorer
@@ -88,7 +91,11 @@ function TransactionDetails({ txid }) {
   };
 
   return (
-    <BunkerShell title="Transaction Details" wide>
+    <BunkerShell
+      title="Transaction Details"
+      wide
+      actions={<ExplorerRefreshButton onClick={handleRefresh} loading={refreshing} />}
+    >
       <h2 className="bunker-subheading">Transaction {abbreviate(txid)}</h2>
       <div className="bunker-panel">
         <dl className="bunker-dl">
@@ -106,18 +113,22 @@ function TransactionDetails({ txid }) {
             {transaction.fromAddress && (
               <div className="bunker-dl-row">
                 <dt>From</dt>
-                <dd className="bunker-link" style={{ cursor: 'pointer' }} onClick={() => handleCopy(transaction.fromAddress, 'from')}>
-                  {isMobile ? abbreviate(transaction.fromAddress) : transaction.fromAddress}
-                  {copiedField === 'from' && <span> (Copied!)</span>}
+                <dd>
+                  <ExplorerAddress
+                    address={transaction.fromAddress}
+                    abbreviated={isMobile}
+                  />
                 </dd>
               </div>
             )}
             {transaction.toAddress && (
               <div className="bunker-dl-row">
                 <dt>To</dt>
-                <dd className="bunker-link" style={{ cursor: 'pointer' }} onClick={() => handleCopy(transaction.toAddress, 'to')}>
-                  {isMobile ? abbreviate(transaction.toAddress) : transaction.toAddress}
-                  {copiedField === 'to' && <span> (Copied!)</span>}
+                <dd>
+                  <ExplorerAddress
+                    address={transaction.toAddress}
+                    abbreviated={isMobile}
+                  />
                 </dd>
               </div>
             )}

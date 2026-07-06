@@ -1,5 +1,4 @@
 ---
-import { Fragment } from "astro/jsx-runtime";
 import Goal from "../BalkyImages/goal 1.svg";
 import Sprout from "../BalkyImages/002-sprout.svg";
 import Profile from "../BalkyImages/004-profile.svg";
@@ -11,11 +10,15 @@ import {
   featurePointIcons,
   type FeaturePointIconName,
 } from "../icons/featurePointIcons";
+import { getBuildHash, shouldShowBuildMark } from "../lib/buildMark";
+
+const buildHash = shouldShowBuildMark() ? getBuildHash() : undefined;
 
 const categories = [
   {
     id: "tokenomics",
     title: "Fair Tokenomics",
+    status: "live",
     lede: "Fair launch, fair supply, fair distribution, scarcer than Bitcoin. Every WART in existence is originating from public mining without insider shortcuts.",
     points: [
       {
@@ -38,6 +41,7 @@ const categories = [
   {
     id: "original-code",
     title: "Original Code",
+    status: "live",
     lede: "No Bitcoin fork. No copy-paste stack. Warthog was written from scratch with a modern toolchain, and the choices that fall out of that decision are visible in every corner of the codebase.",
     points: [
       {
@@ -60,6 +64,7 @@ const categories = [
   {
     id: "chain-descriptor-sync",
     title: "BlitzSync",
+    status: "live",
     lede: "A novel superior sync model understanding all peers' chain forks and identifying branches by nothing more than simple integers.",
     points: [
       {
@@ -82,12 +87,14 @@ const categories = [
   {
     id: "pobw",
     title: "Janushash",
+    status: "live",
     lede: "Our mathematical Proof of Balanced Work (PoBW) theory cleanly combines Verushash v2.2 and Sha256t into Warthog's unique Janushash algorithm desgined to bring back the golden days of mining.",
     points: [
       {
         title: "Repelling Farms",
         copy: "The required balanced combination of Verushash v2.2 and SHA256t bottlenecks pure GPU farms, pure CPU farms and botnets. Efficient mining requires decent CPU and GPU hashrates, which farms rarely support.",
         icon: "repelFarms",
+        iconSlashed: true,
       },
       {
         title: "Favoring Gamers",
@@ -97,7 +104,7 @@ const categories = [
       {
         title: "Democratized Mining",
         copy: "Our mining algorithm brings us close to Satoshi's original vision of \"one-cpu-one-vote\": Mining rewards consumer hardware, not whoever can throw the most ASICs at the network.",
-        icon: "democratized",
+        iconSrc: Group.src,
       },
     ],
   },
@@ -175,519 +182,382 @@ const categories = [
 ---
 
 <script>
-  import { gsap } from "gsap";
-  import ScrollTrigger from "gsap/ScrollTrigger";
-
-  gsap.registerPlugin(ScrollTrigger);
-
-  const SCROLL_PER_BLOCK = 0.82;
-  const END_HOLD = 0.72;
-  const END_EXIT = 0.32;
-  const END_DWELL = END_HOLD + END_EXIT;
-  const BLOCK_GAP = 32;
-  const MOBILE_MQ = "(max-width: 899px)";
-  const NARROW_MQ = "(max-width: 600px)";
-  const DESKTOP_EXPAND_MQ = "(min-width: 1250px)";
-  const MOBILE_PHANTOM_STEPS = 2;
-  const MOBILE_PHANTOM_SCROLL = 0.22;
-
-  class UniqueFeaturesChain extends HTMLElement {
-    constructor() {
-      super();
-      this.scrollTriggers = [];
-      this.navClickHandlers = [];
-      this.pointClickHandlers = [];
-      this.lastActiveIndex = -1;
-      this.suppressLayoutRefresh = false;
-      this.resizeObserver = null;
-      this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-      this.mobileLayout = window.matchMedia(MOBILE_MQ);
-      this.narrowLayout = window.matchMedia(NARROW_MQ);
-      this.desktopExpandLayout = window.matchMedia(DESKTOP_EXPAND_MQ);
-      this.onLayoutModeChange = () => this.setup();
-    }
-
+  class UniqueFeaturesPanel extends HTMLElement {
     connectedCallback() {
-      this.reducedMotion.addEventListener("change", this.onLayoutModeChange);
-      this.mobileLayout.addEventListener("change", this.onLayoutModeChange);
-      this.narrowLayout.addEventListener("change", this.onLayoutModeChange);
-      this.desktopExpandLayout.addEventListener("change", this.onLayoutModeChange);
-      this.setup();
+      this.navButtons = Array.from(this.querySelectorAll("[data-nav]"));
+      this.railButtons = Array.from(this.querySelectorAll("[data-rail]"));
+      this.cards = Array.from(this.querySelectorAll("[data-card]"));
+      this.featuresView = this.querySelector(".features-view");
+      this.cardArrowPrev = this.querySelector("[data-card-arrow='prev']");
+      this.cardArrowNext = this.querySelector("[data-card-arrow='next']");
+      this.railFill = this.querySelector(".features-rail__fill");
+      this.featureIndexById = new Map(
+        this.cards.map((card, index) => [card.id, index]),
+      );
+      this.activeIndex = 0;
+      this.syncingHash = false;
+      this.isTransitioning = false;
+      this.transitionTimer = 0;
+      this.transitionMs = 620;
+      this.prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      this.isHovering = false;
+      this.wheelLocked = false;
+      this.wheelUnlockTimer = 0;
+
+      this.onWheel = (event) => {
+        if (!this.isHovering || this.wheelLocked || this.isTransitioning) return;
+
+        if (event.deltaY > 8 && this.activeIndex < this.cards.length - 1) {
+          event.preventDefault();
+          this.stepCard(1);
+        } else if (event.deltaY < -8 && this.activeIndex > 0) {
+          event.preventDefault();
+          this.stepCard(-1);
+        }
+      };
+
+      this.onKeydown = (event) => {
+        if (event.key === "ArrowDown") {
+          event.preventDefault();
+          this.stepCard(1);
+        } else if (event.key === "ArrowUp") {
+          event.preventDefault();
+          this.stepCard(-1);
+        }
+      };
+
+      this.navDropdown = this.querySelector(".features-nav-dropdown");
+      this.navDropdownTrigger = this.querySelector(".features-nav-dropdown__trigger");
+      this.navDropdownLabel = this.querySelector(".features-nav-dropdown__label");
+      this.navDropdownOptions = Array.from(this.querySelectorAll("[data-nav-mobile]"));
+
+      this.onDocumentClick = (event) => {
+        if (!this.navDropdown?.contains(event.target)) {
+          this.closeNavDropdown();
+        }
+      };
+
+      this.navDropdownTrigger?.addEventListener("click", () => {
+        const isOpen = this.navDropdown?.classList.toggle("is-open");
+        this.navDropdownTrigger?.setAttribute("aria-expanded", isOpen ? "true" : "false");
+      });
+
+      this.navDropdownOptions.forEach((button) => {
+        button.addEventListener("click", (event) => {
+          event.preventDefault();
+          this.activate(Number(button.dataset.navMobile));
+          this.closeNavDropdown();
+        });
+      });
+
+      document.addEventListener("click", this.onDocumentClick);
+
+      this.onHashChange = () => {
+        if (this.syncingHash) return;
+        this.activateFromHash({ scroll: true, animate: false });
+      };
+
+      this.navButtons.forEach((button) => {
+        button.addEventListener("click", (event) => {
+          event.preventDefault();
+          this.activate(Number(button.dataset.nav));
+        });
+      });
+
+      this.railButtons.forEach((button) => {
+        button.addEventListener("click", () => this.activate(Number(button.dataset.rail)));
+      });
+
+      this.cardArrowPrev?.addEventListener("click", () => this.stepCard(-1));
+      this.cardArrowNext?.addEventListener("click", () => this.stepCard(1));
+
+      this.featuresView?.addEventListener("mouseenter", () => {
+        this.isHovering = true;
+      });
+      this.featuresView?.addEventListener("mouseleave", () => {
+        this.isHovering = false;
+      });
+      this.featuresView?.addEventListener("wheel", this.onWheel, { passive: false });
+      this.featuresView?.addEventListener("keydown", this.onKeydown);
+
+      this.setupPointExpansion();
+      this.activateFromHash({ scroll: Boolean(window.location.hash), animate: false });
+      window.addEventListener("hashchange", this.onHashChange);
     }
 
     disconnectedCallback() {
-      this.reducedMotion.removeEventListener("change", this.onLayoutModeChange);
-      this.mobileLayout.removeEventListener("change", this.onLayoutModeChange);
-      this.narrowLayout.removeEventListener("change", this.onLayoutModeChange);
-      this.desktopExpandLayout.removeEventListener("change", this.onLayoutModeChange);
-      this.teardown();
+      this.featuresView?.removeEventListener("wheel", this.onWheel);
+      this.featuresView?.removeEventListener("keydown", this.onKeydown);
+      document.removeEventListener("click", this.onDocumentClick);
+      window.removeEventListener("hashchange", this.onHashChange);
+      clearTimeout(this.wheelUnlockTimer);
+      clearTimeout(this.transitionTimer);
     }
 
-    teardown() {
-      this.scrollTriggers.forEach((trigger) => trigger.kill());
-      this.scrollTriggers = [];
-      this.navClickHandlers.forEach(({ el, handler }) =>
-        el.removeEventListener("click", handler)
-      );
-      this.navClickHandlers = [];
-      this.pointClickHandlers.forEach(({ el, handler }) =>
-        el.removeEventListener("click", handler)
-      );
-      this.pointClickHandlers = [];
-      this.lastActiveIndex = -1;
-      this.resizeObserver?.disconnect();
-      this.resizeObserver = null;
+    getIndexFromHash(hash = window.location.hash) {
+      const slug = hash.replace(/^#/, "");
+      if (!slug || slug === "unique") return -1;
+      const featureId = slug.startsWith("unique-") ? slug : `unique-${slug}`;
+      return this.featureIndexById.get(featureId) ?? -1;
     }
 
-    useStaticLayout() {
-      return this.reducedMotion.matches;
+    updateHash(index) {
+      const card = this.cards[index];
+      if (!card?.id) return;
+
+      const nextHash = `#${card.id}`;
+      if (window.location.hash === nextHash) return;
+
+      this.syncingHash = true;
+      history.replaceState(null, "", `${window.location.pathname}${window.location.search}${nextHash}`);
+      this.syncingHash = false;
     }
 
-    applyStaticLayout(blocks) {
-      this.classList.add("is-static");
-
-      const track = this.querySelector(".chain-track");
-      const viewport = this.querySelector(".chain-viewport");
-      const stage = this.querySelector(".chain-stage");
-
-      blocks.forEach((block) => {
-        block.classList.add("is-active");
-        block.classList.remove("is-synced", "is-pending");
-        block.setAttribute("aria-hidden", "false");
-        gsap.set(block, { clearProps: "opacity,scale,transform,pointerEvents" });
-      });
-
-      if (track) gsap.set(track, { clearProps: "transform,y" });
-      if (stage) gsap.set(stage, { clearProps: "opacity,transform" });
-      if (viewport) {
-        viewport.style.width = "";
-        viewport.style.height = "";
-        viewport.style.paddingBottom = "";
-        viewport.classList.remove("is-last-active");
-      }
-      const stageBody = this.querySelector(".chain-stage__body");
-      if (stageBody) stageBody.style.removeProperty("--chain-viewport-height");
-      const tailSpacer = this.querySelector(".chain-tail-spacer");
-      if (tailSpacer) tailSpacer.style.height = "0";
-      if (stage) stage.classList.remove("is-last-active");
+    scrollToFeature(index) {
+      const target = this.cards[index] ?? this;
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
-    setup() {
-      this.teardown();
-
-      const blocks = this.querySelectorAll(".chain-block");
-      const stage = this.querySelector(".chain-stage");
-
-      if (stage) {
-        stage.classList.remove("is-last-active", "is-exiting");
-      }
-
-      if (this.useStaticLayout()) {
-        this.applyStaticLayout(blocks);
-        return;
-      }
-
-      this.classList.remove("is-static");
-
-      const scrollPin = this.querySelector(".chain-scroll-pin");
-      const pinTrack = this.querySelector(".chain-pin-track");
-      const exitTrack = this.querySelector(".chain-exit-track");
-      const stageBody = this.querySelector(".chain-stage__body");
-      const viewport = this.querySelector(".chain-viewport");
-      const track = this.querySelector(".chain-track");
-      const sectionBackdrop = this.querySelector(".unique-section__backdrop");
-      const sectionOverlay = this.querySelector(".unique-section__overlay");
-      const railFill = this.querySelector(".chain-rail__fill");
-      const trackFill = this.querySelector(".chain-track__fill");
-      const nodes = this.querySelectorAll(".chain-rail__node");
-      const connectors = this.querySelectorAll(".chain-connector");
-      const indicators = this.querySelectorAll(".chain-nav__item");
-
-      if (!scrollPin || !pinTrack || !exitTrack || !stage || !stageBody || !viewport || !track || !blocks.length) {
-        return;
-      }
-
-      const blockCount = blocks.length;
-      let blockOffsets = [];
-      let layoutBlockHeights = [];
-      let tailLift = 0;
-      let chainTrigger = null;
-      let exitTrigger = null;
-      const tailSpacer = this.querySelector(".chain-tail-spacer");
-
-      const getContentDistance = () => {
-        if (!this.mobileLayout.matches) return (blockCount - 1) * SCROLL_PER_BLOCK;
-        return (blockCount - 1) * SCROLL_PER_BLOCK + MOBILE_PHANTOM_STEPS * MOBILE_PHANTOM_SCROLL;
-      };
-
-      const progressToFloatIndex = (progress) => {
-        if (!this.mobileLayout.matches) return progress * (blockCount - 1);
-
-        const realDistance = (blockCount - 1) * SCROLL_PER_BLOCK;
-        const phantomDistance = MOBILE_PHANTOM_STEPS * MOBILE_PHANTOM_SCROLL;
-        const totalDistance = realDistance + phantomDistance;
-        const scrolled = progress * totalDistance;
-        const lastIdx = blockCount - 1;
-
-        if (scrolled <= realDistance) {
-          return scrolled / SCROLL_PER_BLOCK;
-        }
-
-        const phantomScrolled = scrolled - realDistance;
-        return lastIdx + Math.min(MOBILE_PHANTOM_STEPS, phantomScrolled / MOBILE_PHANTOM_SCROLL);
-      };
-
-      const blockIndexToProgress = (index) => {
-        if (!this.mobileLayout.matches) return index / (blockCount - 1);
-
-        const totalDistance = getContentDistance();
-        if (index >= blockCount - 1) return 1;
-        return (index * SCROLL_PER_BLOCK) / totalDistance;
-      };
-
-      const updateLayout = () => {
-        const bodyStyles = getComputedStyle(stageBody);
-        const padX = parseFloat(bodyStyles.paddingLeft) + parseFloat(bodyStyles.paddingRight);
-        const padY = parseFloat(bodyStyles.paddingTop) + parseFloat(bodyStyles.paddingBottom);
-
-        const isMobile = this.mobileLayout.matches;
-        const isNarrow = this.narrowLayout.matches;
-        const navSpace = isMobile ? 0 : 120;
-        const railSpace = isMobile ? 0 : 48;
-        const minAvailable = isMobile ? 240 : 280;
-        const availableWidth = Math.max(stageBody.clientWidth - padX - navSpace - railSpace, minAvailable);
-        const availableHeight = Math.max(stageBody.clientHeight - padY, 280);
-
-        const width = Math.round(Math.min(availableWidth * (isMobile ? 0.96 : 0.98), isMobile ? 620 : 1000));
-
-        layoutBlockHeights = Array.from(blocks, (block) => block.offsetHeight);
-
-        let maxBlockHeight = 0;
-        layoutBlockHeights.forEach((height) => {
-          maxBlockHeight = Math.max(maxBlockHeight, height);
-        });
-
-        const contentBuffer = isMobile ? (isNarrow ? 20 : 72) : 196;
-        const heightCap = isMobile ? (isNarrow ? 0.98 : 0.92) : 0.95;
-        const viewportHeight = Math.round(Math.min(
-          Math.max(maxBlockHeight + contentBuffer, availableHeight * (isMobile ? (isNarrow ? 0.84 : 0.78) : 0.86)),
-          availableHeight * heightCap
-        ));
-
-        viewport.style.width = `${width}px`;
-        viewport.style.height = `${viewportHeight}px`;
-        viewport.style.paddingBottom = isNarrow ? "0.5rem" : isMobile ? "1.25rem" : "3rem";
-        stageBody.style.setProperty("--chain-viewport-height", `${viewportHeight}px`);
-
-        const lastBlock = blocks[blockCount - 1];
-        const lastHeight = lastBlock?.offsetHeight || 0;
-        const centeredTop = viewportHeight / 2 - lastHeight / 2;
-        const targetTop = Math.min(isNarrow ? 6 : 10, viewportHeight - lastHeight - (isNarrow ? 14 : 22));
-        tailLift = isMobile
-          ? Math.max(0, Math.round(centeredTop - targetTop), isNarrow ? 200 : 150)
-          : 0;
-
-        if (tailSpacer) {
-          tailSpacer.style.height = isMobile ? `${tailLift}px` : "0px";
-        }
-
-        blockOffsets = [];
-        let cumulativeOffset = 0;
-        blocks.forEach((block, index) => {
-          blockOffsets.push(cumulativeOffset);
-          cumulativeOffset += layoutBlockHeights[index] ?? block.offsetHeight;
-          const connector = connectors[index];
-          if (connector) {
-            cumulativeOffset += connector.offsetHeight;
-          } else if (index < blockCount - 1) {
-            cumulativeOffset += BLOCK_GAP;
-          }
-        });
-
-        scrollPin.style.setProperty("--block-count", String(blockCount));
-        scrollPin.style.setProperty("--scroll-steps", String(getContentDistance() / SCROLL_PER_BLOCK));
-        scrollPin.style.setProperty("--scroll-per-block", `${Math.round(SCROLL_PER_BLOCK * 100)}svh`);
-        scrollPin.style.setProperty("--end-dwell", `${Math.round(END_DWELL * 100)}svh`);
-      };
-
-      const getContentRatio = () => {
-        const contentDistance = getContentDistance();
-        const totalDistance = contentDistance + END_DWELL;
-        return totalDistance > 0 ? contentDistance / totalDistance : 1;
-      };
-
-      const getTrackOffset = (floatIndex) => {
-        const lastIdx = blockCount - 1;
-        if (!this.mobileLayout.matches || floatIndex <= lastIdx) {
-          return getInterpolatedValue(Math.min(floatIndex, lastIdx), (i) => blockOffsets[i] ?? 0);
-        }
-        const phantomT = Math.min(MOBILE_PHANTOM_STEPS, floatIndex - lastIdx);
-        const phantomProgress = phantomT / MOBILE_PHANTOM_STEPS;
-        return blockOffsets[lastIdx] + tailLift * phantomProgress;
-      };
-
-      const getInterpolatedValue = (floatIndex, getValue) => {
-        const lower = Math.floor(floatIndex);
-        const upper = Math.min(Math.ceil(floatIndex), blockCount - 1);
-        if (lower === upper) return getValue(lower);
-        const t = floatIndex - lower;
-        return getValue(lower) + (getValue(upper) - getValue(lower)) * t;
-      };
-
-      const getExitProgress = (rawProgress) => {
-        const contentRatio = getContentRatio();
-        const dwellSpan = 1 - contentRatio;
-        if (dwellSpan <= 0 || END_EXIT <= 0) return 0;
-        const dwellProgress = Math.min(1, Math.max(0, (rawProgress - contentRatio) / dwellSpan));
-        const holdFraction = END_HOLD / END_DWELL;
-        if (dwellProgress <= holdFraction) return 0;
-        const exitSpan = 1 - holdFraction;
-        return Math.min(1, (dwellProgress - holdFraction) / exitSpan);
-      };
-
-      const updateScrollState = (progress, rawProgress = progress) => {
-        const floatIndex = progressToFloatIndex(progress);
-        const activeIndex = Math.min(Math.round(floatIndex), blockCount - 1);
-
-        if (this.lastActiveIndex !== activeIndex) {
-          this.querySelectorAll(".point.is-expanded").forEach((point) => {
-            point.classList.remove("is-expanded");
-          });
-          this.querySelectorAll(".chain-block.has-expanded-point").forEach((block) => {
-            block.classList.remove("has-expanded-point");
-          });
-          this.lastActiveIndex = activeIndex;
-        }
-        const exitProgress = getExitProgress(rawProgress);
-        const isExiting = exitProgress > 0;
-        const isMobile = this.mobileLayout.matches;
-        const isNarrow = this.narrowLayout.matches;
-
-        const viewportHeight = viewport.clientHeight;
-        const blockOffset = getTrackOffset(floatIndex);
-        const blockHeight = getInterpolatedValue(
-          Math.min(floatIndex, blockCount - 1),
-          (i) => layoutBlockHeights[i] ?? (blocks[i]?.offsetHeight || 0)
-        );
-
-        let centerY = Math.max(0, viewportHeight / 2 - blockHeight / 2);
-        const isLastBlockActive = floatIndex >= blockCount - 1 && !isExiting;
-
-        if (isLastBlockActive) {
-          const topInset = isNarrow ? 6 : 10;
-          const bottomInset = isNarrow ? 14 : 22;
-          centerY = Math.min(topInset, viewportHeight - blockHeight - bottomInset);
-        }
-
-        viewport.classList.toggle("is-last-active", isLastBlockActive);
-        stage?.classList.toggle("is-last-active", isLastBlockActive);
-
-        gsap.set(track, { y: centerY - blockOffset });
-
-        const railProgress = Math.min(1, floatIndex / (blockCount - 1)) * (1 - exitProgress);
-        if (railFill) railFill.style.height = `${railProgress * 100}%`;
-        if (trackFill) trackFill.style.height = `${railProgress * 100}%`;
-
-        const uiOpacity = 1 - exitProgress;
-
-        nodes.forEach((node, i) => {
-          const isLit = i <= activeIndex && !isExiting;
-          const isNodeActive = i === activeIndex && !isExiting;
-          node.classList.toggle("is-lit", isLit);
-          node.classList.toggle("is-active", isNodeActive);
-          gsap.set(node, { opacity: uiOpacity });
-        });
-
-        indicators.forEach((indicator, i) => {
-          const isIndicatorActive = i === activeIndex && !isExiting;
-          indicator.classList.toggle("is-active", isIndicatorActive);
-          if (isIndicatorActive) {
-            indicator.setAttribute("aria-current", "true");
-          } else {
-            indicator.removeAttribute("aria-current");
-          }
-          gsap.set(indicator, { opacity: uiOpacity });
-        });
-
-        connectors.forEach((connector, i) => {
-          const isLit = floatIndex > i + 0.45 && !isExiting;
-          const isConnectorActive = floatIndex > i + 0.15 && floatIndex < i + 0.9 && !isExiting;
-          connector.classList.toggle("is-lit", isLit);
-          connector.classList.toggle("is-active", isConnectorActive);
-          gsap.set(connector, { opacity: uiOpacity });
-        });
-
-        blocks.forEach((block, i) => {
-          const dist = Math.abs(i - floatIndex);
-          const isLastBlock = i === blockCount - 1;
-          const isActive = i === activeIndex && !isExiting;
-          const isSynced = i < activeIndex || (isLastBlock && isExiting);
-
-          block.classList.toggle("is-active", isActive);
-          block.classList.toggle("is-synced", isSynced);
-          block.classList.toggle("is-pending", i > activeIndex);
-          block.setAttribute("aria-hidden", isActive ? "false" : "true");
-
-          const statusEl = block.querySelector(".chain-block__status");
-          if (statusEl) {
-            statusEl.textContent = isActive ? "LIVE" : isSynced ? "SYNCED" : "PENDING";
-          }
-
-          let opacity = isActive ? 1 : Math.max(0.2, 0.55 - dist * 0.28);
-          let scale = isActive ? 1 : Math.max(0.92, 1 - dist * 0.04);
-
-          if (isLastBlock && isExiting) {
-            const syncedOpacity = Math.max(0.2, 0.55 - 0.28);
-            const syncedScale = Math.max(0.92, 1 - 0.04);
-            const clearProgress = Math.min(1, exitProgress * 1.15);
-            opacity = syncedOpacity * (1 - clearProgress);
-            scale = syncedScale - (syncedScale - 0.92) * clearProgress;
-          }
-
-          gsap.set(block, { opacity, scale, pointerEvents: isActive ? "auto" : "none" });
-        });
-
-        gsap.set(stage, { opacity: uiOpacity });
-        if (sectionBackdrop) gsap.set(sectionBackdrop, { opacity: 1 });
-        if (sectionOverlay) gsap.set(sectionOverlay, { opacity: 1 });
-      };
-
-      const syncCurrentScrollState = () => {
-        if (exitTrigger?.isActive) {
-          const contentRatio = getContentRatio();
-          updateScrollState(1, contentRatio + exitTrigger.progress * (1 - contentRatio));
-        } else if (chainTrigger) {
-          const contentRatio = getContentRatio();
-          updateScrollState(chainTrigger.progress, chainTrigger.progress * contentRatio);
+    activateFromHash({ scroll = false, animate = true } = {}) {
+      const index = this.getIndexFromHash();
+      if (index < 0) {
+        if (window.location.hash === "#unique") {
+          this.scrollIntoView({ behavior: "smooth", block: "start" });
         } else {
-          updateScrollState(0);
+          this.update();
         }
-      };
+        return;
+      }
 
-      updateLayout();
-      requestAnimationFrame(() => {
-        updateLayout();
-        syncCurrentScrollState();
+      if (index === this.activeIndex && !scroll) {
+        this.update();
+        return;
+      }
+
+      if (!animate || this.prefersReducedMotion) {
+        this.activeIndex = index;
+        this.update();
+        this.updateHash(index);
+        if (scroll) this.scrollToFeature(index);
+        return;
+      }
+
+      this.activate(index);
+      if (scroll) {
+        window.requestAnimationFrame(() => this.scrollToFeature(index));
+      }
+    }
+
+    closeNavDropdown() {
+      this.navDropdown?.classList.remove("is-open");
+      this.navDropdownTrigger?.setAttribute("aria-expanded", "false");
+    }
+
+    activate(index, explicitDirection) {
+      const nextIndex = Math.max(0, Math.min(index, this.cards.length - 1));
+      if (nextIndex === this.activeIndex || this.isTransitioning) return;
+
+      if (this.prefersReducedMotion) {
+        this.activeIndex = nextIndex;
+        this.update();
+        this.updateHash(nextIndex);
+        return;
+      }
+
+      const direction =
+        explicitDirection ?? (nextIndex > this.activeIndex ? 1 : nextIndex < this.activeIndex ? -1 : 0);
+      this.transitionTo(nextIndex, direction);
+    }
+
+    stepCard(delta) {
+      if (this.isTransitioning) return;
+      this.activate(this.activeIndex + delta, delta);
+
+      this.wheelLocked = true;
+      clearTimeout(this.wheelUnlockTimer);
+      this.wheelUnlockTimer = window.setTimeout(() => {
+        this.wheelLocked = false;
+      }, 720);
+    }
+
+    clearCardMotionClasses(card) {
+      card.classList.remove(
+        "is-leaving",
+        "is-leaving-to-top",
+        "is-leaving-to-bottom",
+        "is-entering",
+        "is-entering-from-top",
+        "is-entering-from-bottom",
+      );
+    }
+
+    transitionTo(nextIndex, direction) {
+      if (this.isTransitioning) return;
+
+      const prevIndex = this.activeIndex;
+      const outgoing = this.cards[prevIndex];
+      const incoming = this.cards[nextIndex];
+      if (!outgoing || !incoming) return;
+
+      this.isTransitioning = true;
+      this.activeIndex = nextIndex;
+
+      const leaveClass = direction > 0 ? "is-leaving-to-top" : "is-leaving-to-bottom";
+      const enterClass = direction > 0 ? "is-entering-from-bottom" : "is-entering-from-top";
+
+      this.clearCardMotionClasses(outgoing);
+      this.clearCardMotionClasses(incoming);
+
+      this.collapsePoints(outgoing);
+
+      outgoing.classList.remove("is-active");
+      outgoing.classList.add("is-leaving", leaveClass);
+      outgoing.removeAttribute("hidden");
+      outgoing.setAttribute("aria-hidden", "true");
+
+      incoming.classList.add("is-active", "is-entering", enterClass);
+      incoming.removeAttribute("hidden");
+      incoming.setAttribute("aria-hidden", "false");
+
+      this.syncChrome();
+
+      clearTimeout(this.transitionTimer);
+      this.transitionTimer = window.setTimeout(() => {
+        this.clearCardMotionClasses(outgoing);
+        outgoing.toggleAttribute("hidden", true);
+
+        this.clearCardMotionClasses(incoming);
+        incoming.classList.add("is-active");
+
+        this.isTransitioning = false;
+        this.updateHash(nextIndex);
+      }, this.transitionMs);
+    }
+
+    collapsePoints(card) {
+      card.classList.remove("has-expanded-point");
+      card.querySelectorAll(".point.is-expanded").forEach((point) => {
+        point.classList.remove("is-expanded");
       });
+    }
 
-      this.resizeObserver = new ResizeObserver(() => {
-        if (this.suppressLayoutRefresh) return;
-        updateLayout();
-        ScrollTrigger.refresh();
-        syncCurrentScrollState();
-      });
-      this.resizeObserver.observe(stageBody);
+    setupPointExpansion() {
+      this.cards.forEach((card) => {
+        card.querySelectorAll(".point").forEach((point) => {
+          const toggle = () => {
+            const wasExpanded = point.classList.contains("is-expanded");
+            this.collapsePoints(card);
 
-      const contentScrollDistance = () => getContentDistance() * window.innerHeight;
-      const exitScrollDistance = () => END_DWELL * window.innerHeight;
+            if (!wasExpanded) {
+              point.classList.add("is-expanded");
+              card.classList.add("has-expanded-point");
+            }
+          };
 
-      chainTrigger = ScrollTrigger.create({
-        trigger: pinTrack,
-        start: "top top",
-        end: () => `+=${contentScrollDistance()}`,
-        pin: stage,
-        pinSpacing: true,
-        scrub: true,
-        anticipatePin: 0,
-        invalidateOnRefresh: true,
-        onUpdate: (self) => {
-          const contentRatio = getContentRatio();
-          updateScrollState(self.progress, self.progress * contentRatio);
-        },
-      });
-      this.scrollTriggers.push(chainTrigger);
-
-      exitTrigger = ScrollTrigger.create({
-        trigger: exitTrack,
-        start: "top top",
-        end: () => `+=${exitScrollDistance()}`,
-        scrub: true,
-        invalidateOnRefresh: true,
-        onUpdate: (self) => {
-          const contentRatio = getContentRatio();
-          updateScrollState(1, contentRatio + self.progress * (1 - contentRatio));
-        },
-      });
-      this.scrollTriggers.push(exitTrigger);
-
-      const scrollToBlock = (index) => {
-        if (!chainTrigger || blockCount <= 1) return;
-
-        const clampedIndex = Math.max(0, Math.min(index, blockCount - 1));
-        const progress = blockIndexToProgress(clampedIndex);
-        ScrollTrigger.refresh();
-        const targetScroll =
-          chainTrigger.start + progress * (chainTrigger.end - chainTrigger.start);
-
-        window.scrollTo({ top: targetScroll, behavior: "smooth" });
-      };
-
-      indicators.forEach((indicator) => {
-        const handler = () => {
-          const index = Number(indicator.dataset.nav);
-          if (Number.isNaN(index)) return;
-          scrollToBlock(index);
-        };
-        indicator.addEventListener("click", handler);
-        this.navClickHandlers.push({ el: indicator, handler });
-      });
-
-      this.querySelectorAll(".point").forEach((point) => {
-        const handler = () => {
-          if (!this.mobileLayout.matches && !this.desktopExpandLayout.matches) return;
-
-          const block = point.closest(".chain-block");
-          if (!block?.classList.contains("is-active")) return;
-
-          this.suppressLayoutRefresh = true;
-
-          const wasExpanded = point.classList.contains("is-expanded");
-          block.querySelectorAll(".point.is-expanded").forEach((el) => {
-            el.classList.remove("is-expanded");
+          point.addEventListener("click", toggle);
+          point.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              toggle();
+            }
           });
-          block.classList.remove("has-expanded-point");
+        });
+      });
+    }
 
-          if (!wasExpanded) {
-            point.classList.add("is-expanded");
-            block.classList.add("has-expanded-point");
-          }
+    syncChrome() {
+      const lastIndex = Math.max(this.cards.length - 1, 1);
+      const progress = (this.activeIndex / lastIndex) * 100;
 
-          requestAnimationFrame(() => {
-            syncCurrentScrollState();
-            requestAnimationFrame(() => {
-              this.suppressLayoutRefresh = false;
-            });
-          });
-        };
-        point.addEventListener("click", handler);
-        this.pointClickHandlers.push({ el: point, handler });
+      this.navButtons.forEach((button, index) => {
+        const isActive = index === this.activeIndex;
+        button.classList.toggle("is-active", isActive);
+        if (isActive) {
+          button.setAttribute("aria-current", "true");
+        } else {
+          button.removeAttribute("aria-current");
+        }
       });
 
-      updateScrollState(0);
+      this.railButtons.forEach((button, index) => {
+        const isActive = index === this.activeIndex;
+        const isLit = index <= this.activeIndex;
+        button.classList.toggle("is-active", isActive);
+        button.classList.toggle("is-lit", isLit);
+        if (isActive) {
+          button.setAttribute("aria-current", "true");
+        } else {
+          button.removeAttribute("aria-current");
+        }
+      });
+
+      if (this.railFill) {
+        this.railFill.style.height = `${progress}%`;
+      }
+
+      if (this.navDropdownLabel) {
+        this.navDropdownLabel.textContent =
+          this.navDropdownOptions[this.activeIndex]?.dataset.label ?? "";
+      }
+
+      this.navDropdownOptions.forEach((button, index) => {
+        const isActive = index === this.activeIndex;
+        button.classList.toggle("is-active", isActive);
+        button.setAttribute("aria-selected", isActive ? "true" : "false");
+      });
+
+      if (this.cardArrowPrev) {
+        const atStart = this.activeIndex === 0;
+        this.cardArrowPrev.disabled = atStart;
+        this.cardArrowPrev.setAttribute("aria-disabled", atStart ? "true" : "false");
+      }
+
+      if (this.cardArrowNext) {
+        const atEnd = this.activeIndex >= this.cards.length - 1;
+        this.cardArrowNext.disabled = atEnd;
+        this.cardArrowNext.setAttribute("aria-disabled", atEnd ? "true" : "false");
+      }
+    }
+
+    update() {
+      this.cards.forEach((card, index) => {
+        const isActive = index === this.activeIndex;
+        this.clearCardMotionClasses(card);
+        card.classList.toggle("is-active", isActive);
+        card.toggleAttribute("hidden", !isActive);
+        card.setAttribute("aria-hidden", isActive ? "false" : "true");
+        if (!isActive) {
+          this.collapsePoints(card);
+        }
+      });
+
+      this.syncChrome();
     }
   }
 
-  customElements.define("unique-features-chain", UniqueFeaturesChain);
+  customElements.define("unique-features-panel", UniqueFeaturesPanel);
 </script>
 
 <style>
   .unique-section {
     position: relative;
     isolation: isolate;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: visible;
     margin-top: clamp(-2.5rem, -5vw, -4rem);
     margin-bottom: 0;
-    padding-block: clamp(2rem, 4vw, 3.25rem) 0;
+    padding-block: clamp(3rem, 6vw, 5rem);
+    background: var(--color-bg);
+    scroll-margin-top: 5.5rem;
   }
 
   .unique-section.section {
-    padding-block: clamp(2rem, 4vw, 3.25rem) 0;
+    padding-block: clamp(3rem, 6vw, 5rem);
   }
 
   .unique-section__backdrop {
     position: absolute;
     inset: 0;
-    bottom: -5rem;
     z-index: 0;
     background-color: transparent;
     background-image:
@@ -704,87 +574,69 @@ const categories = [
     position: absolute;
     inset: 0;
     z-index: 1;
-    background:
-      linear-gradient(to bottom, var(--color-bg) 0%, transparent 9%),
-      linear-gradient(to top, var(--color-bg) 0%, transparent 11%);
+    background: linear-gradient(to bottom, var(--color-bg) 0%, transparent 9%);
     pointer-events: none;
   }
 
   .unique-section__content {
     position: relative;
     z-index: 2;
-  }
-
-  .features-intro {
-    text-align: center;
-    margin: 0 auto clamp(1.25rem, 2.5vw, 2rem);
-    max-width: 800px;
-    padding-inline: var(--page-gutter);
-    flex-shrink: 0;
-  }
-
-  .features-intro h2 {
-    margin: 0.35rem 0 0.5rem;
-  }
-
-  .chain-scroll-pin {
-    --block-count: 7;
-    --scroll-per-block: 88svh;
-    --end-dwell: 93svh;
-    position: relative;
-  }
-
-  .chain-pin-track {
-    height: calc(var(--scroll-steps, calc(var(--block-count) - 1)) * var(--scroll-per-block));
-  }
-
-  .chain-tail-spacer {
-    flex-shrink: 0;
-    height: 0;
-    pointer-events: none;
-    visibility: hidden;
-  }
-
-  .chain-exit-track {
-    height: var(--end-dwell);
-  }
-
-  .chain-stage {
-    position: relative;
-    height: 100svh;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
     width: 100%;
     max-width: 1180px;
     margin-inline: auto;
     padding-inline: var(--page-gutter);
-    padding-top: clamp(0.5rem, 1.5vw, 1rem);
-    padding-bottom: clamp(1.25rem, 2.5vw, 2rem);
   }
 
-  .chain-stage__body {
-    flex: 1;
-    min-height: 0;
+  html.build-mark-on .unique-section[data-build]::after {
+    content: "unique-features · " attr(data-build);
+    position: absolute;
+    left: 50%;
+    bottom: 0.35rem;
+    translate: -50% 0;
+    z-index: 4;
+    pointer-events: none;
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    opacity: 0.65;
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--radius-full);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    background: rgba(1, 3, 10, 0.6);
+  }
+
+  .features-intro {
+    text-align: center;
+    margin: 0 auto clamp(1.5rem, 3vw, 2.25rem);
+    max-width: 800px;
+  }
+
+  .features-intro h2 {
+    margin: 0.35rem 0 0;
+  }
+
+  .features-layout {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
-    gap: clamp(0.5rem, 1.5vw, 1rem);
+    gap: clamp(0.75rem, 2vw, 1.25rem);
   }
 
-  .chain-rail {
+  .features-rail {
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: space-between;
-    height: var(--chain-viewport-height, min(72vh, 520px));
     width: 2rem;
-    flex-shrink: 0;
-    align-self: center;
+    min-height: 420px;
+    align-self: stretch;
+    padding-block: clamp(1.5rem, 3vw, 2.5rem);
   }
 
-  .chain-rail__track {
+  .features-rail__track {
     position: absolute;
     top: 0.5rem;
     bottom: 0.5rem;
@@ -796,15 +648,14 @@ const categories = [
     overflow: hidden;
   }
 
-  .chain-rail__fill {
+  .features-rail__fill {
     width: 100%;
     height: 0%;
     background: linear-gradient(to bottom, var(--color-brand), var(--color-accent));
     border-radius: inherit;
-    transition: height 0.15s ease;
   }
 
-  .chain-rail__nodes {
+  .features-rail__nodes {
     position: relative;
     z-index: 1;
     display: flex;
@@ -814,232 +665,305 @@ const categories = [
     width: 100%;
   }
 
-  .chain-rail__node {
+  .features-rail__node {
     width: 0.65rem;
     height: 0.65rem;
     margin-inline: auto;
+    padding: 0;
+    border: none;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.2);
-    border: 2px solid rgba(255, 255, 255, 0.15);
-    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, scale 0.2s ease;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+    cursor: pointer;
   }
 
-  .chain-rail__node.is-lit {
+  .features-rail__node.is-lit {
     background: var(--color-brand);
-    border-color: rgba(253, 185, 19, 0.5);
+    box-shadow: 0 0 0 2px rgba(253, 185, 19, 0.5);
   }
 
-  .chain-rail__node.is-active {
+  .features-rail__node.is-active {
     scale: 1.35;
-    box-shadow: 0 0 12px rgba(253, 185, 19, 0.65);
+    box-shadow:
+      0 0 0 2px rgba(253, 185, 19, 0.5),
+      0 0 12px rgba(253, 185, 19, 0.65);
   }
 
-  .chain-viewport {
-    position: relative;
-    overflow: hidden;
-    justify-self: center;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 4%, #000 94%, transparent 100%);
-    mask-image: linear-gradient(to bottom, transparent 0%, #000 4%, #000 94%, transparent 100%);
-    padding-bottom: 3rem;
+  .features-rail__node:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
   }
 
-  .chain-track {
-    position: relative;
+  .label-features {
+    margin: 0 0 0.5rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+
+  .features-nav-wrap {
     display: flex;
     flex-direction: column;
-    gap: 28px;
-    will-change: transform;
-    padding-bottom: 2rem;
-  }
-
-  .chain-track__line,
-  .chain-connector {
-    display: none;
-  }
-
-  .chain-track__line {
-    position: absolute;
-    left: 50%;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    transform: translateX(-50%);
-    z-index: 0;
-    pointer-events: none;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
-  .chain-track__fill {
-    width: 100%;
-    height: 0%;
-    background: linear-gradient(to bottom, var(--color-brand), var(--color-accent));
-    border-radius: inherit;
-  }
-
-  .chain-connector {
-    position: relative;
-    z-index: 1;
-    height: 28px;
     flex-shrink: 0;
-    align-items: center;
+    align-self: center;
     justify-content: center;
   }
 
-  .chain-connector__node {
-    width: 0.55rem;
-    height: 0.55rem;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    border: 2px solid rgba(255, 255, 255, 0.15);
-    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, scale 0.2s ease;
+  .features-card-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(0.65rem, 1.5vw, 1rem);
+    min-width: 0;
+    width: 100%;
+    max-width: 1000px;
+    justify-self: center;
+    padding-block: clamp(0.5rem, 1.5vw, 1rem);
   }
 
-  .chain-connector.is-lit .chain-connector__node {
-    background: var(--color-brand);
-    border-color: rgba(253, 185, 19, 0.5);
+  .features-card-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: var(--color-text-muted);
+    opacity: 0.45;
+    cursor: pointer;
+    transition:
+      color 0.2s ease,
+      opacity 0.2s ease,
+      transform 0.2s ease;
   }
 
-  .chain-connector.is-active .chain-connector__node {
-    scale: 1.35;
-    box-shadow: 0 0 12px rgba(253, 185, 19, 0.65);
+  .features-card-arrow::before {
+    content: "";
+    width: 0.42rem;
+    height: 0.42rem;
+    border-top: 1.5px solid currentColor;
+    border-left: 1.5px solid currentColor;
   }
 
-  .chain-block {
-    position: relative;
-    z-index: 1;
-    flex-shrink: 0;
+  .features-card-arrow--prev::before {
+    transform: rotate(45deg);
+    margin-top: 0.12rem;
+  }
+
+  .features-card-arrow--next::before {
+    transform: rotate(225deg);
+    margin-bottom: 0.12rem;
+  }
+
+  @media (hover: hover) {
+    .features-card-arrow:hover:not(:disabled) {
+      opacity: 0.85;
+      color: var(--color-text);
+      transform: translateY(var(--card-arrow-shift, 0));
+    }
+
+    .features-card-arrow--prev:hover:not(:disabled) {
+      --card-arrow-shift: -1px;
+    }
+
+    .features-card-arrow--next:hover:not(:disabled) {
+      --card-arrow-shift: 1px;
+    }
+  }
+
+  .features-card-arrow:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+    opacity: 1;
+  }
+
+  .features-card-arrow:disabled {
+    opacity: 0.15;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  @keyframes featureCardEnterFromBottom {
+    0% {
+      opacity: 0;
+      transform: translateY(5rem) scale(0.94);
+      filter: blur(6px);
+    }
+    55% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+  }
+
+  @keyframes featureCardEnterFromTop {
+    0% {
+      opacity: 0;
+      transform: translateY(-5rem) scale(0.94);
+      filter: blur(6px);
+    }
+    55% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+  }
+
+  @keyframes featureCardLeaveToTop {
+    0% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+    45% {
+      opacity: 0.92;
+      transform: translateY(-4.5rem) scale(0.97);
+      filter: blur(0);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-8.5rem) scale(0.9);
+      filter: blur(7px);
+    }
+  }
+
+  @keyframes featureCardLeaveToBottom {
+    0% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+    45% {
+      opacity: 0.92;
+      transform: translateY(4.5rem) scale(0.97);
+      filter: blur(0);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(8.5rem) scale(0.9);
+      filter: blur(7px);
+    }
+  }
+
+  .features-view {
+    display: grid;
+    min-width: 0;
+    width: 100%;
+    outline: none;
+    overflow: visible;
+    padding-block: clamp(4.5rem, 9vw, 7rem);
+    align-content: center;
+  }
+
+  @media (hover: hover) {
+    .features-view:hover {
+      cursor: ns-resize;
+    }
+  }
+
+  .feature-card {
+    grid-area: 1 / 1;
     display: flex;
     flex-direction: column;
     gap: clamp(0.5rem, 1vw, 0.75rem);
     padding: clamp(0.85rem, 1.6vw, 1.15rem);
     border-radius: var(--radius-md);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-left: 3px solid rgba(255, 255, 255, 0.15);
+    border-left: 3px solid var(--color-brand);
     background: #0c1222;
-    box-shadow: 0 20px 40px rgba(2, 6, 23, 0.45);
-    transform-origin: center center;
-  }
-
-  .chain-block.is-active {
-    border-left-color: var(--color-brand);
     box-shadow:
       0 28px 56px rgba(2, 6, 23, 0.55),
       0 0 0 1px rgba(253, 185, 19, 0.15);
+    will-change: transform, opacity;
+    scroll-margin-top: 5.5rem;
   }
 
-  .chain-block.is-synced {
-    border-left-color: rgba(56, 189, 248, 0.45);
+  .feature-card[hidden]:not(.is-leaving) {
+    display: none;
   }
 
-  .chain-block__meta {
+  .feature-card.is-leaving {
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .feature-card.is-entering {
+    z-index: 2;
+  }
+
+  .feature-card.is-entering-from-bottom {
+    animation: featureCardEnterFromBottom 0.62s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .feature-card.is-entering-from-top {
+    animation: featureCardEnterFromTop 0.62s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .feature-card.is-leaving-to-top {
+    animation: featureCardLeaveToTop 0.62s cubic-bezier(0.4, 0, 0.85, 0.2) forwards;
+  }
+
+  .feature-card.is-leaving-to-bottom {
+    animation: featureCardLeaveToBottom 0.62s cubic-bezier(0.4, 0, 0.85, 0.2) forwards;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .feature-card.is-entering-from-bottom,
+    .feature-card.is-entering-from-top,
+    .feature-card.is-leaving-to-top,
+    .feature-card.is-leaving-to-bottom {
+      animation: none;
+    }
+  }
+
+  .feature-card__meta {
     display: flex;
     align-items: center;
-    gap: 0.65rem;
+    justify-content: space-between;
+    gap: 0.75rem;
     flex-wrap: wrap;
     font-size: 0.72rem;
     letter-spacing: 0.04em;
     text-transform: uppercase;
   }
 
-  .chain-block__height {
+  .feature-card__meta-start {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  .feature-card__height {
     font-weight: 700;
     color: var(--color-brand);
     font-family: var(--font-mono);
   }
 
-  .chain-block__hash {
+  .feature-card__hash {
     color: var(--color-text-muted);
     font-family: var(--font-mono);
     font-size: 0.68rem;
     text-transform: none;
   }
 
-  .chain-block__status {
-    margin-left: auto;
-    padding: 0.15rem 0.5rem;
-    border-radius: var(--radius-full);
-    font-size: 0.62rem;
-    font-weight: 700;
-    background: rgba(255, 255, 255, 0.06);
-    color: var(--color-text-muted);
-  }
-
-  .chain-block.is-active .chain-block__status {
-    background: rgba(253, 185, 19, 0.15);
-    color: var(--color-brand);
-  }
-
-  .chain-block.is-synced .chain-block__status {
-    background: rgba(56, 189, 248, 0.12);
-    color: var(--color-accent);
-  }
-
-  .chain-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-    width: 6.5rem;
-    flex-shrink: 0;
-  }
-
-  .chain-nav__item {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-    width: 100%;
-    padding: 0.3rem 0.45rem;
-    border-radius: var(--radius-full);
-    border: 1px solid transparent;
-    background: transparent;
-    color: var(--color-text-muted);
-    font: inherit;
-    font-size: 0.68rem;
-    font-weight: 600;
-    text-align: left;
-    cursor: pointer;
-    transition:
-      color 0.2s ease,
-      border-color 0.2s ease,
-      background 0.2s ease;
-  }
-
-  @media (hover: hover) {
-    .chain-nav__item:hover:not(.is-active) {
-      color: var(--color-text);
-      border-color: rgba(255, 255, 255, 0.08);
-      background: rgba(8, 12, 24, 0.35);
-    }
-  }
-
-  .chain-nav__item:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
-  }
-
-  .chain-nav__dot {
-    flex-shrink: 0;
-    width: 0.4rem;
-    height: 0.4rem;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-  }
-
-  .chain-nav__item.is-active {
-    color: var(--color-text);
-    border-color: rgba(56, 189, 248, 0.25);
-    background: rgba(8, 12, 24, 0.55);
-  }
-
-  .chain-nav__item.is-active .chain-nav__dot {
-    background: var(--color-accent);
-    box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
-  }
-
   .category-card__header {
-    flex-shrink: 0;
-    margin-bottom: 0;
     padding-bottom: clamp(0.55rem, 1.2vw, 0.75rem);
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   }
@@ -1051,14 +975,6 @@ const categories = [
     color: var(--color-text);
   }
 
-  .category-card__title-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-  }
-
   .category-card__badge {
     flex-shrink: 0;
     padding: 0.2rem 0.7rem;
@@ -1068,6 +984,13 @@ const categories = [
     text-transform: uppercase;
     letter-spacing: 0.06em;
     border: 1px solid transparent;
+  }
+
+  .category-card__badge--live {
+    background: rgba(253, 185, 19, 0.18);
+    color: var(--color-brand);
+    border-color: rgba(253, 185, 19, 0.45);
+    box-shadow: 0 0 12px rgba(253, 185, 19, 0.12);
   }
 
   .category-card__badge--testnet {
@@ -1093,15 +1016,18 @@ const categories = [
     display: grid;
     gap: clamp(0.5rem, 0.9vw, 0.65rem);
     grid-template-columns: 1fr;
-    flex: 0 1 auto;
     align-content: start;
-    align-items: start;
   }
 
   @media (min-width: 900px) {
     .category-points {
       grid-template-columns: repeat(3, 1fr);
     }
+  }
+
+  .feature-card.has-expanded-point .category-points {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
   }
 
   .point {
@@ -1114,7 +1040,73 @@ const categories = [
     border-radius: var(--radius-md);
     background: rgba(10, 15, 28, 0.9);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    transition: transform 0.22s ease, border-color 0.22s ease, background 0.22s ease, box-shadow 0.22s ease;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      transform 0.22s ease,
+      border-color 0.22s ease,
+      background 0.22s ease,
+      box-shadow 0.22s ease,
+      padding 0.22s ease,
+      opacity 0.22s ease,
+      max-height 0.22s ease;
+  }
+
+  .point__title,
+  .point__copy,
+  .point__icon {
+    transition:
+      color 0.22s ease,
+      font-size 0.22s ease,
+      line-height 0.22s ease,
+      width 0.22s ease,
+      height 0.22s ease,
+      transform 0.22s ease;
+  }
+
+  .point:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  .feature-card.has-expanded-point .point:not(.is-expanded) {
+    max-height: 2.35rem;
+    opacity: 0.5;
+    overflow: hidden;
+    gap: 0;
+    padding-block: 0.45rem;
+    padding-inline: 0.65rem;
+  }
+
+  .feature-card.has-expanded-point .point:not(.is-expanded) .point__copy {
+    display: none;
+  }
+
+  .point.is-expanded {
+    z-index: 2;
+    max-height: none;
+    padding: 0.85rem 0.8rem;
+    border-color: rgba(253, 185, 19, 0.45);
+    background: rgba(14, 22, 40, 0.98);
+    box-shadow: inset 0 0 0 1px rgba(253, 185, 19, 0.12);
+    opacity: 1;
+    transform: scale(1.02);
+  }
+
+  .point.is-expanded .point__title {
+    font-size: 1rem;
+    color: var(--color-brand);
+  }
+
+  .point.is-expanded .point__icon {
+    width: 1.45rem;
+    height: 1.45rem;
+  }
+
+  .point.is-expanded .point__copy {
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: var(--color-text);
   }
 
   @media (hover: hover) {
@@ -1137,6 +1129,53 @@ const categories = [
     .point:hover .point__icon {
       transform: scale(1.08);
     }
+
+    .feature-card.has-expanded-point .point:not(.is-expanded):hover {
+      transform: none;
+      opacity: 0.65;
+      border-color: rgba(255, 255, 255, 0.08);
+      background: rgba(10, 15, 28, 0.9);
+      box-shadow: none;
+    }
+
+    .feature-card.has-expanded-point .point:not(.is-expanded):hover .point__title {
+      color: var(--color-text);
+    }
+
+    .point.is-expanded:hover {
+      transform: scale(1.04);
+      border-color: rgba(253, 185, 19, 0.55);
+    }
+
+    .point.is-expanded:hover .point__icon {
+      transform: scale(1);
+    }
+  }
+
+  @media (min-width: 900px) {
+    .feature-card.has-expanded-point .point:not(.is-expanded) {
+      max-height: 2.5rem;
+    }
+
+    .point.is-expanded {
+      padding: clamp(1rem, 1.4vw, 1.25rem);
+      box-shadow:
+        0 18px 36px rgba(2, 6, 23, 0.5),
+        inset 0 0 0 1px rgba(253, 185, 19, 0.12);
+    }
+
+    .point.is-expanded .point__title {
+      font-size: 1.15rem;
+    }
+
+    .point.is-expanded .point__icon {
+      width: 1.65rem;
+      height: 1.65rem;
+    }
+
+    .point.is-expanded .point__copy {
+      font-size: 1rem;
+    }
   }
 
   .point__title {
@@ -1147,7 +1186,6 @@ const categories = [
     font-size: 0.92rem;
     font-weight: 600;
     color: var(--color-text);
-    transition: color 0.22s ease;
   }
 
   .point__icon {
@@ -1157,7 +1195,6 @@ const categories = [
     width: 1.35rem;
     height: 1.35rem;
     flex-shrink: 0;
-    transition: transform 0.22s ease;
   }
 
   .point__icon :global(svg) {
@@ -1166,17 +1203,14 @@ const categories = [
     height: 100%;
   }
 
-  .point__icon--asset {
+  .point__icon .point__icon--asset {
+    width: 100%;
+    height: 100%;
     object-fit: contain;
   }
 
   .point__icon--slashed {
     position: relative;
-  }
-
-  .point__icon--slashed .point__icon--asset {
-    width: 100%;
-    height: 100%;
   }
 
   .point__icon--slashed::after {
@@ -1188,7 +1222,7 @@ const categories = [
     height: 2px;
     background: #fdb913;
     border-radius: 1px;
-    transform: translate(-50%, -50%) rotate(-45deg);
+    transform: translate(-50%, -50%) rotate(45deg);
     pointer-events: none;
   }
 
@@ -1197,547 +1231,431 @@ const categories = [
     color: var(--color-text-muted);
     line-height: 1.45;
     font-size: 0.82rem;
-    transition: color 0.22s ease;
   }
 
-  .is-static .chain-pin-track,
-  .is-static .chain-exit-track {
-    height: auto;
-  }
-
-  .is-static .chain-exit-track {
+  .features-nav-mobile {
     display: none;
   }
 
-  .is-static .chain-stage {
-    height: auto;
-    display: block;
-    padding-bottom: clamp(2rem, 4vw, 3rem);
+  .features-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    width: 7rem;
+    flex-shrink: 0;
   }
 
-  .is-static .chain-stage__body {
-    display: block;
+  .features-nav__item {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    width: 100%;
+    padding: 0.3rem 0.45rem;
+    border-radius: var(--radius-full);
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--color-text-muted);
+    font: inherit;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
   }
 
-  .is-static .chain-rail,
-  .is-static .chain-nav {
-    display: none;
-  }
-
-  .is-static .chain-viewport {
-    width: 100% !important;
-    height: auto !important;
-    max-width: 980px;
-    margin: 0 auto;
-    padding-inline: var(--page-gutter);
-    overflow: visible;
-    mask-image: none;
-    -webkit-mask-image: none;
-    padding-bottom: 2rem;
-  }
-
-  .is-static .chain-track {
-    gap: clamp(1.25rem, 3vw, 2rem);
-    padding-bottom: 2rem;
-  }
-
-  .is-static .chain-block {
-    opacity: 1 !important;
-    scale: 1 !important;
-    pointer-events: auto;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .point, .point__title, .point__icon, .point__copy {
-      transition: none;
+  @media (hover: hover) {
+    .features-nav__item:hover:not(.is-active) {
+      color: var(--color-text);
+      border-color: rgba(255, 255, 255, 0.08);
+      background: rgba(8, 12, 24, 0.35);
     }
-    @media (hover: hover) {
-      .point:hover { transform: none; }
-      .point:hover .point__icon { transform: none; }
-    }
+  }
+
+  .features-nav__item:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  .features-nav__dot {
+    flex-shrink: 0;
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .features-nav__item.is-active {
+    color: var(--color-text);
+    border-color: rgba(56, 189, 248, 0.25);
+    background: rgba(8, 12, 24, 0.55);
+  }
+
+  .features-nav__item.is-active .features-nav__dot {
+    background: var(--color-accent);
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
   }
 
   @media (max-width: 899px) {
     .unique-section {
       margin-top: 0;
-      padding-block: clamp(2.5rem, 5vw, 3.5rem);
       overflow: visible;
     }
 
-    .unique-section.section {
-      padding-block: clamp(2.5rem, 5vw, 3.5rem);
-    }
-
-    .is-static .features-intro {
-      margin-bottom: clamp(1.25rem, 3vw, 1.75rem);
-      padding-inline: clamp(1rem, 4vw, 1.5rem);
-    }
-
-    .is-static .chain-stage {
-      padding-inline: clamp(1rem, 4vw, 1.5rem);
-    }
-
-    .is-static .chain-viewport {
-      padding-inline: 0;
-    }
-
-    .is-static .chain-block__meta,
-    .is-static .chain-connector,
-    .is-static .chain-track__line {
-      display: none !important;
-    }
-
-    .is-static .chain-track {
-      gap: clamp(1rem, 3vw, 1.35rem);
-    }
-
-    .is-static .chain-block {
-      padding: clamp(1rem, 3vw, 1.25rem);
-      gap: 0.75rem;
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      border-radius: var(--radius-md);
-      border-left: 1px solid rgba(255, 255, 255, 0.14);
-      background: rgba(8, 12, 24, 0.92);
-      box-shadow: none;
-    }
-
-    .is-static .category-card__header {
-      padding-bottom: 0.65rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .is-static .category-card__lede {
-      font-size: 0.88rem;
-      line-height: 1.45;
-    }
-
-    .is-static .category-points {
-      gap: 0.6rem;
-      padding: 0;
-    }
-
-    .is-static .point {
-      padding: 0.75rem 0.85rem;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: calc(var(--radius-md) - 4px);
-      background: rgba(10, 15, 28, 0.88);
-      box-shadow: none;
-    }
-
-    .is-static .point__copy {
-      font-size: 0.84rem;
-      line-height: 1.45;
-    }
-
-    /* === Animated mobile layout === */
-    unique-features-chain:not(.is-static) .chain-stage__body {
+    .features-layout {
       grid-template-columns: 1fr;
-      position: relative;
-      gap: 0;
-      align-items: center;
-      justify-items: center;
+      gap: 1rem;
     }
 
-    unique-features-chain:not(.is-static) .chain-nav {
+    .features-rail {
       display: none;
     }
 
-    unique-features-chain:not(.is-static) .chain-rail {
-      display: none;
-    }
-
-    unique-features-chain:not(.is-static) .chain-viewport {
-      position: relative;
-      z-index: 2;
-      padding-bottom: 1.25rem;
-    }
-
-    unique-features-chain:not(.is-static) .chain-track {
-      gap: 0;
-    }
-
-    unique-features-chain:not(.is-static) .chain-track__line {
+    .features-nav-mobile {
       display: block;
-      z-index: 0;
+      order: -1;
+      width: 100%;
+      min-width: 0;
+      position: relative;
+      z-index: 5;
     }
 
-    unique-features-chain:not(.is-static) .chain-connector {
+    .features-nav-dropdown {
+      position: relative;
+      width: 100%;
+    }
+
+    .features-nav-chip {
       display: flex;
       align-items: center;
-      justify-content: center;
-      position: relative;
-      z-index: 2;
-      height: 2rem;
-      flex-shrink: 0;
-      pointer-events: none;
-    }
-
-    unique-features-chain:not(.is-static) .chain-connector__node {
-      position: relative;
-      z-index: 1;
-      width: 0.6rem;
-      height: 0.6rem;
-      background: #0c1222;
-    }
-
-    unique-features-chain:not(.is-static) .chain-connector.is-lit .chain-connector__node {
-      background: var(--color-brand);
-    }
-
-    unique-features-chain:not(.is-static) .chain-block {
-      z-index: 1;
-    }
-
-    unique-features-chain:not(.is-static) .chain-block.is-active {
-      z-index: 3;
-      background: #0c1222;
-    }
-
-    unique-features-chain:not(.is-static) .chain-block.is-synced,
-    unique-features-chain:not(.is-static) .chain-block.is-pending {
-      background: #0c1222;
-    }
-
-    unique-features-chain:not(.is-static) .features-intro {
-      margin-bottom: 0.75rem;
-      padding-inline: 1rem;
-    }
-
-    unique-features-chain:not(.is-static) .chain-block {
-      padding: 0.7rem 0.85rem;
-      gap: 0.5rem;
-      isolation: isolate;
-      overflow: hidden;
-      max-width: 100%;
-      box-sizing: border-box;
-    }
-
-    unique-features-chain:not(.is-static) .category-points {
-      max-width: 100%;
-      min-width: 0;
-    }
-
-    unique-features-chain:not(.is-static) .category-card__title {
-      font-size: 1.1rem;
-      line-height: 1.3;
-    }
-
-    unique-features-chain:not(.is-static) .category-card__lede {
-      font-size: 0.82rem;
-    }
-
-    unique-features-chain:not(.is-static) .point {
-      padding: 0.55rem 0.7rem;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      transition:
-        padding 0.2s ease,
-        border-color 0.2s ease,
-        background 0.2s ease,
-        box-shadow 0.2s ease,
-        max-height 0.2s ease,
-        opacity 0.2s ease;
-    }
-
-    unique-features-chain:not(.is-static) .point__title {
-      font-size: 0.82rem;
-      gap: 0.4rem;
-    }
-
-    unique-features-chain:not(.is-static) .point__icon {
-      width: 1.15rem;
-      height: 1.15rem;
-    }
-
-    unique-features-chain:not(.is-static) .point__copy {
-      font-size: 0.76rem;
-      line-height: 1.4;
-    }
-
-    unique-features-chain:not(.is-static) .chain-block.has-expanded-point .point:not(.is-expanded) {
-      max-height: 2.4rem;
-      opacity: 0.45;
-      overflow: hidden;
-      pointer-events: none;
-    }
-
-    unique-features-chain:not(.is-static) .chain-block.has-expanded-point .point:not(.is-expanded) .point__copy {
-      display: none;
-    }
-
-    unique-features-chain:not(.is-static) .point.is-expanded {
-      position: relative;
-      z-index: 2;
+      gap: 0.45rem;
       width: 100%;
-      max-width: 100%;
-      box-sizing: border-box;
-      padding: 0.85rem 0.8rem;
-      border-color: rgba(253, 185, 19, 0.45);
-      background: rgba(14, 22, 40, 0.98);
-      box-shadow: inset 0 0 0 1px rgba(253, 185, 19, 0.12);
-    }
-
-    unique-features-chain:not(.is-static) .point.is-expanded .point__title {
-      font-size: 1rem;
-      color: var(--color-brand);
-    }
-
-    unique-features-chain:not(.is-static) .point.is-expanded .point__icon {
-      width: 1.45rem;
-      height: 1.45rem;
-    }
-
-    unique-features-chain:not(.is-static) .point.is-expanded .point__copy {
-      font-size: 0.9rem;
-      line-height: 1.55;
+      padding: 0.5rem 0.9rem;
+      border-radius: var(--radius-full);
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      background: rgba(56, 189, 248, 0.14);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.12);
       color: var(--color-text);
-    }
-
-    unique-features-chain:not(.is-static) .chain-viewport.is-last-active {
-      overflow: visible;
-      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 3%, #000 100%);
-      mask-image: linear-gradient(to bottom, transparent 0%, #000 3%, #000 100%);
-    }
-
-    /* === Extra fix for very narrow screens (< 600px) === */
-    @media (max-width: 600px) {
-      unique-features-chain:not(.is-static) .features-intro {
-        margin-bottom: 0.5rem;
-      }
-
-      unique-features-chain:not(.is-static) .chain-stage {
-        padding-bottom: 0.75rem;
-      }
-
-      unique-features-chain:not(.is-static) .chain-viewport {
-        -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 2%, #000 97%, transparent 100%);
-        mask-image: linear-gradient(to bottom, transparent 0%, #000 2%, #000 97%, transparent 100%);
-      }
-
-      unique-features-chain:not(.is-static) .chain-viewport.is-last-active {
-        -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 2%, #000 100%);
-        mask-image: linear-gradient(to bottom, transparent 0%, #000 2%, #000 100%);
-        padding-bottom: 0.25rem;
-      }
-    }
-  }
-
-  @media (min-width: 900px) {
-    .chain-nav {
-      width: 7rem;
-    }
-  }
-
-  /* Desktop expand-on-click — larger than hover, similar to mobile */
-  @media (min-width: 1250px) {
-    unique-features-chain:not(.is-static) .point {
+      font: inherit;
+      font-size: 0.72rem;
+      font-weight: 600;
+      line-height: 1.3;
+      text-align: left;
       cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      transition:
-        transform 0.22s ease,
-        border-color 0.22s ease,
-        background 0.22s ease,
-        box-shadow 0.22s ease,
-        padding 0.22s ease,
-        opacity 0.22s ease,
-        max-height 0.22s ease;
     }
 
-    unique-features-chain:not(.is-static) .point__title,
-    unique-features-chain:not(.is-static) .point__copy,
-    unique-features-chain:not(.is-static) .point__icon {
-      transition:
-        color 0.22s ease,
-        font-size 0.22s ease,
-        line-height 0.22s ease,
-        width 0.22s ease,
-        height 0.22s ease,
-        transform 0.22s ease;
+    .features-nav-chip__dot {
+      flex-shrink: 0;
+      width: 0.4rem;
+      height: 0.4rem;
+      border-radius: 50%;
+      background: var(--color-accent);
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
     }
 
-    unique-features-chain:not(.is-static) .chain-block.has-expanded-point .point:not(.is-expanded) {
-      max-height: 2.75rem;
-      opacity: 0.45;
+    .features-nav-chip__label {
+      flex: 1;
+      min-width: 0;
       overflow: hidden;
-      pointer-events: none;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-    unique-features-chain:not(.is-static) .chain-block.has-expanded-point .point:not(.is-expanded) .point__copy {
+    .features-nav-dropdown__trigger:focus-visible,
+    .features-nav-dropdown__option:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
+    }
+
+    .features-nav-dropdown__chevron {
+      flex-shrink: 0;
+      width: 0.7rem;
+      height: 0.7rem;
+      margin-left: 0.1rem;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23ffffff' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: contain;
+      transition: transform 0.2s ease;
+    }
+
+    .features-nav-dropdown.is-open .features-nav-dropdown__chevron {
+      transform: rotate(180deg);
+    }
+
+    .features-nav-dropdown__menu {
+      position: absolute;
+      top: calc(100% + 0.45rem);
+      left: 0;
+      right: 0;
+      z-index: 6;
       display: none;
+      margin: 0;
+      padding: 0.4rem;
+      padding-inline-end: 0.55rem;
+      list-style: none;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      background: rgba(4, 8, 18, 0.98);
+      box-shadow: 0 18px 40px rgba(2, 6, 23, 0.55);
+      max-height: min(18rem, 55vh);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(56, 189, 248, 0.45) rgba(4, 8, 18, 0.85);
     }
 
-    unique-features-chain:not(.is-static) .point.is-expanded {
-      grid-column: 1 / -1;
-      z-index: 3;
-      padding: clamp(1rem, 1.4vw, 1.25rem);
-      border-color: rgba(253, 185, 19, 0.45);
-      background: rgba(14, 22, 40, 0.98);
-      box-shadow:
-        0 18px 36px rgba(2, 6, 23, 0.5),
-        inset 0 0 0 1px rgba(253, 185, 19, 0.12);
-      transform: scale(1.02);
+    .features-nav-dropdown__menu::-webkit-scrollbar {
+      width: 0.42rem;
     }
 
-    unique-features-chain:not(.is-static) .point.is-expanded .point__title {
-      font-size: 1.15rem;
-      color: var(--color-brand);
+    .features-nav-dropdown__menu::-webkit-scrollbar-track {
+      margin-block: 0.2rem;
+      border-radius: var(--radius-full);
+      background: rgba(4, 8, 18, 0.85);
+      border: 1px solid rgba(56, 189, 248, 0.15);
     }
 
-    unique-features-chain:not(.is-static) .point.is-expanded .point__icon {
-      width: 1.65rem;
-      height: 1.65rem;
-      transform: scale(1);
-    }
-
-    unique-features-chain:not(.is-static) .point.is-expanded .point__copy {
-      font-size: 1rem;
-      line-height: 1.55;
-      color: var(--color-text);
+    .features-nav-dropdown__menu::-webkit-scrollbar-thumb {
+      border-radius: var(--radius-full);
+      background: rgba(56, 189, 248, 0.14);
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.1);
     }
 
     @media (hover: hover) {
-      unique-features-chain:not(.is-static) .chain-block.has-expanded-point .point:not(.is-expanded):hover {
-        transform: none;
-        border-color: rgba(255, 255, 255, 0.08);
-        background: rgba(10, 15, 28, 0.9);
-        box-shadow: none;
+      .features-nav-dropdown__menu::-webkit-scrollbar-thumb:hover {
+        background: rgba(56, 189, 248, 0.22);
+        border-color: rgba(56, 189, 248, 0.55);
+        box-shadow: 0 0 12px rgba(56, 189, 248, 0.18);
       }
+    }
 
-      unique-features-chain:not(.is-static) .point.is-expanded:hover {
-        transform: scale(1.02);
-        border-color: rgba(253, 185, 19, 0.55);
-      }
+    .features-nav-dropdown.is-open .features-nav-dropdown__menu {
+      display: grid;
+      gap: 0.4rem;
+    }
 
-      unique-features-chain:not(.is-static) .point.is-expanded:hover .point__title,
-      unique-features-chain:not(.is-static) .point.is-expanded:hover .point__copy {
-        color: var(--color-brand);
-      }
+    .features-nav-dropdown__option {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      width: 100%;
+      border-color: rgba(56, 189, 248, 0.45);
+      background: rgba(56, 189, 248, 0.14);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.08);
+      text-decoration: none;
+      color: inherit;
+    }
 
-      unique-features-chain:not(.is-static) .point.is-expanded:hover .point__copy {
-        color: var(--color-text);
-      }
+    .features-nav-dropdown__option .features-nav-chip__dot {
+      background: rgba(255, 255, 255, 0.25);
+      box-shadow: none;
+    }
+
+    .features-nav-dropdown__option.is-active,
+    .features-nav-dropdown__option:hover {
+      border-color: rgba(56, 189, 248, 0.45);
+      background: rgba(56, 189, 248, 0.14);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.12);
+    }
+
+    .features-nav-dropdown__option.is-active .features-nav-chip__dot,
+    .features-nav-dropdown__option:hover .features-nav-chip__dot {
+      background: var(--color-accent);
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+    }
+
+    .features-nav-wrap {
+      display: none;
+    }
+
+  }
+
+  @media (min-width: 900px) and (max-width: 1100px) {
+    .features-nav {
+      width: 6.5rem;
+    }
+
+    .features-nav__item {
+      font-size: 0.64rem;
     }
   }
 </style>
 
-<unique-features-chain class="section unique-section" id="unique">
+<unique-features-panel
+  class="section unique-section"
+  id="unique"
+  {...(buildHash ? { "data-build": buildHash } : {})}
+>
   <div class="unique-section__backdrop" aria-hidden="true"></div>
   <div class="unique-section__overlay" aria-hidden="true"></div>
 
   <div class="unique-section__content">
-    <div class="chain-scroll-pin">
-      <div class="chain-pin-track">
-        <div class="chain-stage">
-          <div class="features-intro">
-            <p class="section__eyebrow">What makes us unique</p>
-            <h2 class="section__title">Built different, on purpose</h2>
-          </div>
+    <div class="features-intro">
+      <p class="section__eyebrow">What makes us unique</p>
+      <h2 class="section__title">Built with purpose</h2>
+    </div>
 
-          <div class="chain-stage__body">
-            <div class="chain-rail" aria-hidden="true">
-              <div class="chain-rail__track"><div class="chain-rail__fill"></div></div>
-              <div class="chain-rail__nodes">
-                {categories.map((_, index) => (
-                  <div class:list={["chain-rail__node", { "is-lit": index === 0, "is-active": index === 0 }]} />
-                ))}
-              </div>
-            </div>
-
-            <div class="chain-viewport">
-              <div class="chain-track">
-                <div class="chain-track__line" aria-hidden="true">
-                  <div class="chain-track__fill"></div>
-                </div>
-                {categories.map((category, index) => (
-                  <Fragment>
-                    <article
-                      class:list={["chain-block", { "is-active": index === 0 }]}
-                      data-block-index={index}
-                      aria-hidden={index !== 0 ? "true" : "false"}
-                    >
-                      <div class="chain-block__meta">
-                        <span class="chain-block__height">#{String(index + 1).padStart(4, "0")}</span>
-                        <code class="chain-block__hash">0x{category.id.slice(0, 8)}…</code>
-                        <span class="chain-block__status">{index === 0 ? "LIVE" : "PENDING"}</span>
-                      </div>
-                      <header class="category-card__header">
-                        <div class="category-card__title-row">
-                          <h3 class="category-card__title">{category.title}</h3>
-                          {category.status && (
-                            <span class={`category-card__badge category-card__badge--${category.status}`}>
-                              {category.status}
-                            </span>
-                          )}
-                        </div>
-                        <p class="category-card__lede">{category.lede}</p>
-                      </header>
-                      <div class="category-points">
-                        {category.points.map((point) => (
-                          <div class="point" role="button" tabindex="-1">
-                            <h4 class="point__title">
-                              {"iconSrc" in point && point.iconSrc ? (
-                                "iconSlashed" in point && point.iconSlashed ? (
-                                  <span class="point__icon point__icon--slashed">
-                                    <img
-                                      src={point.iconSrc}
-                                      alt=""
-                                      class="point__icon--asset"
-                                      width="22"
-                                      height="22"
-                                      loading="lazy"
-                                    />
-                                  </span>
-                                ) : (
-                                  <img
-                                    src={point.iconSrc}
-                                    alt=""
-                                    class="point__icon point__icon--asset"
-                                    width="22"
-                                    height="22"
-                                    loading="lazy"
-                                  />
-                                )
-                              ) : (
-                                <span
-                                  class="point__icon"
-                                  set:html={featurePointIcons[point.icon as FeaturePointIconName]}
-                                />
-                              )}
-                              {point.title}
-                            </h4>
-                            <p class="point__copy">{point.copy}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </article>
-                    {index < categories.length - 1 && (
-                      <div class="chain-connector" aria-hidden="true">
-                        <span class="chain-connector__node"></span>
-                      </div>
-                    )}
-                  </Fragment>
-                ))}
-                <div class="chain-tail-spacer" aria-hidden="true"></div>
-              </div>
-            </div>
-
-            <nav class="chain-nav" aria-label="Feature categories">
-              {categories.map((category, index) => (
-                <button
-                  type="button"
-                  class:list={["chain-nav__item", { "is-active": index === 0 }]}
-                  data-nav={index}
-                  aria-current={index === 0 ? "true" : undefined}
-                >
-                  <span class="chain-nav__dot" aria-hidden="true"></span>
-                  <span class="chain-nav__label">{category.title}</span>
-                </button>
-              ))}
-            </nav>
-          </div>
+    <div class="features-layout">
+      <div class="features-rail" aria-label="Feature progress">
+        <div class="features-rail__track" aria-hidden="true">
+          <div class="features-rail__fill"></div>
+        </div>
+        <div class="features-rail__nodes">
+          {categories.map((_, index) => (
+            <button
+              type="button"
+              class:list={["features-rail__node", { "is-lit": index === 0, "is-active": index === 0 }]}
+              data-rail={index}
+              aria-label={`Show ${categories[index].title}`}
+              aria-current={index === 0 ? "true" : undefined}
+            />
+          ))}
         </div>
       </div>
-      <div class="chain-exit-track" aria-hidden="true"></div>
+
+      <div class="features-nav-mobile">
+        <p class="label-features">Features</p>
+        <div class="features-nav-dropdown">
+          <button
+            type="button"
+            class="features-nav-chip features-nav-dropdown__trigger"
+            aria-expanded="false"
+            aria-haspopup="listbox"
+            aria-label="Choose a feature category"
+          >
+            <span class="features-nav-chip__dot" aria-hidden="true"></span>
+            <span class="features-nav-dropdown__label features-nav-chip__label">{categories[0].title}</span>
+            <span class="features-nav-dropdown__chevron" aria-hidden="true"></span>
+          </button>
+          <ul class="features-nav-dropdown__menu" role="listbox" aria-label="Feature categories">
+            {categories.map((category, index) => (
+              <li>
+                <a
+                  href={`#unique-${category.id}`}
+                  class:list={["features-nav-chip", "features-nav-dropdown__option", { "is-active": index === 0 }]}
+                  role="option"
+                  data-nav-mobile={index}
+                  data-label={category.title}
+                  aria-selected={index === 0 ? "true" : "false"}
+                >
+                  <span class="features-nav-chip__dot" aria-hidden="true"></span>
+                  <span class="features-nav-chip__label">{category.title}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div class="features-card-stack">
+        <button
+          type="button"
+          class="features-card-arrow features-card-arrow--prev"
+          data-card-arrow="prev"
+          aria-label="Previous feature card"
+          disabled
+        ></button>
+
+        <div
+          class="features-view"
+          tabindex="0"
+          aria-label="Feature cards. Use arrows, scroll, or arrow keys to change card."
+        >
+          {categories.map((category, index) => (
+            <article
+              id={`unique-${category.id}`}
+              class:list={["feature-card", { "is-active": index === 0 }]}
+              data-card={index}
+              hidden={index !== 0}
+              aria-hidden={index !== 0 ? "true" : "false"}
+            >
+              <div class="feature-card__meta">
+                <div class="feature-card__meta-start">
+                  <span class="feature-card__height">#{String(index + 1).padStart(4, "0")}</span>
+                  <code class="feature-card__hash">0x{category.id.slice(0, 8)}…</code>
+                </div>
+                {category.status && (
+                  <span class={`category-card__badge category-card__badge--${category.status}`}>
+                    {category.status}
+                  </span>
+                )}
+              </div>
+              <header class="category-card__header">
+                <h3 class="category-card__title">{category.title}</h3>
+                <p class="category-card__lede">{category.lede}</p>
+              </header>
+              <div class="category-points">
+                {category.points.map((point) => (
+                  <div class="point" role="button" tabindex="0">
+                    <h4 class="point__title">
+                      {"iconSrc" in point && point.iconSrc ? (
+                        "iconSlashed" in point && point.iconSlashed ? (
+                          <span class="point__icon point__icon--slashed">
+                            <img
+                              src={point.iconSrc}
+                              alt=""
+                              class="point__icon--asset"
+                              width="22"
+                              height="22"
+                              loading="lazy"
+                            />
+                          </span>
+                        ) : (
+                          <span class="point__icon">
+                            <img
+                              src={point.iconSrc}
+                              alt=""
+                              class="point__icon--asset"
+                              width="22"
+                              height="22"
+                              loading="lazy"
+                            />
+                          </span>
+                        )
+                      ) : (
+                        <span
+                          class:list={[
+                            "point__icon",
+                            { "point__icon--slashed": "iconSlashed" in point && point.iconSlashed },
+                          ]}
+                          set:html={featurePointIcons[point.icon as FeaturePointIconName]}
+                        />
+                      )}
+                      {point.title}
+                    </h4>
+                    <p class="point__copy">{point.copy}</p>
+                  </div>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          class="features-card-arrow features-card-arrow--next"
+          data-card-arrow="next"
+          aria-label="Next feature card"
+        ></button>
+      </div>
+
+      <div class="features-nav-wrap">
+        <p class="label-features">Features</p>
+        <nav class="features-nav" aria-label="Feature categories">
+          {categories.map((category, index) => (
+            <a
+              href={`#unique-${category.id}`}
+              class:list={["features-nav__item", { "is-active": index === 0 }]}
+              data-nav={index}
+              aria-current={index === 0 ? "true" : undefined}
+            >
+              <span class="features-nav__dot" aria-hidden="true"></span>
+              <span class="features-nav__label">{category.title}</span>
+            </a>
+          ))}
+        </nav>
+      </div>
     </div>
   </div>
-</unique-features-chain>
+</unique-features-panel>

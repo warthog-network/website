@@ -3,6 +3,33 @@ import { format_height, abbreviate } from './assets/util.js';
 import APIClient from './assets/api_ws.js';
 import { Block } from './assets/api_ws.js';
 import BunkerShell from '../BunkerShell.jsx';
+import ExplorerAddress from './ExplorerAddress.jsx';
+import ExplorerRefreshButton from './ExplorerRefreshButton.jsx';
+import { unwrapNodeResponse } from './explorerApi.js';
+import {
+    EXPLORER_NODE_OPTIONS,
+    getExplorerHost,
+    normalizeSelectedNode,
+} from '../../lib/explorerNodes.js';
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const RETRY_DELAYS_MS = [500, 1000, 2000, 3000, 4000];
+
+async function fetchWithRetry(fn) {
+    let lastError;
+    for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+        try {
+            return await fn();
+        } catch (err) {
+            lastError = err;
+            if (attempt < RETRY_DELAYS_MS.length) {
+                await sleep(RETRY_DELAYS_MS[attempt]);
+            }
+        }
+    }
+    throw lastError;
+}
 
 function Explorer() {
     const [selectedNode, setSelectedNode] = useState('losthymns');
@@ -12,48 +39,24 @@ function Explorer() {
     const [customConnected, setCustomConnected] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false); // New: Flag to delay loading until localStorage is populated
 
-    const nodeOptions = [
-        { value: 'losthymns', label: 'official 1' },
-        { value: 'official2', label: 'official 2' },
-        { value: 'local', label: 'Local Node' },
-        { value: 'custom', label: 'Custom Node' },
-    ];
-
-    const getHost = (node) => {
-        if (node === 'losthymns') return 'https://warthognode.duckdns.org';
-        if (node === 'official2' || node === 'polaire') return 'http://65.87.7.86:3001';
-        if (node === 'local') return 'http://localhost:3000';
-        return 'http://localhost:3000';
-    };
+    const nodeOptions = EXPLORER_NODE_OPTIONS;
 
     useEffect(() => {
-        // Load saved settings from localStorage
-        let savedNode = localStorage.getItem('selectedNode');
-        let savedHost = localStorage.getItem('selectedHost');
+        const savedNode = normalizeSelectedNode(localStorage.getItem('selectedNode'));
         const savedIP = localStorage.getItem('customIP');
         const savedPort = localStorage.getItem('customPort');
 
-        if (savedNode === 'polaire') {
-            savedNode = 'official2';
-            savedHost = 'http://65.87.7.86:3001';
-            localStorage.setItem('selectedNode', savedNode);
-            localStorage.setItem('selectedHost', savedHost);
-        }
+        setSelectedNode(savedNode);
 
-        if (savedNode && savedHost) {
-            setSelectedNode(savedNode);
-            setHost(savedHost);
-            if (savedNode === 'custom' && savedIP && savedPort) {
-                setCustomIP(savedIP);
-                setCustomPort(savedPort);
-            }
+        if (savedNode === 'custom' && savedIP && savedPort) {
+            setCustomIP(savedIP);
+            setCustomPort(savedPort);
+            setHost(getExplorerHost('losthymns'));
         } else {
-            // If no saved values, use defaults but save them
-            localStorage.setItem('selectedNode', selectedNode);
-            localStorage.setItem('selectedHost', host);
+            setHost(getExplorerHost(savedNode));
         }
 
-        setIsInitialized(true); // Mark as initialized after loading
+        setIsInitialized(true);
     }, []);
 
     useEffect(() => {
@@ -86,8 +89,10 @@ function Explorer() {
             }
             // else stay on previous host
         } else {
-            const newHost = getHost(selectedNode);
-            setHost(newHost);
+            const newHost = getExplorerHost(selectedNode);
+            if (newHost) {
+                setHost(newHost);
+            }
             setCustomConnected(false);
         }
     }, [selectedNode, customIP, customPort, customConnected, isInitialized]);
@@ -104,6 +109,8 @@ function Explorer() {
     const [addressSearchInput, setAddressSearchInput] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [connectionError, setConnectionError] = useState(null);
+    const [refreshing, setRefreshing] = useState(false);
+    const [refreshToken, setRefreshToken] = useState(0);
     const perPage = 10;
 
     useEffect(() => {
@@ -127,10 +134,25 @@ function Explorer() {
         };
         setClient(cl);
 
-        const fetchLatest = async () => {
+        let hasConnected = false;
+        let cancelled = false;
+
+        const fetchLatest = async (isInitial = false) => {
+            if (cancelled) return;
+
+            if (isInitial) {
+                setRefreshing(true);
+            }
+
             try {
-                const headResponse = await cl.get('/chain/head');
-                const headHeight = headResponse.data.height;
+                const headResponse = await fetchWithRetry(() => cl.get('/chain/head'));
+                if (cancelled) return;
+
+                const headData = unwrapNodeResponse(headResponse);
+                const headHeight = headData?.height;
+                if (!headHeight) {
+                    throw new Error('Unexpected response format from node head endpoint');
+                }
                 const blocks = [];
                 for (let h = headHeight; h > Math.max(1, headHeight - 10); h--) {
                     try {
@@ -140,26 +162,37 @@ function Explorer() {
                         console.error(`Failed to fetch block ${h}`, e);
                     }
                 }
+                if (cancelled) return;
+
                 setChain({ blocks });
                 setSubscribed(true);
+                setConnectionError(null);
+                hasConnected = true;
             } catch (e) {
+                if (cancelled) return;
                 console.error('Failed to fetch head', e);
-                setConnectionError('Failed to fetch data from node.');
+                if (!hasConnected) {
+                    setConnectionError('Failed to fetch data from node.');
+                }
             } finally {
-                setLoading(false);
+                if (isInitial && !cancelled) {
+                    setLoading(false);
+                    setRefreshing(false);
+                }
             }
         };
 
-        fetchLatest();
+        fetchLatest(true);
 
         // Poll for updates every 10 seconds
-        const interval = setInterval(fetchLatest, 10000);
+        const interval = setInterval(() => fetchLatest(false), 10000);
 
         return () => {
+            cancelled = true;
             cl.closeConnection();
             clearInterval(interval);
         };
-    }, [host, isInitialized]);
+    }, [host, isInitialized, refreshToken]);
 
     useEffect(() => {
         if (!client || !isInitialized) return;
@@ -309,8 +342,17 @@ function Explorer() {
         );
     }
 
+    const handleRefresh = () => {
+        if (refreshing) return;
+        setRefreshToken((token) => token + 1);
+    };
+
     return (
-        <BunkerShell title="Explorer" wide>
+        <BunkerShell
+            title="Explorer"
+            wide
+            actions={<ExplorerRefreshButton onClick={handleRefresh} loading={refreshing} />}
+        >
             <div className="bunker-panel">
                 <label htmlFor="node-select" className="bunker-label">Select Node:</label>
                 <select
@@ -433,7 +475,9 @@ function Explorer() {
                                                 </div>
                                                 <div className="bunker-dl-row">
                                                     <dt>Miner</dt>
-                                                    <dd>{abbreviate(block.miner())}</dd>
+                                                    <dd>
+                                                        <ExplorerAddress address={block.miner()} />
+                                                    </dd>
                                                 </div>
                                                 <div className="bunker-dl-row">
                                                     <dt>Reward</dt>

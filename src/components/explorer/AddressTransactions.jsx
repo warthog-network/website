@@ -1,9 +1,18 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { format_height, abbreviate } from './assets/util.js';
 import APIClient from './assets/api_ws.js';
 import BunkerShell from '../BunkerShell.jsx';
+import { resolveExplorerHostFromStorage } from '../../lib/explorerNodes.js';
+import ExplorerAddress from './ExplorerAddress.jsx';
+import ExplorerRefreshButton from './ExplorerRefreshButton.jsx';
+import {
+  formatExplorerError,
+  parseAccountHistory,
+  unwrapNodeResponse,
+} from './explorerApi.js';
 
 const PAGE_SIZE = 15;
+const INITIAL_CURSOR = '4294967295';
 
 function TransactionItem({ tx, index }) {
   const safeStr = (val) => {
@@ -35,12 +44,12 @@ function TransactionItem({ tx, index }) {
       </div>
       {tx.fromAddress && safeStr(tx.fromAddress) !== '—' && (
         <div className="bunker-meta">
-          From: {abbreviate(safeStr(tx.fromAddress))}
+          From: <ExplorerAddress address={tx.fromAddress} />
         </div>
       )}
       {tx.toAddress && safeStr(tx.toAddress) !== '—' && (
         <div className="bunker-meta">
-          To: {abbreviate(safeStr(tx.toAddress))}
+          To: <ExplorerAddress address={tx.toAddress} />
         </div>
       )}
       {tx.amount && safeStr(tx.amount) !== '—' && (
@@ -71,11 +80,11 @@ function AddressTransactions({ address }) {
   const [allHistory, setAllHistory] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [nextCursor, setNextCursor] = useState('4294967295');
+  const [refreshing, setRefreshing] = useState(false);
+  const [nextCursor, setNextCursor] = useState(INITIAL_CURSOR);
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
-  const [copiedField, setCopiedField] = useState(null);
   const [balance, setBalance] = useState(null);
   const [usdBalance, setUsdBalance] = useState(null);
   const clientRef = useRef(null);
@@ -87,108 +96,124 @@ function AddressTransactions({ address }) {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const handleCopy = async (text, field) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedField(field);
-      setTimeout(() => setCopiedField(null), 2000);
-    } catch (err) {
-      console.error('Failed to copy', err);
-    }
-  };
+  useEffect(() => {
+    clientRef.current = new APIClient(resolveExplorerHostFromStorage());
+  }, []);
 
-  const fetchMoreHistory = async () => {
-    if (!hasMore || loading || !clientRef.current) return;
-    setLoading(true);
+  const fetchBalance = useCallback(async () => {
+    if (!clientRef.current || !address) return;
+
     try {
-      const response = await clientRef.current.get(`/account/${address}/history/${nextCursor}`);
-      const rawData = response.data || response;
-      if (rawData.perBlock && Array.isArray(rawData.perBlock)) {
-        const newItems = rawData.perBlock.flatMap(block => {
-          const txs = [
-            ...(block.transactions?.transfers || []),
-            ...(block.transactions?.rewards || [])
-          ];
-          return txs.map(tx => ({
-            ...tx,
-            confirmations: block.confirmations,
-            height: block.height,
-            txid: tx.txHash,
-          }));
-        });
-        setAllHistory(prev => [...prev, ...newItems]);
-        setHasMore(newItems.length > 0 && rawData.fromId > 0);
-        setNextCursor(rawData.fromId > 0 ? rawData.fromId : null);
+      const response = await clientRef.current.get(`/account/${address}/balance`);
+      const balanceData = unwrapNodeResponse(response);
+      const bal = balanceData?.balance ?? 'N/A';
+      setBalance(bal);
+
+      if (bal && bal !== 'N/A') {
+        fetch('https://api.coingecko.com/api/v3/simple/price?ids=warthog&vs_currencies=usd')
+          .then((res) => res.json())
+          .then((data) => {
+            const price = data.warthog?.usd || 0;
+            const usd = (parseFloat(bal) * price).toFixed(2);
+            setUsdBalance(`$${usd}`);
+          })
+          .catch(() => setUsdBalance('N/A'));
       } else {
-        setError('Unexpected response format');
+        setUsdBalance('N/A');
       }
     } catch (err) {
-      setError(err.message || 'Failed to fetch transaction history');
+      console.error('Failed to fetch balance', err);
+      setBalance('N/A');
+      setUsdBalance('N/A');
+    }
+  }, [address]);
+
+  const fetchHistoryPage = useCallback(async (cursor, { append = false } = {}) => {
+    if (!clientRef.current || !address) return;
+
+    const response = await clientRef.current.get(`/account/${address}/history/${cursor}`);
+    const rawData = unwrapNodeResponse(response);
+    const parsed = parseAccountHistory(rawData);
+
+    if (!parsed) {
+      throw new Error('Unexpected response format from node history endpoint');
+    }
+
+    const { items, fromId } = parsed;
+    setAllHistory((prev) => (append ? [...prev, ...items] : items));
+    setHasMore(items.length > 0 && fromId > 0);
+    setNextCursor(fromId > 0 ? String(fromId) : null);
+    return items;
+  }, [address]);
+
+  const loadInitialHistory = useCallback(async () => {
+    if (!address) return;
+
+    setLoading(true);
+    setError(null);
+    try {
+      await fetchHistoryPage(INITIAL_CURSOR, { append: false });
+      setCurrentPage(1);
+    } catch (err) {
+      setError(formatExplorerError(err, 'Failed to fetch transaction history'));
+      setAllHistory([]);
+      setHasMore(false);
+    } finally {
+      setLoading(false);
+    }
+  }, [address, fetchHistoryPage]);
+
+  useEffect(() => {
+    if (!address) return;
+
+    setAllHistory([]);
+    setCurrentPage(1);
+    setNextCursor(INITIAL_CURSOR);
+    setHasMore(true);
+    setError(null);
+
+    loadInitialHistory();
+    fetchBalance();
+
+    const balanceInterval = setInterval(fetchBalance, 30000);
+    return () => clearInterval(balanceInterval);
+  }, [address, loadInitialHistory, fetchBalance]);
+
+  const fetchMoreHistory = async () => {
+    if (!hasMore || loading || !nextCursor) return;
+
+    setLoading(true);
+    setError(null);
+    try {
+      await fetchHistoryPage(nextCursor, { append: true });
+    } catch (err) {
+      setError(formatExplorerError(err, 'Failed to fetch transaction history'));
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    const getHost = (node) => {
-      if (node === 'losthymns') return 'https://warthognode.duckdns.org';
-      if (node === 'official2' || node === 'polaire') return 'http://65.87.7.86:3001';
-      if (node === 'local') return 'http://localhost:3000';
-      return 'http://localhost:3000';
-    };
+  const handleRefresh = async () => {
+    if (!address || refreshing) return;
 
-    const selectedNode = typeof window !== 'undefined' ? localStorage.getItem('selectedNode') || 'losthymns' : 'losthymns';
-    let selectedHost;
-    if (selectedNode === 'custom') {
-      const customIP = localStorage.getItem('customIP') || 'localhost';
-      const customPort = localStorage.getItem('customPort') || '3000';
-      let fullIP = customIP;
-      if (!fullIP.includes('://')) {
-        fullIP = `http://${fullIP}`;
-      }
-      selectedHost = `${fullIP}:${customPort}`;
-    } else {
-      selectedHost = getHost(selectedNode);
+    setRefreshing(true);
+    setError(null);
+    setAllHistory([]);
+    setCurrentPage(1);
+    setNextCursor(INITIAL_CURSOR);
+    setHasMore(true);
+
+    try {
+      await Promise.all([fetchBalance(), fetchHistoryPage(INITIAL_CURSOR, { append: false })]);
+    } catch (err) {
+      setError(formatExplorerError(err, 'Failed to refresh address data'));
+      setAllHistory([]);
+      setHasMore(false);
+    } finally {
+      setRefreshing(false);
+      setLoading(false);
     }
-    const client = new APIClient(selectedHost);
-    clientRef.current = client;
-
-    const fetchBalance = async () => {
-      client.get(`/account/${address}/balance`)
-        .then(response => {
-          const bal = response.data?.balance || response.data || 'N/A';
-          setBalance(bal);
-          // Fetch USD equivalent
-          if (bal && bal !== 'N/A') {
-            fetch('https://api.coingecko.com/api/v3/simple/price?ids=warthog&vs_currencies=usd')
-              .then(res => res.json())
-              .then(data => {
-                const price = data.warthog?.usd || 0;
-                const usd = (parseFloat(bal) * price).toFixed(2);
-                setUsdBalance(`$${usd}`);
-              })
-              .catch(() => setUsdBalance('N/A'));
-          } else {
-            setUsdBalance('N/A');
-          }
-        })
-        .catch(err => {
-          console.error('Failed to fetch balance', err);
-          setBalance('N/A');
-          setUsdBalance('N/A');
-        });
-    };
-
-    if (address) {
-      if (allHistory.length === 0) {
-        fetchMoreHistory();
-      }
-      fetchBalance();
-      // Poll balance every 30 seconds
-      const balanceInterval = setInterval(fetchBalance, 30000);
-      return () => clearInterval(balanceInterval);
-    }
-  }, [address]);
+  };
 
   const handleNext = () => {
     const nextPage = currentPage + 1;
@@ -207,14 +232,6 @@ function AddressTransactions({ address }) {
     }
   };
 
-  if (loading && allHistory.length === 0) {
-    return (
-      <BunkerShell title="Address Transactions">
-        <p className="bunker-muted">Loading transactions...</p>
-      </BunkerShell>
-    );
-  }
-
   if (!address) {
     return (
       <BunkerShell title="Address Not Found">
@@ -226,21 +243,39 @@ function AddressTransactions({ address }) {
     );
   }
 
+  if (loading && allHistory.length === 0 && !error) {
+    return (
+      <BunkerShell
+        title="Address Transactions"
+        actions={<ExplorerRefreshButton onClick={handleRefresh} loading={refreshing} />}
+      >
+        <p className="bunker-muted">Loading transactions...</p>
+      </BunkerShell>
+    );
+  }
+
   const startIndex = (currentPage - 1) * PAGE_SIZE;
   const endIndex = startIndex + PAGE_SIZE;
   const currentHistory = allHistory.slice(startIndex, endIndex);
   const hasNext = (endIndex < allHistory.length) || hasMore;
 
   return (
-    <BunkerShell title="Address Transactions" wide>
+    <BunkerShell
+      title="Address Transactions"
+      wide
+      actions={<ExplorerRefreshButton onClick={handleRefresh} loading={refreshing || loading} />}
+    >
       <h2 className="bunker-subheading">Address {abbreviate(address)}</h2>
       <div className="bunker-panel">
         <dl className="bunker-dl" style={{ marginBottom: '1rem' }}>
           <div className="bunker-dl-row">
             <dt>Address</dt>
-            <dd className="bunker-link" style={{ cursor: 'pointer' }} onClick={() => handleCopy(address, 'address')}>
-              {isMobile ? abbreviate(address) : address}
-              {copiedField === 'address' && <span> (Copied!)</span>}
+            <dd>
+              <ExplorerAddress
+                address={address}
+                abbreviated={isMobile}
+                showLink={false}
+              />
             </dd>
           </div>
           <div className="bunker-dl-row">
@@ -257,9 +292,9 @@ function AddressTransactions({ address }) {
               <TransactionItem key={tx.txid || `tx-${startIndex + index}`} tx={tx} index={startIndex + index} />
             ))}
           </ul>
-        ) : (
+        ) : !error ? (
           <p className="bunker-muted">No transactions found for this address.</p>
-        )}
+        ) : null}
       </div>
       <div className="bunker-toolbar" style={{ marginTop: '1.5rem' }}>
         <button onClick={handlePrev} disabled={currentPage === 1} className="bunker-btn bunker-btn--ghost">Previous</button>

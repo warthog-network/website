@@ -997,3 +997,135 @@
     display: none !important;
   }
 }
+
+.wallet-contacts-modal {
+  width: min(100%, 36rem);
+  max-height: min(85vh, 40rem);
+  overflow: auto;
+}
+
+.wallet-contacts-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.wallet-contacts-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.wallet-contacts-toolbar .bunker-input {
+  flex: 1 1 12rem;
+  margin: 0;
+}
+
+.wallet-contacts-sort {
+  width: auto;
+  min-width: 7rem;
+  flex: 0 0 auto;
+}
+
+.wallet-contacts-empty {
+  margin: 0.5rem 0 0;
+}
+
+.wallet-contacts-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.wallet-contacts-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid rgba(82, 82, 91, 0.45);
+  border-radius: 0.75rem;
+  background: rgba(24, 24, 27, 0.65);
+}
+
+.wallet-contacts-item__main {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.wallet-contacts-item__favorite {
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #71717a;
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.wallet-contacts-item__favorite.is-active {
+  color: #fbbf24;
+}
+
+.wallet-contacts-item__select {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+
+.wallet-contacts-item__name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #f4f4f5;
+}
+
+.wallet-contacts-item__address {
+  font-family: ui-monospace, 'Roboto Mono', monospace;
+  font-size: 0.72rem;
+  color: #a1a1aa;
+}
+
+.wallet-contacts-item__notes {
+  font-size: 0.68rem;
+  color: #71717a;
+}
+
+.wallet-contacts-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.wallet-contacts-form__favorite {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8125rem;
+  color: #d4d4d8;
+}
+
+.wallet-contacts-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}

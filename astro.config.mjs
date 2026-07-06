@@ -1,9 +1,13 @@
 // astro.config.mjs
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import tailwind from '@astrojs/tailwind';
 import mdx from '@astrojs/mdx';
 import netlify from '@astrojs/netlify';
+
+const root = path.dirname(fileURLToPath(import.meta.url));
 
 
 export default defineConfig({
@@ -17,7 +21,7 @@ experimental: {
   csp: {
     directives: [
       "default-src 'self' https://api.coingecko.com",
-      "connect-src 'self' ws: wss: https://api.coingecko.com http://localhost:3000",
+      "connect-src 'self' ws: wss: https://api.coingecko.com http://localhost:3000 https://warthognode.duckdns.org http://65.87.7.86:3001",
       "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com",
       "img-src 'self' data:",
       "object-src 'self'",
@@ -34,14 +38,14 @@ experimental: {
       alias: {
         crypto: 'crypto-browserify',
         stream: 'stream-browserify',
-         '@': new URL('./src', import.meta.url).pathname
+        '@': path.resolve(root, 'src'),
       },
-  
     },
     ssr: {
       noExternal: ['crypto-browserify', 'stream-browserify'],
     },
     optimizeDeps: {
+      include: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
       esbuildOptions: {
         define: {
           global: 'globalThis',

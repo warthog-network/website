@@ -7,6 +7,8 @@ import WalletQrExportModal from './WalletQrExportModal.jsx';
 import { fetchNodes, resolveNodeUrl } from '../lib/nodesCache';
 import { encryptWallet, decryptWallet, getSavedWallets } from '../utils/warthogWalletUtils';
 import BunkerShell from './BunkerShell.jsx';
+import WalletContactsModal from './WalletContactsModal.jsx';
+import { recordContactUsage } from '../utils/walletContacts';
 
 const API_URL = '/api/proxy';
 
@@ -73,6 +75,8 @@ const Wallet = () => {
   const [registration, setRegistration] = useState(null);
   const [usdBalance, setUsdBalance] = useState(null);
   const [showSendPanel, setShowSendPanel] = useState(false);
+  const [showContactsModal, setShowContactsModal] = useState(false);
+  const [contactsModalMode, setContactsModalMode] = useState('manage');
   const [showWalletExportQr, setShowWalletExportQr] = useState(false);
   const [currentWalletName, setCurrentWalletName] = useState(null);
   const [selectedSavedWallet, setSelectedSavedWallet] = useState('');
@@ -822,6 +826,8 @@ const Wallet = () => {
         ...prev,
         { ...txDetails, txHash: data.data.txHash, status: 'pending' },
       ]);
+      recordContactUsage(toAddr);
+
       // Clear input fields
       setToAddr('');
       setAmount('');
@@ -968,7 +974,22 @@ const Wallet = () => {
                   }}
                   onDownload={() => setShowDownloadPrompt(true)}
                   onExportQr={() => setShowWalletExportQr(true)}
+                  onContacts={() => {
+                    setContactsModalMode('manage');
+                    setShowContactsModal(true);
+                  }}
                   onClear={clearWallet}
+                />
+
+                <WalletContactsModal
+                  open={showContactsModal}
+                  mode={contactsModalMode}
+                  onClose={() => setShowContactsModal(false)}
+                  prefillAddress={toAddr}
+                  onSelectContact={(contact) => {
+                    setToAddr(contact.address);
+                    setShowSendPanel(true);
+                  }}
                 />
 
                 <WalletQrExportModal
@@ -991,7 +1012,19 @@ const Wallet = () => {
                         </button>
                       </div>
                       <div className="mb-4">
-                        <label className="bunker-label">To Address:</label>
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+                          <label className="bunker-label" style={{ margin: 0 }}>To Address:</label>
+                          <button
+                            type="button"
+                            className="compact-btn hover:!text-[#E79300] !m-0"
+                            onClick={() => {
+                              setContactsModalMode('select');
+                              setShowContactsModal(true);
+                            }}
+                          >
+                            Contacts
+                          </button>
+                        </div>
                         <input
                           type="text"
                           value={toAddr}

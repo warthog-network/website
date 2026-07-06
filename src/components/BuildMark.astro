@@ -1,0 +1,76 @@
+---
+import { getBuildHash, getBuildLabel, shouldShowBuildMark } from "../lib/buildMark";
+
+const enabled = shouldShowBuildMark();
+const buildHash = getBuildHash();
+const buildLabel = getBuildLabel();
+---
+
+{
+  enabled && (
+    <>
+      <meta name="build-mark" content={buildHash} />
+      <meta name="build-label" content={buildLabel} />
+
+      <span
+        class="build-mark build-mark--on"
+        data-build={buildLabel}
+        title={`Build ${buildLabel}`}
+        aria-hidden="true"
+      />
+
+      <script is:inline>
+        {`if (new URLSearchParams(location.search).has("buildMark")) {
+  document.documentElement.classList.add("build-mark-on");
+}`}
+      </script>
+    </>
+  )
+}
+
+<style is:global>
+  .build-mark {
+    position: fixed;
+    bottom: 0.4rem;
+    left: 0.4rem;
+    z-index: 9999;
+    pointer-events: none;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--color-brand);
+    opacity: 0;
+    padding: 0.2rem 0.45rem;
+    border-radius: var(--radius-full);
+    border: 1px solid rgba(253, 185, 19, 0.25);
+    background: rgba(1, 3, 10, 0.72);
+    backdrop-filter: blur(4px);
+  }
+
+  .build-mark::before {
+    content: "build ";
+    opacity: 0.55;
+    font-weight: 500;
+  }
+
+  .build-mark::after {
+    content: attr(data-build);
+  }
+
+  .build-mark--on,
+  html.build-mark-on .build-mark {
+    opacity: 0.72;
+  }
+
+  @media (max-width: 600px) {
+    .build-mark {
+      font-size: 0.55rem;
+      max-width: calc(100vw - 1rem);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+</style>
