@@ -30,10 +30,11 @@ experimental: {
 },
   vite: {
     resolve: {
+      dedupe: ['react', 'react-dom'],
       alias: {
         crypto: 'crypto-browserify',
         stream: 'stream-browserify',
-         '@': '/src' // Points @/ to your src/ folder
+         '@': new URL('./src', import.meta.url).pathname
       },
   
     },

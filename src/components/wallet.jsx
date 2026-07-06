@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import CryptoJS from 'crypto-js';
 import axios from 'axios';
 import { ethers } from 'ethers';
 import TransactionHistory from './TransactionHistory';
-import { fetchNodes } from '../lib/nodesCache';
+import WalletOverviewCard from './WalletOverviewCard.jsx';
+import WalletQrExportModal from './WalletQrExportModal.jsx';
+import { fetchNodes, resolveNodeUrl } from '../lib/nodesCache';
+import { encryptWallet, decryptWallet, getSavedWallets } from '../utils/warthogWalletUtils';
+import BunkerShell from './BunkerShell.jsx';
 
 const API_URL = '/api/proxy';
 
@@ -69,6 +72,20 @@ const Wallet = () => {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [registration, setRegistration] = useState(null);
   const [usdBalance, setUsdBalance] = useState(null);
+  const [showSendPanel, setShowSendPanel] = useState(false);
+  const [showWalletExportQr, setShowWalletExportQr] = useState(false);
+  const [currentWalletName, setCurrentWalletName] = useState(null);
+  const [selectedSavedWallet, setSelectedSavedWallet] = useState('');
+  const [walletName, setWalletName] = useState('');
+  const [savedWalletList, setSavedWalletList] = useState(() => getSavedWallets());
+  const [showNamePrompt, setShowNamePrompt] = useState(false);
+  const [namePromptDismissed, setNamePromptDismissed] = useState(false);
+  const [promptWalletName, setPromptWalletName] = useState('');
+  const [promptPassword, setPromptPassword] = useState('');
+  const [promptConfirmPassword, setPromptConfirmPassword] = useState('');
+  const [promptError, setPromptError] = useState(null);
+  const [showPromptPassword, setShowPromptPassword] = useState(false);
+  const [showPromptConfirmPassword, setShowPromptConfirmPassword] = useState(false);
 
   // Fetch nodes and validate savedNode from localStorage
   useEffect(() => {
@@ -86,10 +103,16 @@ const Wallet = () => {
 
       if (nodes && nodes.length > 0) {
         const savedNode = localStorage.getItem('selectedNode');
-        if (savedNode && nodes.includes(savedNode)) {
-          setSelectedNode(savedNode);
+        const savedUrl = resolveNodeUrl(savedNode);
+        const knownUrls = nodes.map((n) => n.url);
+        if (savedUrl && knownUrls.includes(savedUrl)) {
+          setSelectedNode(savedUrl);
+        } else if (savedUrl && savedUrl.startsWith('http')) {
+          setSelectedNode(savedUrl);
         } else {
-          setSelectedNode(nodes[0]);
+          const defaultUrl = nodes[0].url;
+          setSelectedNode(defaultUrl);
+          localStorage.setItem('selectedNode', defaultUrl);
         }
       }
     }
@@ -138,10 +161,18 @@ const Wallet = () => {
   }, []);
 
   useEffect(() => {
-    if (wallet?.address) {
+    if (isLoggedIn && wallet && !currentWalletName && !namePromptDismissed) {
+      setShowNamePrompt(true);
+    } else if (!isLoggedIn || currentWalletName) {
+      setShowNamePrompt(false);
+    }
+  }, [isLoggedIn, wallet, currentWalletName, namePromptDismissed]);
+
+  useEffect(() => {
+    const nodeUrl = resolveNodeUrl(selectedNode);
+    if (wallet?.address && nodeUrl) {
       console.log('Fetching balance for address:', wallet.address);
       fetchBalanceAndNonce(wallet.address);
-      // Poll for balance update every 30 seconds
       const balanceInterval = setInterval(() => fetchBalanceAndNonce(wallet.address), 30000);
       return () => clearInterval(balanceInterval);
     }
@@ -173,10 +204,23 @@ const Wallet = () => {
     }
   }, [sentTransactions, wallet, selectedNode]);
 
-  // PWA Update Logic
+  // PWA update logic — WalletLayout registers /webwallet/sw.js; attach listeners here
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').then((reg) => {
+    if (!('serviceWorker' in navigator)) return;
+
+    // Remove legacy root-scoped SW that intercepted all assets (e.g. /images/*.svg)
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      registrations.forEach((reg) => {
+        const script = reg.active?.scriptURL || reg.installing?.scriptURL || reg.waiting?.scriptURL || '';
+        if (script.endsWith('/sw.js') && !script.includes('/webwallet/')) {
+          reg.unregister();
+        }
+      });
+    });
+
+    navigator.serviceWorker
+      .register('/webwallet/sw.js', { scope: '/webwallet/' })
+      .then((reg) => {
         setRegistration(reg);
         reg.addEventListener('updatefound', () => {
           const newWorker = reg.installing;
@@ -188,10 +232,10 @@ const Wallet = () => {
             });
           }
         });
-      }).catch((error) => {
+      })
+      .catch((error) => {
         console.error('Service Worker registration failed:', error);
       });
-    }
   }, []);
 
   const handleUpdate = () => {
@@ -217,7 +261,8 @@ const Wallet = () => {
 
   // ==================== FIXED fetchBalanceAndNonce (only change) ====================
   const fetchBalanceAndNonce = async (address) => {
-    setError(null);
+    const nodeUrl = resolveNodeUrl(selectedNode);
+    if (!nodeUrl) return;
 
     // Read the latest optimistic nonce from localStorage (survives page reload / login)
     let persistentNonce = 0;
@@ -227,7 +272,7 @@ const Wallet = () => {
     }
 
     try {
-      const nodeBaseParam = `nodeBase=${encodeURIComponent(selectedNode)}`;
+      const nodeBaseParam = `nodeBase=${encodeURIComponent(nodeUrl)}`;
       console.log('Sending chain head request to:', `${API_URL}?nodePath=chain/head&${nodeBaseParam}`);
       const chainHeadResponse = await axios.get(`${API_URL}?nodePath=chain/head&${nodeBaseParam}`, {
         headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
@@ -277,18 +322,16 @@ const Wallet = () => {
       console.log('Chain head data:', chainHeadData);
       return { balanceInWart, nextNonce: newNextNonce, pinHeight: chainHeadData.pinHeight, pinHash: chainHeadData.pinHash };
     } catch (err) {
-      const errorMessage =
-        err.response?.data?.message ||
-        err.message ||
-        'Could not fetch chain head or balance';
-      setError(errorMessage);
-      console.error('Fetch error:', err);
+      console.warn('Balance fetch failed:', err.response?.status || err.message);
+      // Background balance refresh — don't surface raw proxy errors in the global banner
     }
   };
   // =================================================================================
 
   const updateTxStatuses = async () => {
-    const nodeBaseParam = `nodeBase=${encodeURIComponent(selectedNode)}`;
+    const nodeUrl = resolveNodeUrl(selectedNode);
+    if (!nodeUrl) return;
+    const nodeBaseParam = `nodeBase=${encodeURIComponent(nodeUrl)}`;
     const updatedTxs = await Promise.all(
       sentTransactions.map(async (tx) => {
         if (tx.status === 'confirmed') return tx;
@@ -312,44 +355,59 @@ const Wallet = () => {
     }
   };
 
-  const encryptWallet = (walletData, password) => {
-    const { privateKey, publicKey, address } = walletData;
-    const walletToSave = { privateKey, publicKey, address };
-    const encrypted = CryptoJS.AES.encrypt(JSON.stringify(walletToSave), password).toString();
-    return encrypted;
+  const refreshSavedWalletList = () => {
+    setSavedWalletList(getSavedWallets());
   };
 
-  const decryptWallet = (encrypted, password) => {
-    try {
-      const bytes = CryptoJS.AES.decrypt(encrypted, password);
-      const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-      if (!decrypted) throw new Error('Invalid password');
-      return JSON.parse(decrypted);
-    } catch {
-      throw new Error('Failed to decrypt wallet: Invalid password');
+  const activateWalletSession = (decryptedWallet, name = null) => {
+    setWallet(decryptedWallet);
+    setCurrentWalletName(name);
+    setNonceInput('');
+    fetchBalanceAndNonce(decryptedWallet.address);
+    const storedNonce = localStorage.getItem(`warthogNextNonce_${decryptedWallet.address}`);
+    if (storedNonce) {
+      setNextNonce(Number(storedNonce));
     }
+    setShowPasswordPrompt(false);
+    setUploadedFile(null);
+    setError(null);
+    setIsWalletProcessed(false);
+    setIsLoggedIn(true);
+    setPassword('');
+    setSelectedSavedWallet('');
   };
 
-  const saveWallet = (walletData) => {
-    if (!saveWalletConsent || !password) {
-      setError('Please provide a password and consent to save the wallet');
+  const saveNamedWallet = (walletData, name, pwd) => {
+    const trimmedName = String(name || '').trim();
+    if (!trimmedName || !pwd) {
+      setError('Please provide a wallet name and password');
       return false;
     }
     try {
-      const encrypted = encryptWallet(walletData, password);
-      localStorage.setItem('warthogWallet', encrypted);
-      setWallet(walletData);
-      setShowPasswordPrompt(false);
-      setError(null);
-      setIsWalletProcessed(true);
-      setPassword('');
+      const encrypted = encryptWallet(walletData, pwd);
+      localStorage.setItem(`warthogWallet_${trimmedName}`, encrypted);
+      refreshSavedWalletList();
+      activateWalletSession(walletData, trimmedName);
       setSaveWalletConsent(false);
-      setIsLoggedIn(true);
+      setWalletName('');
+      setConfirmPassword('');
       return true;
     } catch (err) {
       setError(err.message);
       return false;
     }
+  };
+
+  const saveWallet = (walletData) => {
+    if (!saveWalletConsent || !walletName.trim() || !password) {
+      setError('Please provide a wallet name, password, and consent to save the wallet');
+      return false;
+    }
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return false;
+    }
+    return saveNamedWallet(walletData, walletName, password);
   };
 
   const downloadWallet = (walletData, pwd) => {
@@ -386,43 +444,47 @@ const Wallet = () => {
     reader.readAsText(file);
   };
 
-  const loadWallet = () => {
+  const loadWallet = (savedName = null) => {
     if (!password) {
       setError('Please provide a password');
       return;
     }
     try {
       let encrypted;
+      let walletLabel = savedName;
       if (uploadedFile) {
         encrypted = uploadedFile;
+      } else if (savedName) {
+        encrypted = localStorage.getItem(`warthogWallet_${savedName}`);
+        if (!encrypted) throw new Error('Selected wallet not found');
       } else {
         encrypted = localStorage.getItem('warthogWallet');
         if (!encrypted) throw new Error('No wallet found in storage or file');
+        walletLabel = null;
       }
       const decryptedWallet = decryptWallet(encrypted, password);
-      setWallet(decryptedWallet);
-      setNonceInput('');
-      fetchBalanceAndNonce(decryptedWallet.address);
-      const storedNonce = localStorage.getItem(`warthogNextNonce_${decryptedWallet.address}`);
-      if (storedNonce) {
-        setNextNonce(Number(storedNonce));
-      }
-      setShowPasswordPrompt(false);
-      setUploadedFile(null);
-      setError(null);
-      setIsWalletProcessed(false);
-      setIsLoggedIn(true);
+      activateWalletSession(decryptedWallet, walletLabel);
     } catch (err) {
-      setError(err.message);
+      const msg = err?.message || 'Unknown error';
+      setError(
+        msg === 'Invalid password'
+          ? 'Invalid password'
+          : msg.startsWith('Failed to decrypt')
+          ? 'Invalid password'
+          : msg,
+      );
     }
   };
 
   const clearWallet = () => {
-    localStorage.removeItem('warthogWallet');
+    if (!currentWalletName) {
+      localStorage.removeItem('warthogWallet');
+    }
     if (wallet?.address) {
       localStorage.removeItem(`warthogNextNonce_${wallet.address}`);
     }
     setWallet(null);
+    setCurrentWalletName(null);
     setBalance(null);
     setNextNonce(null);
     setPinHeight(null);
@@ -434,6 +496,16 @@ const Wallet = () => {
     setUploadedFile(null);
     setIsWalletProcessed(false);
     setIsLoggedIn(false);
+    setShowSendPanel(false);
+    setShowWalletExportQr(false);
+    setShowNamePrompt(false);
+    setNamePromptDismissed(false);
+    setPromptWalletName('');
+    setPromptPassword('');
+    setPromptConfirmPassword('');
+    setPromptError(null);
+    setWalletName('');
+    setSelectedSavedWallet('');
     setFailedTransactions([]); // Clear failed logs on wallet clear
     setSentTransactions([]); // Clear sent logs on wallet clear
     setNonceInput('');
@@ -530,6 +602,14 @@ const Wallet = () => {
   const handleWalletAction = async () => {
     setError(null);
     setIsWalletProcessed(false);
+    if (walletAction === 'login-saved') {
+      if (!selectedSavedWallet || !password) {
+        setError('Please select a saved wallet and enter password');
+        return;
+      }
+      loadWallet(selectedSavedWallet);
+      return;
+    }
     if (walletAction === 'login' && !uploadedFile) {
       setError('Please upload the warthog_wallet.txt file');
       return;
@@ -585,10 +665,9 @@ const Wallet = () => {
   };
 
   const handleValidateAddress = () => {
-    setError(null);
     setValidateResult(null);
     if (!address) {
-      setError('Please enter an address');
+      setValidateResult({ valid: false });
       return;
     }
     try {
@@ -602,7 +681,9 @@ const Wallet = () => {
   };
 
   const getRoundedFeeE8 = async (feeWart) => {
-    const nodeBaseParam = `nodeBase=${encodeURIComponent(selectedNode)}`;
+    const nodeUrl = resolveNodeUrl(selectedNode);
+    if (!nodeUrl) return null;
+    const nodeBaseParam = `nodeBase=${encodeURIComponent(nodeUrl)}`;
     try {
       const response = await axios.get(`${API_URL}?nodePath=tools/encode16bit/from_string/${feeWart}&${nodeBaseParam}`);
       const feeData = response.data.data || response.data;
@@ -702,7 +783,13 @@ const Wallet = () => {
       const recid = sig.v - 27;
       const recidHex = recid.toString(16).padStart(2, '0');
       const signature65 = rHex + sHex + recidHex;
-      const nodeBaseParam = `nodeBase=${encodeURIComponent(selectedNode)}`;
+      const nodeUrl = resolveNodeUrl(selectedNode);
+      if (!nodeUrl) {
+        setError('Select a valid node before sending');
+        setSending(false);
+        return;
+      }
+      const nodeBaseParam = `nodeBase=${encodeURIComponent(nodeUrl)}`;
       console.log('Sending transaction request to:', `${API_URL}?nodePath=transaction/add&${nodeBaseParam}`);
       const response = await axios.post(
         `${API_URL}?nodePath=transaction/add&${nodeBaseParam}`,
@@ -780,85 +867,50 @@ const Wallet = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-4xl font-bold text-white">Warthog Wallet</h1>
-      </div>
+    <BunkerShell>
 
       {deferredPrompt && (
-        <button onClick={handleInstallClick} className="mb-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-4 focus:outline-none focus:ring-green-300 transition-colors duration-200">
+        <button onClick={handleInstallClick} className="bunker-btn" style={{ marginBottom: '1rem' }}>
           Install Wallet App
         </button>
       )}
 
       {updateAvailable && (
-        <button onClick={handleUpdate} className="mb-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 transition-colors duration-200">
+        <button onClick={handleUpdate} className="bunker-btn" style={{ marginBottom: '1rem' }}>
           Update App Available
         </button>
       )}
 
       {!showModal && (
         <>
-          {isLoggedIn && (
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
-              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Node Selection</h2>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Node:</label>
-                {nodesLoading ? (
-                  <div className="flex items-center justify-center py-4">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900 dark:border-white"></div>
-                    <span className="ml-2 text-gray-500">Loading nodes...</span>
-                  </div>
-                ) : nodesError ? (
-                  <div className="text-red-500 py-2">{nodesError}</div>
-                ) : (
-                  <select
-                    value={selectedNode}
-                    onChange={(e) => {
-                      setSelectedNode(e.target.value);
-                      localStorage.setItem('selectedNode', e.target.value);
-                    }}
-                    className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  >
-                    {nodeList.map((node, index) => (
-                      <option key={index} value={node.url}>
-                        {node.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            </div>
-          )}
-
           {showPasswordPrompt && !wallet && (
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
-              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Unlock Wallet</h2>
+            <div className="bunker-panel">
+              <h2 className="bunker-heading">Unlock Wallet</h2>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Upload Wallet File (optional):</label>
-                <input type="file" accept=".txt" onChange={handleFileUpload} className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                <label className="bunker-label">Upload Wallet File (optional):</label>
+                <input type="file" accept=".txt" onChange={handleFileUpload} className="bunker-input" />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password:</label>
-                <div className="relative">
+                <label className="bunker-label">Password:</label>
+                <div className="bunker-input-wrap">
                   <input
                     type={showUnlockPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter password to unlock wallet"
-                    className="mt-1 block w-full px-3 py-2 pr-10 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    className="bunker-input"
                   />
                   <button
                     type="button"
                     onClick={() => setShowUnlockPassword(!showUnlockPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    className="bunker-input-toggle"
                   >
-                    {showUnlockPassword ? "🙈" : "👁️"}
+                    {showUnlockPassword ? 'hide' : 'show'}
                   </button>
                 </div>
               </div>
               <div className="flex space-x-2">
-                <button onClick={loadWallet} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800">Unlock Wallet</button>
+                <button onClick={loadWallet} className="bunker-btn">Unlock Wallet</button>
                 <button
                   onClick={() => {
                     setShowPasswordPrompt(false);
@@ -866,7 +918,7 @@ const Wallet = () => {
                     setUploadedFile(null);
                     setShowUnlockPassword(false);
                   }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200"
+                  className="bunker-btn bunker-btn--ghost"
                 >
                   Cancel
                 </button>
@@ -875,83 +927,172 @@ const Wallet = () => {
           )}
 
           {wallet && (
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Wallet</h2>
-                <button
-                  className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
-                  onClick={() => setShowDownloadPrompt(true)}
-                >
-                  Download Wallet File
-                </button>
+            <section className="wallet-overview !p-0 !bg-transparent !border-0 !shadow-none !mb-0">
+              <div className="mb-5">
+                <h2 className="!mb-1">Wallet Overview</h2>
+                <p className="text-xs text-zinc-500">Your balance and transaction history</p>
               </div>
-              <div className="mb-4">
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300"><strong>Address:</strong></p>
-                <p
-                  className="text-gray-900 dark:text-white break-all cursor-pointer"
-                  onClick={() => navigator.clipboard.writeText(wallet.address).then(() => alert('Address copied to clipboard!'))}
-                  title="Click to copy address"
-                >
-                  {wallet.address}
+
+              <div className="space-y-4">
+                <WalletOverviewCard
+                  balance={balance}
+                  usdBalance={usdBalance}
+                  address={wallet.address}
+                  walletName={currentWalletName}
+                  nodeList={nodeList}
+                  selectedNode={resolveNodeUrl(selectedNode)}
+                  nodesLoading={nodesLoading}
+                  nodesError={nodesError}
+                  onNodeChange={(url) => {
+                    setSelectedNode(url);
+                    localStorage.setItem('selectedNode', url);
+                  }}
+                  onRefresh={() => fetchBalanceAndNonce(wallet.address)}
+                  onCopyAddress={() =>
+                    navigator.clipboard
+                      .writeText(wallet.address)
+                      .then(() => alert('Address copied to clipboard!'))
+                  }
+                  validateInput={address}
+                  onValidateInputChange={(value) => setAddress(value.trim())}
+                  onValidate={handleValidateAddress}
+                  validateResult={validateResult}
+                  onSend={() => {
+                    setShowSendPanel(true);
+                    requestAnimationFrame(() => {
+                      document.getElementById('send-transaction')?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                      });
+                    });
+                  }}
+                  onDownload={() => setShowDownloadPrompt(true)}
+                  onExportQr={() => setShowWalletExportQr(true)}
+                  onClear={clearWallet}
+                />
+
+                <WalletQrExportModal
+                  open={showWalletExportQr}
+                  wallet={wallet}
+                  onClose={() => setShowWalletExportQr(false)}
+                />
+
+                {showSendPanel && isLoggedIn && (
+                  <div className="wallet-send-wrap">
+                    <div id="send-transaction" className="bunker-panel wallet-send-panel">
+                      <div className="flex items-center justify-between gap-3 mb-4">
+                        <h2 className="bunker-heading" style={{ margin: 0 }}>Send Transaction</h2>
+                        <button
+                          type="button"
+                          onClick={() => setShowSendPanel(false)}
+                          className="compact-btn hover:!text-[#E79300] !m-0"
+                        >
+                          Close
+                        </button>
+                      </div>
+                      <div className="mb-4">
+                        <label className="bunker-label">To Address:</label>
+                        <input
+                          type="text"
+                          value={toAddr}
+                          onChange={(e) => setToAddr(e.target.value.trim())}
+                          placeholder="Enter 48-character to address"
+                          className="bunker-input"
+                        />
+                      </div>
+                      <div className="mb-4">
+                        <label className="bunker-label">Amount (WART):</label>
+                        <input
+                          type="text"
+                          value={amount}
+                          onChange={(e) => setAmount(e.target.value.trim())}
+                          placeholder="Enter amount in WART (e.g., 1)"
+                          className="bunker-input"
+                        />
+                      </div>
+                      <div className="mb-4">
+                        <label className="bunker-label">Fee (WART):</label>
+                        <input
+                          type="text"
+                          value={fee}
+                          onChange={(e) => setFee(e.target.value.trim())}
+                          placeholder="Enter fee in WART (minimum 0.01)"
+                          className="bunker-input"
+                        />
+                      </div>
+                      <div className="mb-4">
+                        <label className="bunker-label">Nonce:</label>
+                        <input
+                          type="text"
+                          value={nonceInput}
+                          onChange={(e) => setNonceInput(e.target.value.trim())}
+                          placeholder={`Auto: ${nextNonce !== null ? nextNonce : 'Loading'}`}
+                          className="bunker-input"
+                        />
+                      </div>
+                      <button onClick={handleSendTransaction} disabled={sending} className="bunker-btn">
+                        {sending ? 'Sending...' : 'Send Transaction'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-xs text-zinc-500 italic">
+                  {currentWalletName
+                    ? `Wallet "${currentWalletName}" is saved encrypted in this browser. Use the mobile icon to export via QR.`
+                    : 'Private key is in this session only until you name & save the wallet. Keep your password secure.'}
                 </p>
+
+                <TransactionHistory
+                  address={wallet.address}
+                  node={resolveNodeUrl(selectedNode)}
+                  onCountsUpdate={setBlockCounts}
+                  blockCounts={blockCounts}
+                  refreshTrigger={refreshHistory}
+                />
               </div>
-              <div className="mb-4">
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300"><strong>Balance:</strong> {balance !== null ? `${balance}` : 'Loading...'} {usdBalance && usdBalance !== '$0.00' && usdBalance !== 'N/A' ? `(${usdBalance})` : ''}</p>
-              </div>
-              <div className="flex space-x-2 mb-4">
-                <button onClick={() => fetchBalanceAndNonce(wallet.address)} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800">
-                  Refresh Balance
-                </button>
-                <button onClick={clearWallet} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200">
-                  Clear Wallet
-                </button>
-              </div>
-              <p className="text-sm mb-4" style={{ color: 'var(--color-brand)' }}>
-                Warning: Private key is encrypted in localStorage. Keep your password secure.
-              </p>
-              <TransactionHistory address={wallet.address} node={selectedNode} onCountsUpdate={setBlockCounts} blockCounts={blockCounts} refreshTrigger={refreshHistory} />
-            </div>
+            </section>
           )}
 
           {showDownloadPrompt && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full">
-                <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Download Wallet File</h2>
+            <div className="bunker-modal-overlay">
+              <div className="bunker-modal">
+                <h2 className="bunker-heading">Download Wallet File</h2>
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password to Encrypt Wallet:</label>
-                  <div className="relative">
+                  <label className="bunker-label">Password to Encrypt Wallet:</label>
+                  <div className="bunker-input-wrap">
                     <input
                       type={showDownloadPassword ? "text" : "password"}
                       value={downloadPassword}
                       onChange={(e) => setDownloadPassword(e.target.value)}
                       placeholder="Enter password to encrypt wallet"
-                      className="mt-1 block w-full px-3 py-2 pr-10 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="bunker-input"
                     />
                     <button
                       type="button"
                       onClick={() => setShowDownloadPassword(!showDownloadPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                      className="bunker-input-toggle"
                     >
-                      {showDownloadPassword ? "🙈" : "👁️"}
+                      {showDownloadPassword ? 'hide' : 'show'}
                     </button>
                   </div>
                 </div>
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirm Password:</label>
-                  <div className="relative">
+                  <label className="bunker-label">Confirm Password:</label>
+                  <div className="bunker-input-wrap">
                     <input
                       type={showConfirmDownloadPassword ? "text" : "password"}
                       value={confirmDownloadPassword}
                       onChange={(e) => setConfirmDownloadPassword(e.target.value)}
                       placeholder="Confirm password"
-                      className="mt-1 block w-full px-3 py-2 pr-10 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="bunker-input"
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmDownloadPassword(!showConfirmDownloadPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                      className="bunker-input-toggle"
                     >
-                      {showConfirmDownloadPassword ? "🙈" : "👁️"}
+                      {showConfirmDownloadPassword ? 'hide' : 'show'}
                     </button>
                   </div>
                 </div>
@@ -968,10 +1109,10 @@ const Wallet = () => {
                     setError(null);
                     downloadWallet(wallet, downloadPassword);
                     setShowDownloadPrompt(false);
-                  }} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800">
+                  }} className="bunker-btn">
                     Download
                   </button>
-                  <button onClick={() => { setShowDownloadPrompt(false); setDownloadPassword(''); setConfirmDownloadPassword(''); setShowDownloadPassword(false); setShowConfirmDownloadPassword(false); }} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200">
+                  <button onClick={() => { setShowDownloadPrompt(false); setDownloadPassword(''); setConfirmDownloadPassword(''); setShowDownloadPassword(false); setShowConfirmDownloadPassword(false); }} className="bunker-btn bunker-btn--ghost">
                     Cancel
                   </button>
                 </div>
@@ -980,10 +1121,10 @@ const Wallet = () => {
           )}
 
           {!isLoggedIn && (
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
-              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Wallet Management</h2>
+            <div className="bunker-panel">
+              <h2 className="bunker-heading">Wallet Management</h2>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Action:</label>
+                <label className="bunker-label">Action:</label>
                 <select
                   value={walletAction}
                   onChange={(e) => {
@@ -993,68 +1134,137 @@ const Wallet = () => {
                     setPrivateKeyInput('');
                     setUploadedFile(null);
                     setPassword('');
+                    setSelectedSavedWallet('');
                     setIsWalletProcessed(false);
                     setShowLoginPassword(false);
+                    refreshSavedWalletList();
                   }}
-                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className="bunker-input"
                 >
                   <option value="create">Create New Wallet</option>
                   <option value="derive">Derive Wallet from Seed Phrase</option>
                   <option value="import">Import from Private Key</option>
+                  <option value="login-saved">Login to Saved Wallet</option>
                   <option value="login">Login with Wallet File</option>
                 </select>
               </div>
+              {walletAction === 'login-saved' && (
+                <>
+                  <div className="mb-4">
+                    <label className="bunker-label">Select Saved Wallet:</label>
+                    {savedWalletList.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+                        {savedWalletList.map((name) => {
+                          const isSelected = selectedSavedWallet === name;
+                          return (
+                            <button
+                              key={name}
+                              type="button"
+                              onClick={() => {
+                                setSelectedSavedWallet(name);
+                                setError(null);
+                              }}
+                              className={`saved-wallet-card${isSelected ? ' saved-wallet-card--selected' : ''}`}
+                              aria-pressed={isSelected}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                  <div className="saved-wallet-card__name">{name}</div>
+                                  <div className="saved-wallet-card__meta">
+                                    {isSelected ? 'Selected' : 'Saved in this browser'}
+                                  </div>
+                                </div>
+                                <span className="saved-wallet-card__check" aria-hidden="true">
+                                  {isSelected && (
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" fill="currentColor" className="w-2.5 h-2.5">
+                                      <path d="M10.28 2.28a.75.75 0 0 1 0 1.06l-5.5 5.5a.75.75 0 0 1-1.06 0l-2.5-2.5a.75.75 0 1 1 1.06-1.06L4.5 7.19l4.97-4.97a.75.75 0 0 1 1.06 0Z" />
+                                    </svg>
+                                  )}
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-zinc-500 mt-1">
+                        No saved wallets yet. Create a wallet and save it for quick login.
+                      </p>
+                    )}
+                  </div>
+                  <div className="mb-4">
+                    <label className="bunker-label">Password:</label>
+                    <div className="bunker-input-wrap">
+                      <input
+                        type={showLoginPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Enter password"
+                        className="bunker-input"
+                        autoComplete="current-password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowLoginPassword(!showLoginPassword)}
+                        className="bunker-input-toggle"
+                      >
+                        {showLoginPassword ? 'hide' : 'show'}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
               {walletAction === 'derive' && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Seed Phrase:</label>
+                  <label className="bunker-label">Seed Phrase:</label>
                   <input
                     type="text"
                     value={mnemonic}
                     onChange={(e) => setMnemonic(e.target.value)}
                     placeholder="Enter 12 or 24-word seed phrase"
-                    className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    className="bunker-input"
                   />
                 </div>
               )}
               {walletAction === 'import' && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Private Key:</label>
+                  <label className="bunker-label">Private Key:</label>
                   <input
                     type="text"
                     value={privateKeyInput}
                     onChange={(e) => setPrivateKeyInput(e.target.value.replace(/\s/g, ''))}
                     placeholder="Enter 64-character hex private key"
-                    className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    className="bunker-input"
                   />
                 </div>
               )}
               {walletAction === 'login' && (
                 <>
                   <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Upload Wallet File (warthog_wallet.txt):</label>
+                    <label className="bunker-label">Upload Wallet File (warthog_wallet.txt):</label>
                     <input
                       type="file"
                       accept=".txt"
                       onChange={handleFileUpload}
-                      className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="bunker-input"
                     />
                   </div>
                   <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password:</label>
-                    <div className="relative">
+                    <label className="bunker-label">Password:</label>
+                    <div className="bunker-input-wrap">
                       <input
                         type={showLoginPassword ? "text" : "password"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Enter password to decrypt wallet"
-                        className="mt-1 block w-full px-3 py-2 pr-10 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        className="bunker-input"
                       />
                       <button
                         type="button"
                         onClick={() => setShowLoginPassword(!showLoginPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                        className="bunker-input-toggle"
                       >
-                        {showLoginPassword ? "🙈" : "👁️"}
+                        {showLoginPassword ? 'hide' : 'show'}
                       </button>
                     </div>
                   </div>
@@ -1062,11 +1272,11 @@ const Wallet = () => {
               )}
               {(walletAction === 'create' || walletAction === 'derive') && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Word Count:</label>
+                  <label className="bunker-label">Word Count:</label>
                   <select
                     value={wordCount}
                     onChange={(e) => setWordCount(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    className="bunker-input"
                   >
                     <option value="12">12 Words</option>
                     <option value="24">24 Words</option>
@@ -1075,110 +1285,44 @@ const Wallet = () => {
               )}
               {(walletAction === 'create' || walletAction === 'derive') && wordCount === '12' && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Derivation Path Type:</label>
+                  <label className="bunker-label">Derivation Path Type:</label>
                   <select
                     value={pathType}
                     onChange={(e) => setPathType(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    className="bunker-input"
                   >
                     <option value="hardened">Hardened (m/44'/2070'/0'/0/0)</option>
                     <option value="non-hardened">Non-Hardened (m/44'/2070'/0/0/0)</option>
                   </select>
                 </div>
               )}
-              <button onClick={handleWalletAction} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800">
+              <button
+                onClick={handleWalletAction}
+                disabled={walletAction === 'login-saved' && (!password || !selectedSavedWallet)}
+                className="bunker-btn"
+              >
                 {walletAction === 'create'
                   ? 'Create Wallet'
                   : walletAction === 'derive'
                   ? 'Derive Wallet'
                   : walletAction === 'import'
                   ? 'Import Wallet'
+                  : walletAction === 'login-saved'
+                  ? 'Login to Wallet'
                   : 'Login'}
               </button>
             </div>
           )}
 
-          {isLoggedIn && (
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
-              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Validate Address</h2>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Address:</label>
-                <input
-                  type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value.trim())}
-                  placeholder="Enter 48-character address"
-                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-              </div>
-              <button onClick={handleValidateAddress} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800">Validate Address</button>
-              {validateResult && (
-                <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-md">
-                  <pre className="text-sm text-gray-900 dark:text-white">{JSON.stringify(validateResult, null, 2)}</pre>
-                </div>
-              )}
-            </div>
-          )}
-
-          {isLoggedIn && (
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
-              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Send Transaction</h2>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">To Address:</label>
-                <input
-                  type="text"
-                  value={toAddr}
-                  onChange={(e) => setToAddr(e.target.value.trim())}
-                  placeholder="Enter 48-character to address"
-                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Amount (WART):</label>
-                <input
-                  type="text"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value.trim())}
-                  placeholder="Enter amount in WART (e.g., 1)"
-                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fee (WART):</label>
-                <input
-                  type="text"
-                  value={fee}
-                  onChange={(e) => setFee(e.target.value.trim())}
-                  placeholder="Enter fee in WART (minimum 0.01)"
-                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nonce:</label>
-                <input
-                  type="text"
-                  value={nonceInput}
-                  onChange={(e) => setNonceInput(e.target.value.trim())}
-                  placeholder={`Auto: ${nextNonce !== null ? nextNonce : 'Loading'}`}
-                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                />
-              </div>
-              <button onClick={handleSendTransaction} disabled={sending} className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed">
-                {sending ? 'Sending...' : 'Send Transaction'}
-              </button>
-            
-            </div>
-          )}
-
          {isLoggedIn && sentTransactions.length > 0 && (
-  <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
+  <div className="bunker-panel">
     <div className="flex justify-between items-center mb-4">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Sent Transactions Log</h2>
+      <h2 className="bunker-heading">Sent Transactions Log</h2>
       
       <div className="flex gap-3">
         <button 
           onClick={updateTxStatuses} 
-          className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
+          className="bunker-btn"
         >
           Refresh Status
         </button>
@@ -1186,7 +1330,7 @@ const Wallet = () => {
         {sentTransactions.some(tx => tx.status === 'confirmed') && (
           <button 
             onClick={() => setSentTransactions(prev => prev.filter(tx => tx.status === 'pending'))}
-            className="px-4 py-2 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 dark:text-red-400 dark:border-red-700 transition-colors"
+            className="bunker-btn bunker-btn--danger"
           >
             Clear confirmed
           </button>
@@ -1194,15 +1338,15 @@ const Wallet = () => {
       </div>
     </div>
 
-    <ul className="space-y-4">
+    <ul className="bunker-list">
       {sentTransactions.map((tx, index) => (
-        <li key={index} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md border border-gray-200 dark:border-gray-600">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-            <p><strong className="text-gray-700 dark:text-gray-300">Timestamp:</strong> {tx.timestamp}</p>
+        <li key={index} className="bunker-list-item">
+          <div className="bunker-dl-grid">
+            <p><strong>Timestamp:</strong> {tx.timestamp}</p>
             
             <p>
-              <strong className="text-gray-700 dark:text-gray-300">From:</strong>{' '}
-              <span className="text-gray-900 dark:text-white break-all">
+              <strong>From:</strong>{' '}
+              <span className="bunker-text">
                 {isSmallScreen767 
                   ? `${wallet.address.slice(0,6)}...${wallet.address.slice(-4)}` 
                   : wallet.address}
@@ -1210,22 +1354,22 @@ const Wallet = () => {
             </p>
 
             <p>
-              <strong className="text-gray-700 dark:text-gray-300">To:</strong>{' '}
-              <span className="text-gray-900 dark:text-white break-all">
+              <strong>To:</strong>{' '}
+              <span className="bunker-text">
                 {isSmallScreen767 
                   ? `${tx.toAddr.slice(0,6)}...${tx.toAddr.slice(-4)}` 
                   : tx.toAddr}
               </span>
             </p>
 
-            <p><strong className="text-gray-700 dark:text-gray-300">Amount:</strong> {tx.amount} WART</p>
-            <p><strong className="text-gray-700 dark:text-gray-300">Fee:</strong> {tx.fee} WART</p>
-            <p><strong className="text-gray-700 dark:text-gray-300">Nonce:</strong> {tx.nonce}</p>
+            <p><strong>Amount:</strong> {tx.amount} WART</p>
+            <p><strong>Fee:</strong> {tx.fee} WART</p>
+            <p><strong>Nonce:</strong> {tx.nonce}</p>
 
             <p>
-              <strong className="text-gray-700 dark:text-gray-300">Tx Hash:</strong>{' '}
+              <strong>Tx Hash:</strong>{' '}
               <span 
-                className="text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 break-all"
+                className="bunker-copyable"
                 onClick={() => copyToClipboard(tx.txHash, setCopiedTxId)}
                 title={tx.txHash}
               >
@@ -1237,8 +1381,8 @@ const Wallet = () => {
             </p>
 
             <p>
-              <strong className="text-gray-700 dark:text-gray-300">Status:</strong>{' '}
-              <span className={tx.status === 'confirmed' ? 'text-green-600 dark:text-green-400 font-medium' : 'text-amber-600 dark:text-amber-400'}>
+              <strong>Status:</strong>{' '}
+              <span className={tx.status === 'confirmed' ? 'bunker-status--ok' : 'bunker-status--pending'}>
                 {tx.status === 'confirmed' ? 'Confirmed (Block mined)' : 'Pending'}
               </span>
             </p>
@@ -1250,17 +1394,17 @@ const Wallet = () => {
 )}
 
           {isLoggedIn && failedTransactions.length > 0 && (
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-6 mb-6">
-              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Failed Transactions Log</h2>
-              <ul className="space-y-4">
+            <div className="bunker-panel">
+              <h2 className="bunker-heading">Failed Transactions Log</h2>
+              <ul className="bunker-list">
                 {failedTransactions.map((tx, index) => (
-                  <li key={index} className="bg-red-50 dark:bg-red-900 p-4 rounded-md border border-red-200 dark:border-red-700">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                      <p><strong className="text-red-700 dark:text-red-300">Timestamp:</strong> {tx.timestamp}</p>
+                  <li key={index} className="bunker-list-item bunker-list-item--error">
+                    <div className="bunker-dl-grid">
+                      <p><strong>Timestamp:</strong> {tx.timestamp}</p>
                       <p>
-                        <strong className="text-red-700 dark:text-red-300">From:</strong>{' '}
+                        <strong>From:</strong>{' '}
                         <span
-                          className="text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 break-all"
+                          className="bunker-copyable"
                           title={wallet.address}
                           onClick={() => copyToClipboard(wallet.address, setCopiedFromAddr)}
                         >
@@ -1269,9 +1413,9 @@ const Wallet = () => {
                         </span>
                       </p>
                       <p>
-                        <strong className="text-red-700 dark:text-red-300">To:</strong>{' '}
+                        <strong>To:</strong>{' '}
                         <span
-                          className="text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 break-all"
+                          className="bunker-copyable"
                           title={tx.toAddr}
                           onClick={() => copyToClipboard(tx.toAddr, setCopiedToAddr)}
                         >
@@ -1279,10 +1423,10 @@ const Wallet = () => {
                           {copiedToAddr === tx.toAddr ? ' (Copied!)' : ''}
                         </span>
                       </p>
-                      <p><strong className="text-red-700 dark:text-red-300">Amount:</strong> {tx.amount} WART</p>
-                      <p><strong className="text-red-700 dark:text-red-300">Fee:</strong> {tx.fee} WART</p>
-                      <p><strong className="text-red-700 dark:text-red-300">Nonce:</strong> {tx.nonce}</p>
-                      <p><strong className="text-red-700 dark:text-red-300">Error:</strong> {tx.error}</p>
+                      <p><strong>Amount:</strong> {tx.amount} WART</p>
+                      <p><strong>Fee:</strong> {tx.fee} WART</p>
+                      <p><strong>Nonce:</strong> {tx.nonce}</p>
+                      <p><strong>Error:</strong> {tx.error}</p>
                     </div>
                   </li>
                 ))}
@@ -1291,7 +1435,7 @@ const Wallet = () => {
           )}
 
           {error && (
-            <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 p-4 rounded-md mb-6">
+            <div className="bunker-alert bunker-alert--error">
               <strong>Error:</strong> {error}
             </div>
           )}
@@ -1299,131 +1443,167 @@ const Wallet = () => {
       )}
 
       {showModal && walletData && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Wallet Information</h2>
-            <p className="mb-4" style={{ color: 'var(--color-brand)' }}>
+        <div className="bunker-modal-overlay">
+          <div className="bunker-modal bunker-modal--wide">
+            <h2 className="bunker-heading">Wallet Information</h2>
+            <p className="bunker-warning" style={{ marginBottom: '1rem' }}>
               Warning: Please write down your seed phrase (if available) and private key on a piece of paper and store them securely. Do not share them with anyone.
             </p>
-            <p className="text-gray-700 dark:text-gray-300 mb-2">Options for securing your wallet:</p>
-            <ul className="text-gray-700 dark:text-gray-300 mb-4 list-disc list-inside">
-              <li>Save the wallet to localStorage (encrypted with your password). This allows easy access but is tied to this browser.</li>
+            <p className="bunker-text" style={{ marginBottom: '0.5rem' }}>Options for securing your wallet:</p>
+            <ul className="bunker-text bunker-muted" style={{ marginBottom: '1rem', paddingLeft: '1.25rem' }}>
+              <li>Save a named wallet to this browser for quick login via &quot;Login to Saved Wallet&quot;.</li>
               <li>Download the wallet as an encrypted file (warthog_wallet.txt). You can store this file securely and upload it later to login.</li>
+              <li>Export to the mobile app via QR from the overview after you start using the wallet.</li>
             </ul>
             {walletData.wordCount && (
               <p className="mb-2">
-                <strong className="text-gray-700 dark:text-gray-300">Word Count:</strong> {walletData.wordCount}
+                <strong className="bunker-label" style={{ display: 'inline' }}>Word Count:</strong> {walletData.wordCount}
               </p>
             )}
             {walletData.mnemonic && (
               <div className="mb-4">
-                <strong className="text-gray-700 dark:text-gray-300">Seed Phrase:</strong>
-                <p
-                  className="p-4 rounded-md mt-2 border"
-                  style={{ background: 'rgba(253, 185, 19, 0.12)', borderColor: 'rgba(253, 185, 19, 0.35)' }}
-                >
-                  <span className="font-mono text-lg font-bold" style={{ color: 'var(--color-brand)' }}>{walletData.mnemonic}</span>
+                <strong className="bunker-label" style={{ display: 'inline' }}>Seed Phrase:</strong>
+                <p className="bunker-seed-phrase">
+                  <span>{walletData.mnemonic}</span>
                 </p>
               </div>
             )}
             {walletData.pathType && (
               <p className="mb-2">
-                <strong className="text-gray-700 dark:text-gray-300">Path Type:</strong> {walletData.pathType}
+                <strong className="bunker-label" style={{ display: 'inline' }}>Path Type:</strong> {walletData.pathType}
               </p>
             )}
             <div className="mb-2">
-              <strong className="text-gray-700 dark:text-gray-300">Private Key:</strong><br />
-              <span className="text-gray-900 dark:text-white font-mono break-all">{walletData.privateKey}</span>
+              <strong className="bunker-label" style={{ display: 'inline' }}>Private Key:</strong><br />
+              <span className="bunker-text" style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>{walletData.privateKey}</span>
             </div>
             <div className="mb-2">
-              <strong className="text-gray-700 dark:text-gray-300">Public Key:</strong><br />
-              <span className="text-gray-900 dark:text-white font-mono break-all">{walletData.publicKey}</span>
+              <strong className="bunker-label" style={{ display: 'inline' }}>Public Key:</strong><br />
+              <span className="bunker-text" style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>{walletData.publicKey}</span>
             </div>
             <div className="mb-4">
-              <strong className="text-gray-700 dark:text-gray-300">Address:</strong><br />
-              <span className="text-gray-900 dark:text-white font-mono break-all">{walletData.address}</span>
+              <strong className="bunker-label" style={{ display: 'inline' }}>Address:</strong><br />
+              <span className="bunker-text" style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>{walletData.address}</span>
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password to Encrypt Wallet:</label>
-              <div className="relative">
+              <label className="bunker-label">Password to Encrypt Wallet:</label>
+              <div className="bunker-input-wrap">
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter password to encrypt wallet"
-                  className="mt-1 block w-full px-3 py-2 pr-10 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className="bunker-input"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  className="bunker-input-toggle"
                 >
-                  {showPassword ? "🙈" : "👁️"}
+                  {showPassword ? 'hide' : 'show'}
                 </button>
               </div>
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirm Password:</label>
-              <div className="relative">
+              <label className="bunker-label">Confirm Password:</label>
+              <div className="bunker-input-wrap">
                 <input
                   type={showConfirmPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Confirm password"
-                  className="mt-1 block w-full px-3 py-2 pr-10 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className="bunker-input"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  className="bunker-input-toggle"
                 >
-                  {showConfirmPassword ? "🙈" : "👁️"}
+                  {showConfirmPassword ? 'hide' : 'show'}
                 </button>
               </div>
             </div>
             {error && (
-              <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 p-4 rounded-md mb-4">
+              <div className="bunker-alert bunker-alert--error">
                 <strong>Error:</strong> {error}
               </div>
             )}
             <div className="mb-4">
-              <label className="flex items-center">
+              <label className="bunker-check-label">
                 <input
                   type="checkbox"
                   checked={saveWalletConsent}
                   onChange={(e) => setSaveWalletConsent(e.target.checked)}
-                  className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  className="bunker-checkbox"
                 />
-                <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Save wallet to localStorage (encrypted)</span>
+                <span>Save named wallet to this browser (encrypted with password)</span>
               </label>
             </div>
-            <div className="flex space-x-2 mb-4">
+            {saveWalletConsent && (
+              <div className="mb-4">
+                <label className="bunker-label">Wallet Name:</label>
+                <input
+                  type="text"
+                  value={walletName}
+                  onChange={(e) => setWalletName(e.target.value)}
+                  placeholder="e.g. main or trading"
+                  className="bunker-input"
+                />
+              </div>
+            )}
+            <div className="mb-4">
+              <label className="bunker-check-label">
+                <input
+                  type="checkbox"
+                  checked={consentToClose}
+                  onChange={(e) => setConsentToClose(e.target.checked)}
+                  className="bunker-checkbox"
+                />
+                <span>I have saved the seed phrase / private key securely (required)</span>
+              </label>
+            </div>
+            <div className="flex flex-wrap gap-2 mb-4">
               <button
+                disabled={!consentToClose}
                 onClick={() => {
-                  if (!password) {
-                    setError('Please provide a password to encrypt and save the wallet.');
-                    return;
-                  }
-                  if (password !== confirmPassword) {
-                    setError('Passwords do not match.');
-                    return;
-                  }
-                  if (!saveWalletConsent) {
-                    setError('Please consent to save the wallet.');
+                  if (!consentToClose) {
+                    setError('Please confirm you have saved the seed/private key securely');
                     return;
                   }
                   setError(null);
-                  saveWallet(walletData);
+                  activateWalletSession(walletData, null);
                   setShowModal(false);
                   setWalletData(null);
                   setPassword('');
                   setConfirmPassword('');
+                  setWalletName('');
+                  setSaveWalletConsent(false);
+                  setConsentToClose(false);
                   setShowPassword(false);
                   setShowConfirmPassword(false);
                 }}
-                className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
+                className="bunker-btn"
               >
-                Save Wallet
+                Use Wallet Now
+              </button>
+              <button
+                disabled={!consentToClose || !saveWalletConsent || !walletName.trim() || !password || password !== confirmPassword}
+                onClick={() => {
+                  setError(null);
+                  if (saveWallet(walletData)) {
+                    setShowModal(false);
+                    setWalletData(null);
+                    setPassword('');
+                    setConfirmPassword('');
+                    setWalletName('');
+                    setConsentToClose(false);
+                    setShowPassword(false);
+                    setShowConfirmPassword(false);
+                  }
+                }}
+                className="bunker-btn"
+              >
+                Save Named Wallet
               </button>
               <button
                 onClick={() => {
@@ -1436,51 +1616,133 @@ const Wallet = () => {
                     return;
                   }
                   setError(null);
-                  downloadWallet(walletData);
+                  downloadWallet(walletData, password);
                   setShowModal(false);
                   setWalletData(null);
                   setPassword('');
                   setConfirmPassword('');
-                  setShowPassword(false);
-                  setShowConfirmPassword(false);
-                }}
-                className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
-              >
-                Download Wallet File
-              </button>
-            </div>
-            <div className="flex items-center justify-end space-x-2">
-              <label className="flex items-center text-sm">
-                <input
-                  type="checkbox"
-                  checked={consentToClose}
-                  onChange={(e) => setConsentToClose(e.target.checked)}
-                  className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                />
-                <span className="ml-2 text-gray-700 dark:text-gray-300">I consent to close without saving to local storage or downloading the wallet file</span>
-              </label>
-              <button
-                disabled={!consentToClose}
-                onClick={() => {
-                  setShowModal(false);
-                  setWalletData(null);
-                  setPassword('');
-                  setConfirmPassword('');
+                  setWalletName('');
                   setSaveWalletConsent(false);
                   setConsentToClose(false);
-                  setError(null);
                   setShowPassword(false);
                   setShowConfirmPassword(false);
                 }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bunker-btn"
               >
-                Close
+                Download Wallet File
               </button>
             </div>
           </div>
         </div>
       )}
-    </div>
+
+      {showNamePrompt && wallet && (
+        <div className="bunker-modal-overlay" style={{ zIndex: 1100 }}>
+          <div className="bunker-modal">
+            <h2 className="bunker-heading">Name &amp; Save This Wallet</h2>
+            <p className="bunker-text bunker-muted" style={{ marginBottom: '1rem' }}>
+              This wallet isn&apos;t tagged with an account name yet. Give it a name and password so you can select it easily from &quot;Login to Saved Wallet&quot; next time.
+            </p>
+            {promptError && (
+              <div className="bunker-alert bunker-alert--error" style={{ marginBottom: '1rem' }}>
+                {promptError}
+              </div>
+            )}
+            <div className="mb-4">
+              <label className="bunker-label">Wallet Name:</label>
+              <input
+                type="text"
+                value={promptWalletName}
+                onChange={(e) => setPromptWalletName(e.target.value)}
+                placeholder="e.g. main-wallet or trading"
+                className="bunker-input"
+              />
+            </div>
+            <div className="mb-4">
+              <label className="bunker-label">Password:</label>
+              <div className="bunker-input-wrap">
+                <input
+                  type={showPromptPassword ? 'text' : 'password'}
+                  value={promptPassword}
+                  onChange={(e) => setPromptPassword(e.target.value)}
+                  placeholder="Password to encrypt saved wallet"
+                  className="bunker-input"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPromptPassword(!showPromptPassword)}
+                  className="bunker-input-toggle"
+                >
+                  {showPromptPassword ? 'hide' : 'show'}
+                </button>
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="bunker-label">Confirm Password:</label>
+              <div className="bunker-input-wrap">
+                <input
+                  type={showPromptConfirmPassword ? 'text' : 'password'}
+                  value={promptConfirmPassword}
+                  onChange={(e) => setPromptConfirmPassword(e.target.value)}
+                  placeholder="Confirm password"
+                  className="bunker-input"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPromptConfirmPassword(!showPromptConfirmPassword)}
+                  className="bunker-input-toggle"
+                >
+                  {showPromptConfirmPassword ? 'hide' : 'show'}
+                </button>
+              </div>
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => {
+                  setPromptError(null);
+                  const name = promptWalletName.trim();
+                  if (!name || !promptPassword || promptPassword !== promptConfirmPassword) {
+                    setPromptError('Please provide a wallet name and matching passwords to save');
+                    return;
+                  }
+                  if (saveNamedWallet(wallet, name, promptPassword)) {
+                    setShowNamePrompt(false);
+                    setPromptWalletName('');
+                    setPromptPassword('');
+                    setPromptConfirmPassword('');
+                    setPromptError(null);
+                    setNamePromptDismissed(false);
+                  } else {
+                    setPromptError('Save failed — check the error above');
+                  }
+                }}
+                className="bunker-btn"
+                style={{ flex: 1 }}
+              >
+                Save &amp; Tag Wallet
+              </button>
+              <button
+                onClick={() => {
+                  setShowNamePrompt(false);
+                  setNamePromptDismissed(true);
+                  setPromptWalletName('');
+                  setPromptPassword('');
+                  setPromptConfirmPassword('');
+                  setPromptError(null);
+                }}
+                className="bunker-btn bunker-btn--ghost"
+                style={{ flex: 1 }}
+              >
+                Skip for Now
+              </button>
+            </div>
+            <p className="bunker-text bunker-muted" style={{ marginTop: '0.75rem', fontSize: '0.625rem' }}>
+              This stores an encrypted copy in localStorage under your chosen name. Mnemonic is never saved.
+            </p>
+          </div>
+        </div>
+      )}
+    </BunkerShell>
   );
 };
 

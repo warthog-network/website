@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { format_height, abbreviate } from './assets/util.js';
 import APIClient from './assets/api_ws.js';
+import BunkerShell from '../BunkerShell.jsx';
 
 const PAGE_SIZE = 15;
 
@@ -18,47 +19,47 @@ function TransactionItem({ tx, index }) {
   };
 
   return (
-    <li key={tx.txid || `tx-${index}`} className="bg-gray-50 p-3 rounded-lg dark:bg-gray-700">
+    <li key={tx.txid || `tx-${index}`} className="bunker-list-item">
       <div className="flex justify-between items-center">
-        <span className="text-sm font-medium text-gray-800 dark:text-neutral-200 break-all">
+        <span className="bunker-tx-title">
           {abbreviate(safeStr(tx.txid))}
         </span>
         {tx.txid && (
           <a
             href={`/transaction/lookup/${tx.txid}`}
-            className="text-sm text-zinc-600 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+            className="bunker-link"
           >
             View Details
           </a>
         )}
       </div>
       {tx.fromAddress && safeStr(tx.fromAddress) !== '—' && (
-        <div className="mt-1 text-xs text-gray-600 dark:text-neutral-400">
+        <div className="bunker-meta">
           From: {abbreviate(safeStr(tx.fromAddress))}
         </div>
       )}
       {tx.toAddress && safeStr(tx.toAddress) !== '—' && (
-        <div className="mt-1 text-xs text-gray-600 dark:text-neutral-400">
+        <div className="bunker-meta">
           To: {abbreviate(safeStr(tx.toAddress))}
         </div>
       )}
       {tx.amount && safeStr(tx.amount) !== '—' && (
-        <div className="mt-1 text-xs text-gray-600 dark:text-neutral-400">
+        <div className="bunker-meta">
           Amount: {safeStr(tx.amount)}
         </div>
       )}
       {tx.fee && safeStr(tx.fee) !== '—' && (
-        <div className="mt-1 text-xs text-gray-600 dark:text-neutral-400">
+        <div className="bunker-meta">
           Fee: {safeStr(tx.fee)}
         </div>
       )}
       {tx.height && (
-        <div className="mt-1 text-xs text-gray-600 dark:text-neutral-400">
+        <div className="bunker-meta">
           Block: {format_height(tx.height)}
         </div>
       )}
       {tx.confirmations !== undefined && (
-        <div className="mt-1 text-xs text-gray-600 dark:text-neutral-400">
+        <div className="bunker-meta">
           Confirmations: {tx.confirmations}
         </div>
       )}
@@ -131,12 +132,12 @@ function AddressTransactions({ address }) {
   useEffect(() => {
     const getHost = (node) => {
       if (node === 'losthymns') return 'https://warthognode.duckdns.org';
+      if (node === 'official2' || node === 'polaire') return 'http://65.87.7.86:3001';
       if (node === 'local') return 'http://localhost:3000';
-      if (node === 'polaire') return 'http://217.182.64.43:3001';
       return 'http://localhost:3000';
     };
 
-    const selectedNode = typeof window !== 'undefined' ? localStorage.getItem('selectedNode') || 'polaire' : 'polaire';
+    const selectedNode = typeof window !== 'undefined' ? localStorage.getItem('selectedNode') || 'losthymns' : 'losthymns';
     let selectedHost;
     if (selectedNode === 'custom') {
       const customIP = localStorage.getItem('customIP') || 'localhost';
@@ -208,24 +209,20 @@ function AddressTransactions({ address }) {
 
   if (loading && allHistory.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-6 text-gray-900 dark:text-white">Loading Transactions...</h1>
-      </div>
+      <BunkerShell title="Address Transactions">
+        <p className="bunker-muted">Loading transactions...</p>
+      </BunkerShell>
     );
   }
 
   if (!address) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-6 text-gray-900 dark:text-white">Address Not Found</h1>
-        <p className="text-gray-600">No address provided.</p>
-        <a
-          href="/explorer"
-          className="mt-6 inline-flex items-center px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-gray-200 transition-colors duration-200 dark:bg-gray-800 dark:text-zinc-300 dark:border-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-700"
-        >
+      <BunkerShell title="Address Not Found">
+        <p className="bunker-muted">No address provided.</p>
+        <a href="/explorer" className="bunker-btn bunker-btn--ghost" style={{ marginTop: '1rem' }}>
           ← Back to Explorer
         </a>
-      </div>
+      </BunkerShell>
     );
   }
 
@@ -235,57 +232,43 @@ function AddressTransactions({ address }) {
   const hasNext = (endIndex < allHistory.length) || hasMore;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Address Transactions</h1>
-      <h2 className="mb-4 text-2xl font-bold tracking-tight text-white-900 md:text-3xl lg:text-4xl">
-        Address {abbreviate(address)}
-      </h2>
-      <div className="bg-white border border-gray-200 rounded-xl shadow-lg dark:bg-gray-800 dark:border-gray-700">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <dt className="font-medium text-gray-500 uppercase">Address</dt>
-              <dd className="mt-1 text-gray-800 dark:text-neutral-200 break-all cursor-pointer hover:text-blue-600" onClick={() => handleCopy(address, 'address')}>
-                {isMobile ? abbreviate(address) : address}
-                {copiedField === 'address' && <span className="ml-2 text-green-600">Copied!</span>}
-              </dd>
-            </div>
-            <div>
-              <dt className="font-medium text-gray-500 uppercase">Balance</dt>
-              <dd className="mt-1 text-gray-800 dark:text-neutral-200">{balance ?? 'Loading...'} {usdBalance && usdBalance !== 'N/A' ? `(${usdBalance})` : ''}</dd>
-            </div>
-          </dl>
-        </div>
-        <div className="px-6 py-4">
-          <h3 className="mb-3 text-xl font-semibold text-gray-900 dark:text-white">Transaction History (Page {currentPage})</h3>
-          {loading && <p>Loading more...</p>}
-          {error && <div className="error"><strong>Error:</strong> {error}</div>}
-          {currentHistory.length > 0 ? (
-            <ul className="space-y-3">
-              {currentHistory.map((tx, index) => (
-                <TransactionItem key={tx.txid || `tx-${startIndex + index}`} tx={tx} index={startIndex + index} />
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-600 dark:text-neutral-400">No transactions found for this address.</p>
-          )}
-        </div>
+    <BunkerShell title="Address Transactions" wide>
+      <h2 className="bunker-subheading">Address {abbreviate(address)}</h2>
+      <div className="bunker-panel">
+        <dl className="bunker-dl" style={{ marginBottom: '1rem' }}>
+          <div className="bunker-dl-row">
+            <dt>Address</dt>
+            <dd className="bunker-link" style={{ cursor: 'pointer' }} onClick={() => handleCopy(address, 'address')}>
+              {isMobile ? abbreviate(address) : address}
+              {copiedField === 'address' && <span> (Copied!)</span>}
+            </dd>
+          </div>
+          <div className="bunker-dl-row">
+            <dt>Balance</dt>
+            <dd>{balance ?? 'Loading...'} {usdBalance && usdBalance !== 'N/A' ? `(${usdBalance})` : ''}</dd>
+          </div>
+        </dl>
+        <h3 className="bunker-heading">Transaction History (Page {currentPage})</h3>
+        {loading && <p className="bunker-muted">Loading more...</p>}
+        {error && <div className="bunker-alert"><strong>Error:</strong> {error}</div>}
+        {currentHistory.length > 0 ? (
+          <ul className="bunker-list">
+            {currentHistory.map((tx, index) => (
+              <TransactionItem key={tx.txid || `tx-${startIndex + index}`} tx={tx} index={startIndex + index} />
+            ))}
+          </ul>
+        ) : (
+          <p className="bunker-muted">No transactions found for this address.</p>
+        )}
       </div>
-      <div className="mt-6 flex justify-between">
-        <button onClick={handlePrev} disabled={currentPage === 1} className="px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
-          Previous
-        </button>
-        <button onClick={handleNext} disabled={!hasNext} className="px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
-          Next
-        </button>
+      <div className="bunker-toolbar" style={{ marginTop: '1.5rem' }}>
+        <button onClick={handlePrev} disabled={currentPage === 1} className="bunker-btn bunker-btn--ghost">Previous</button>
+        <button onClick={handleNext} disabled={!hasNext} className="bunker-btn bunker-btn--ghost">Next</button>
       </div>
-      <a
-        href="/explorer"
-        className="mt-6 inline-flex items-center px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-gray-200 transition-colors duration-200 dark:bg-gray-800 dark:text-zinc-300 dark:border-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-700"
-      >
+      <a href="/explorer" className="bunker-btn bunker-btn--ghost" style={{ marginTop: '1rem' }}>
         ← Back to Explorer
       </a>
-    </div>
+    </BunkerShell>
   );
 }
 

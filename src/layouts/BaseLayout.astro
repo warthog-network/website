@@ -2,7 +2,7 @@
 import "../blogstyles.css";
 import "../styles.css";
 import BaseHead from "../components/BaseHead.astro";
-const { title } = Astro.props;
+const { title, bodyClass = "" } = Astro.props;
 import Footer from "../components/FooterTailwind.astro";
 ---
 
@@ -16,7 +16,7 @@ import Footer from "../components/FooterTailwind.astro";
     <title>{title}</title>
   </head>
 
-  <body class="site-body">
+  <body class={`site-body${bodyClass ? ` ${bodyClass}` : ""}`}>
     <a href="#main-content" class="skip-link">Skip to content</a>
     <BaseHead class="navbarclass" />
     <main id="main-content" class="site-main">

@@ -3,6 +3,6 @@ import AddressTransactions from "../../components/explorer/AddressTransactions.j
 import BaseLayout from "../../layouts/BaseLayout.astro";
 const { address } = Astro.params;
 ---
-<BaseLayout title={`Address Transactions: ${address}`}>
+<BaseLayout title={`Address Transactions: ${address}`} bodyClass="site-body--wartbunker">
   <AddressTransactions address={address} client:load />
 </BaseLayout>

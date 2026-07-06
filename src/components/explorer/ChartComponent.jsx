@@ -104,7 +104,7 @@ const ChartComponent = ({ client }) => {
     }, [client]); // Re-run on client change
 
     if (error || supportedVersion !== true) {
-        return <p className="text-gray-600">{error || 'Hashrate chart unavailable.'}</p>;
+        return <p className="bunker-muted">{error || 'Hashrate chart unavailable.'}</p>;
     }
 
     return <div ref={chartContainerRef} />;

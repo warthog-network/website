@@ -2,35 +2,43 @@ import { useState, useEffect } from 'react';
 import { format_height, abbreviate } from './assets/util.js';
 import APIClient from './assets/api_ws.js';
 import { Block } from './assets/api_ws.js';
+import BunkerShell from '../BunkerShell.jsx';
 
 function Explorer() {
-    const [selectedNode, setSelectedNode] = useState('polaire');
-    const [host, setHost] = useState('http://217.182.64.43:3001');
+    const [selectedNode, setSelectedNode] = useState('losthymns');
+    const [host, setHost] = useState('https://warthognode.duckdns.org');
     const [customIP, setCustomIP] = useState('localhost');
     const [customPort, setCustomPort] = useState('3000');
     const [customConnected, setCustomConnected] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false); // New: Flag to delay loading until localStorage is populated
 
     const nodeOptions = [
-        { value: 'polaire', label: 'Polaire' },
-        { value: 'losthymns', label: 'Losthymns' },
+        { value: 'losthymns', label: 'official 1' },
+        { value: 'official2', label: 'official 2' },
         { value: 'local', label: 'Local Node' },
         { value: 'custom', label: 'Custom Node' },
     ];
 
     const getHost = (node) => {
         if (node === 'losthymns') return 'https://warthognode.duckdns.org';
-        if (node === 'polaire') return 'http://217.182.64.43:3001';
+        if (node === 'official2' || node === 'polaire') return 'http://65.87.7.86:3001';
         if (node === 'local') return 'http://localhost:3000';
         return 'http://localhost:3000';
     };
 
     useEffect(() => {
         // Load saved settings from localStorage
-        const savedNode = localStorage.getItem('selectedNode');
-        const savedHost = localStorage.getItem('selectedHost'); // New: Load saved host directly
+        let savedNode = localStorage.getItem('selectedNode');
+        let savedHost = localStorage.getItem('selectedHost');
         const savedIP = localStorage.getItem('customIP');
         const savedPort = localStorage.getItem('customPort');
+
+        if (savedNode === 'polaire') {
+            savedNode = 'official2';
+            savedHost = 'http://65.87.7.86:3001';
+            localStorage.setItem('selectedNode', savedNode);
+            localStorage.setItem('selectedHost', savedHost);
+        }
 
         if (savedNode && savedHost) {
             setSelectedNode(savedNode);
@@ -294,21 +302,22 @@ function Explorer() {
     };
 
     if (!isInitialized) {
-        return <div className="container mx-auto px-4 py-8">Loading settings...</div>; // Delay rendering until initialized
+        return (
+            <BunkerShell title="Explorer">
+                <p className="bunker-muted">Loading settings...</p>
+            </BunkerShell>
+        );
     }
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            <h1 className="text-4xl font-bold mb-6 text-gray-900 dark:text-white">Explorer</h1>
-
-            {/* Node Switcher Dropdown */}
-            <div className="mb-4">
-                <label htmlFor="node-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Select Node:</label>
+        <BunkerShell title="Explorer" wide>
+            <div className="bunker-panel">
+                <label htmlFor="node-select" className="bunker-label">Select Node:</label>
                 <select
                     id="node-select"
                     value={selectedNode}
                     onChange={(e) => setSelectedNode(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    className="bunker-select"
                 >
                     {nodeOptions.map(option => (
                         <option key={option.value} value={option.value}>{option.label}</option>
@@ -316,211 +325,155 @@ function Explorer() {
                 </select>
                 {selectedNode === 'custom' && (
                     <>
-                        <div className="mt-2 flex space-x-2">
-                            <div className="flex-1">
-                                <label htmlFor="custom-ip" className="block text-sm font-medium text-gray-700 dark:text-gray-300">IP Address:</label>
+                        <div className="bunker-form-row" style={{ marginTop: '0.75rem' }}>
+                            <div style={{ flex: '1 1 12rem' }}>
+                                <label htmlFor="custom-ip" className="bunker-label">IP Address:</label>
                                 <input
                                     id="custom-ip"
                                     type="text"
                                     value={customIP}
                                     onChange={(e) => setCustomIP(e.target.value)}
                                     placeholder="e.g., localhost, 192.168.1.1, or http://example.com"
-                                    className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    className="bunker-input"
                                 />
                             </div>
-                            <div className="flex-1">
-                                <label htmlFor="custom-port" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Port:</label>
+                            <div style={{ flex: '1 1 8rem' }}>
+                                <label htmlFor="custom-port" className="bunker-label">Port:</label>
                                 <input
                                     id="custom-port"
                                     type="text"
                                     value={customPort}
                                     onChange={(e) => setCustomPort(e.target.value)}
                                     placeholder="e.g., 3000"
-                                    className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    className="bunker-input"
                                 />
                             </div>
                         </div>
-                        <div className="mt-2">
-                            <button
-                                onClick={() => setCustomConnected(true)}
-                                disabled={!customIP.trim() || !customPort.trim()}
-                                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                Connect to Custom Node
-                            </button>
-                        </div>
+                        <button
+                            onClick={() => setCustomConnected(true)}
+                            disabled={!customIP.trim() || !customPort.trim()}
+                            className="bunker-btn"
+                            style={{ marginTop: '0.75rem' }}
+                        >
+                            Connect to Custom Node
+                        </button>
                     </>
                 )}
             </div>
 
             {connectionError ? (
-                <div className="text-red-600">{connectionError}</div>
+                <div className="bunker-error">{connectionError}</div>
             ) : !subscribed || !chain ? (
-                <div className="text-gray-600">Connecting to node...</div>
+                <p className="bunker-muted">Connecting to node...</p>
             ) : (
                 <>
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-2xl font-bold tracking-tight text-gray-900 md:text-3xl lg:text-4xl">
+                    <div className="bunker-toolbar">
+                        <h2 className="bunker-subheading" style={{ margin: 0 }}>
                             {mode === 'latest' ? 'Latest Blocks' : `Blocks (Page ${page})`}
                         </h2>
-                        <button
-                            onClick={toggleMode}
-                            className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
-                        >
+                        <button onClick={toggleMode} className="bunker-btn">
                             {mode === 'latest' ? 'Switch to Deep Search (All Blocks)' : 'Switch to Latest Blocks'}
                         </button>
                     </div>
                     {mode === 'all' && (
                         <>
-                            <form onSubmit={handleSearch} className="mb-6">
-                                <div className="flex items-center">
-                                    <input
-                                        type="text"
-                                        value={searchInput}
-                                        onChange={(e) => setSearchInput(e.target.value)}
-                                        placeholder="Search blocks: 123 100-200"
-                                        className="flex-grow px-4 py-2 text-sm text-gray-900 border border-gray-300 rounded-l-lg focus:ring-zinc-500 focus:border-zinc-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:border-zinc-500"
-                                    />
-                                    <button
-                                        type="submit"
-                                        className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-r-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
-                                    >
-                                        Search Blocks
+                            <form onSubmit={handleSearch} className="bunker-form-row">
+                                <input
+                                    type="text"
+                                    value={searchInput}
+                                    onChange={(e) => setSearchInput(e.target.value)}
+                                    placeholder="Search blocks: 123 100-200"
+                                    className="bunker-input"
+                                />
+                                <button type="submit" className="bunker-btn">Search Blocks</button>
+                                {isSearching && (
+                                    <button type="button" onClick={resetSearch} className="bunker-btn bunker-btn--ghost">
+                                        Clear Search
                                     </button>
-                                    {isSearching && (
-                                        <button
-                                            type="button"
-                                            onClick={resetSearch}
-                                            className="ml-2 px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-                                        >
-                                            Clear Search
-                                        </button>
-                                    )}
-                                </div>
+                                )}
                             </form>
-                            <form onSubmit={handleTxSearch} className="mb-6">
-                                <div className="flex items-center">
-                                    <input
-                                        type="text"
-                                        value={txSearchInput}
-                                        onChange={(e) => setTxSearchInput(e.target.value)}
-                                        placeholder="Enter TX Hash: e.g., 0x123..."
-                                        className="flex-grow px-4 py-2 text-sm text-gray-900 border border-gray-300 rounded-l-lg focus:ring-zinc-500 focus:border-zinc-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:border-zinc-500"
-                                    />
-                                    <button
-                                        type="submit"
-                                        className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-r-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
-                                    >
-                                        Lookup TX
-                                    </button>
-                                </div>
+                            <form onSubmit={handleTxSearch} className="bunker-form-row">
+                                <input
+                                    type="text"
+                                    value={txSearchInput}
+                                    onChange={(e) => setTxSearchInput(e.target.value)}
+                                    placeholder="Enter TX Hash: e.g., 0x123..."
+                                    className="bunker-input"
+                                />
+                                <button type="submit" className="bunker-btn">Lookup TX</button>
                             </form>
-                            <form onSubmit={handleAddressSearch} className="mb-6">
-                                <div className="flex items-center">
-                                    <input
-                                        type="text"
-                                        value={addressSearchInput}
-                                        onChange={(e) => setAddressSearchInput(e.target.value)}
-                                        placeholder="Enter Address: e.g., bc1q..."
-                                        className="flex-grow px-4 py-2 text-sm text-gray-900 border border-gray-300 rounded-l-lg focus:ring-zinc-500 focus:border-zinc-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:border-zinc-500"
-                                    />
-                                    <button
-                                        type="submit"
-                                        className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-r-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
-                                    >
-                                        Lookup Address
-                                    </button>
-                                </div>
+                            <form onSubmit={handleAddressSearch} className="bunker-form-row">
+                                <input
+                                    type="text"
+                                    value={addressSearchInput}
+                                    onChange={(e) => setAddressSearchInput(e.target.value)}
+                                    placeholder="Enter Address: e.g., bc1q..."
+                                    className="bunker-input"
+                                />
+                                <button type="submit" className="bunker-btn">Lookup Address</button>
                             </form>
                         </>
                     )}
                     {loading ? (
-                        <p className="text-gray-600">Loading blocks...</p>
+                        <p className="bunker-muted">Loading blocks...</p>
                     ) : (
                         <>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                            <div className="bunker-grid">
                                 {currentBlocks.map((block) => (
-                                    <div
-                                        key={block.header.hash}
-                                        className="bg-white border border-gray-200 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 dark:bg-gray-800 dark:border-gray-700"
-                                    >
-                                        <div className="flex justify-between items-center px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                                            <span className="px-3 py-1 text-sm font-medium rounded-full" style={{ background: 'var(--color-brand)', color: '#1f2937' }}>Block {format_height(block.height)}</span>
-                                            <span className="text-sm text-gray-500">{formatTimeAgo(block.header.timestamp)}</span>
+                                    <article key={block.header.hash} className="bunker-card">
+                                        <div className="bunker-card__header">
+                                            <span className="bunker-badge">Block {format_height(block.height)}</span>
+                                            <span className="bunker-muted">{formatTimeAgo(block.header.timestamp)}</span>
                                         </div>
-                                        <div className="px-4 py-3">
-                                            <dl className="space-y-2">
-                                                <div className="flex justify-between text-sm">
-                                                    <dt className="font-medium text-gray-500 uppercase">Hash</dt>
-                                                    <dd className="text-gray-800 dark:text-neutral-200 lowercase">{abbreviate(block.header.hash)}</dd>
+                                        <div className="bunker-card__body">
+                                            <dl className="bunker-dl">
+                                                <div className="bunker-dl-row">
+                                                    <dt>Hash</dt>
+                                                    <dd>{abbreviate(block.header.hash)}</dd>
                                                 </div>
-                                                <div className="flex justify-between text-sm">
-                                                    <dt className="font-medium text-gray-500 uppercase">Miner</dt>
-                                                    <dd className="text-gray-800 dark:text-neutral-200">{abbreviate(block.miner())}</dd>
+                                                <div className="bunker-dl-row">
+                                                    <dt>Miner</dt>
+                                                    <dd>{abbreviate(block.miner())}</dd>
                                                 </div>
-                                                <div className="flex justify-between text-sm">
-                                                    <dt className="font-medium text-gray-500 uppercase">Reward</dt>
-                                                    <dd className="text-gray-800 dark:text-neutral-200">{block.reward()}</dd>
+                                                <div className="bunker-dl-row">
+                                                    <dt>Reward</dt>
+                                                    <dd>{block.reward()}</dd>
                                                 </div>
-                                                <div className="flex justify-between text-sm">
-                                                    <dt className="font-medium text-gray-500 uppercase">#TXS</dt>
-                                                    <dd className="text-gray-800 dark:text-neutral-200">{block.transactionCount()}</dd>
+                                                <div className="bunker-dl-row">
+                                                    <dt>#TXS</dt>
+                                                    <dd>{block.transactionCount()}</dd>
                                                 </div>
                                             </dl>
                                         </div>
-                                        <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
-                                            <a
-                                                href={`/chain/block/${block.height}`}
-                                                className="inline-flex items-center w-full justify-center px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
-                                            >
-                                                Details
-                                                <svg
-                                                    className="rtl:rotate-180 w-3.5 h-3.5 ml-2"
-                                                    aria-hidden="true"
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    fill="none"
-                                                    viewBox="0 0 14 10"
-                                                >
-                                                    <path
-                                                        stroke="currentColor"
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        strokeWidth="2"
-                                                        d="M1 5h12m0 0L9 1m4 4L9 9"
-                                                    />
-                                                </svg>
+                                        <div className="bunker-card__footer">
+                                            <a href={`/chain/block/${block.height}`} className="bunker-btn" style={{ width: '100%' }}>
+                                                Details →
                                             </a>
                                         </div>
-                                    </div>
+                                    </article>
                                 ))}
                             </div>
                             {!loading && currentBlocks.length === 0 && (
-                                <p className="text-gray-600 col-span-full text-center py-4">No blocks found for this page. The chain may be short or historical data unavailable.</p>
+                                <p className="bunker-muted" style={{ textAlign: 'center', padding: '1rem 0' }}>
+                                    No blocks found for this page. The chain may be short or historical data unavailable.
+                                </p>
                             )}
                         </>
                     )}
                     {mode === 'all' && !loading && !isSearching && (
-                        <div className="flex justify-between items-center mt-6">
-                            <button
-                                disabled={page === 1}
-                                onClick={() => setPage(page - 1)}
-                                className="px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                            >
+                        <div className="bunker-toolbar" style={{ marginTop: '1.5rem' }}>
+                            <button disabled={page === 1} onClick={() => setPage(page - 1)} className="bunker-btn bunker-btn--ghost">
                                 Previous
                             </button>
-                            <span className="text-sm text-gray-600">Page {page} of {maxPage}</span>
-                            <button
-                                disabled={!hasNext}
-                                onClick={() => setPage(page + 1)}
-                                className="px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                            >
+                            <span className="bunker-muted">Page {page} of {maxPage}</span>
+                            <button disabled={!hasNext} onClick={() => setPage(page + 1)} className="bunker-btn bunker-btn--ghost">
                                 Next
                             </button>
                         </div>
                     )}
                 </>
             )}
-        </div>
+        </BunkerShell>
     );
 }
 

@@ -40,6 +40,7 @@
     "react-bootstrap": "^2.10.10",
     "react-dom": "^18.3.1",
     "react-joyride": "^2.9.3",
+    "react-qr-code": "^2.2.0",
     "react-router-dom": "^6.26.2",
     "react-xarrows": "^2.0.2",
     "secp256k1": "^5.0.1",
