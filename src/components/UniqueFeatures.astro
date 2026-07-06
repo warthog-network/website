@@ -1494,6 +1494,10 @@ const categories = [
       overflow: visible;
     }
 
+    .unique-section__content {
+      padding-inline: clamp(0.65rem, 2.5vw, 1rem);
+    }
+
     .features-layout {
       grid-template-columns: 1fr;
       gap: 1rem;
@@ -1665,7 +1669,7 @@ const categories = [
     .features-card-stack {
       flex-direction: row;
       align-items: stretch;
-      gap: 0.35rem;
+      gap: 0.15rem;
       padding-block: 0;
       padding-top: 1.35rem;
     }
@@ -1727,11 +1731,27 @@ const categories = [
       touch-action: pan-x;
     }
 
+    .feature-card {
+      padding: clamp(0.75rem, 2vw, 0.95rem);
+    }
+
+    .feature-card .point:not(.is-expanded) {
+      max-height: 2.35rem;
+      overflow: hidden;
+      gap: 0;
+      padding-block: 0.45rem;
+      padding-inline: 0.65rem;
+    }
+
+    .feature-card .point:not(.is-expanded) .point__copy {
+      display: none;
+    }
+
     .features-card-arrow {
       align-self: center;
       flex-shrink: 0;
-      width: 1.25rem;
-      height: 1.25rem;
+      width: 0.9rem;
+      height: 0.9rem;
       opacity: 0.35;
     }
 
