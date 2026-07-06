@@ -205,6 +205,7 @@ const categories = [
       this.wheelUnlockTimer = 0;
       this.touchStartY = 0;
       this.touchStartX = 0;
+      this.touchIntent = null;
       this.touchLocked = false;
       this.touchUnlockTimer = 0;
       this.mobileQuery = window.matchMedia("(max-width: 899px)");
@@ -247,6 +248,26 @@ const categories = [
         if (event.touches.length !== 1 || this.touchLocked || this.isTransitioning) return;
         this.touchStartY = event.touches[0].clientY;
         this.touchStartX = event.touches[0].clientX;
+        this.touchIntent = null;
+      };
+
+      this.onTouchMove = (event) => {
+        if (this.touchIntent || event.touches.length !== 1 || this.touchLocked || this.isTransitioning) {
+          return;
+        }
+
+        const deltaY = Math.abs(event.touches[0].clientY - this.touchStartY);
+        const deltaX = Math.abs(event.touches[0].clientX - this.touchStartX);
+        const intentThreshold = 12;
+
+        if (deltaY < intentThreshold && deltaX < intentThreshold) return;
+
+        if (this.isMobileLayout()) {
+          this.touchIntent = deltaX > deltaY * 1.15 ? "horizontal" : "vertical";
+          return;
+        }
+
+        this.touchIntent = deltaY > deltaX * 1.15 ? "vertical" : "horizontal";
       };
 
       this.onTouchEnd = (event) => {
@@ -260,6 +281,7 @@ const categories = [
         const swipeThreshold = 48;
 
         if (this.isMobileLayout()) {
+          if (this.touchIntent === "vertical") return;
           if (Math.abs(deltaX) < swipeThreshold || Math.abs(deltaY) > Math.abs(deltaX) * 0.85) return;
 
           if (deltaX > 0 && this.activeIndex < this.cards.length - 1) {
@@ -267,9 +289,11 @@ const categories = [
           } else if (deltaX < 0 && this.activeIndex > 0) {
             this.stepCard(-1);
           }
+          this.touchIntent = null;
           return;
         }
 
+        if (this.touchIntent === "horizontal") return;
         if (Math.abs(deltaY) < swipeThreshold || Math.abs(deltaX) > Math.abs(deltaY) * 0.85) return;
 
         if (deltaY > 0 && this.activeIndex < this.cards.length - 1) {
@@ -277,6 +301,7 @@ const categories = [
         } else if (deltaY < 0 && this.activeIndex > 0) {
           this.stepCard(-1);
         }
+        this.touchIntent = null;
       };
 
       this.navDropdown = this.querySelector(".features-nav-dropdown");
@@ -333,6 +358,7 @@ const categories = [
       this.featuresView?.addEventListener("wheel", this.onWheel, { passive: false });
       this.featuresView?.addEventListener("keydown", this.onKeydown);
       this.featuresView?.addEventListener("touchstart", this.onTouchStart, { passive: true });
+      this.featuresView?.addEventListener("touchmove", this.onTouchMove, { passive: true });
       this.featuresView?.addEventListener("touchend", this.onTouchEnd, { passive: true });
 
       this.setupPointExpansion();
@@ -344,6 +370,7 @@ const categories = [
       this.featuresView?.removeEventListener("wheel", this.onWheel);
       this.featuresView?.removeEventListener("keydown", this.onKeydown);
       this.featuresView?.removeEventListener("touchstart", this.onTouchStart);
+      this.featuresView?.removeEventListener("touchmove", this.onTouchMove);
       this.featuresView?.removeEventListener("touchend", this.onTouchEnd);
       document.removeEventListener("click", this.onDocumentClick);
       window.removeEventListener("hashchange", this.onHashChange);
@@ -1728,7 +1755,7 @@ const categories = [
       position: relative;
       z-index: 1;
       padding-block: 0;
-      touch-action: pan-x;
+      touch-action: pan-y pinch-zoom;
     }
 
     .feature-card {
