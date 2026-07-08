@@ -13,14 +13,20 @@ export default function WalletOverviewCard({
   walletName = null,
   nodeList = [],
   selectedNode = '',
+  customIP = 'localhost',
+  customPort = '3000',
   nodesLoading = false,
   nodesError = null,
   onNodeChange,
+  onCustomIPChange,
+  onCustomPortChange,
+  onSaveCustomNode,
   validateInput = '',
   onValidateInputChange,
   onValidate,
   validateResult = null,
   onRefresh,
+  refreshing = false,
   onCopyAddress,
   onDownload,
   onExportQr,
@@ -28,7 +34,7 @@ export default function WalletOverviewCard({
   onContacts,
   onSend,
 }) {
-  const balanceLoading = balance === null;
+  const balanceMissing = balance === null;
   const usdDisplay =
     usdBalance && usdBalance !== 'N/A' ? usdBalance : '—';
 
@@ -46,11 +52,18 @@ export default function WalletOverviewCard({
             <button
               type="button"
               onClick={onRefresh}
-              className="refresh-balance-btn flex flex-shrink-0 items-center gap-1 px-2 py-1 text-[10px] font-medium text-zinc-400 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-600/50 rounded-lg transition-colors !m-0"
-              title="Refresh balance"
+              disabled={refreshing}
+              className="refresh-balance-btn flex flex-shrink-0 items-center gap-1 px-2 py-1 text-[10px] font-medium text-zinc-400 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-600/50 rounded-lg transition-colors !m-0 disabled:opacity-60 disabled:cursor-wait"
+              title={refreshing ? 'Refreshing…' : 'Refresh balance & history'}
+              aria-busy={refreshing}
             >
-              <span className="text-[#FDB913] text-[11px] leading-none">⟳</span>
-              Refresh
+              <span
+                className={`text-[#FDB913] text-[11px] leading-none inline-block${refreshing ? ' animate-spin' : ''}`}
+                aria-hidden="true"
+              >
+                ⟳
+              </span>
+              {refreshing ? 'Refreshing…' : 'Refresh'}
             </button>
           </div>
 
@@ -60,8 +73,8 @@ export default function WalletOverviewCard({
             </div>
           ) : null}
 
-          <div className="flex items-baseline gap-2 min-w-0 flex-wrap text-white">
-            {balanceLoading ? (
+          <div className={`flex items-baseline gap-2 min-w-0 flex-wrap text-white${refreshing ? ' opacity-60' : ''}`}>
+            {balanceMissing ? (
               <div className="h-9 w-36 bg-zinc-800/80 rounded-lg animate-pulse" />
             ) : (
               <span className="text-3xl font-semibold tracking-tight break-all tabular-nums">
@@ -71,35 +84,70 @@ export default function WalletOverviewCard({
             <span className="text-sm font-medium text-[#FDB913]">WART</span>
           </div>
 
-          <div className="text-sm text-zinc-400 mt-1 tabular-nums">
-            {balanceLoading ? (
+          <div className={`text-sm text-zinc-400 mt-1 tabular-nums${refreshing ? ' opacity-60' : ''}`}>
+            {balanceMissing ? (
               <span className="inline-block h-4 w-20 bg-zinc-800/60 rounded animate-pulse" />
             ) : (
               <>≈ {usdDisplay} USD</>
             )}
           </div>
 
-          <div className="mt-3 pt-3 border-t border-zinc-800/80 flex flex-wrap items-center gap-2 min-w-0">
-            <span className="text-[10px] uppercase tracking-[0.12em] text-zinc-500 font-medium flex-shrink-0">
-              Node
-            </span>
-            {nodesLoading ? (
-              <span className="text-[11px] text-zinc-500">Loading…</span>
-            ) : nodesError ? (
-              <span className="text-[11px] text-red-400">{nodesError}</span>
-            ) : (
-              <select
-                value={selectedNode}
-                onChange={(e) => onNodeChange?.(e.target.value)}
-                className="wallet-node-select"
-                title="Select node"
-              >
-                {nodeList.map((node) => (
-                  <option key={node.url} value={node.url}>
-                    {node.name}
-                  </option>
-                ))}
-              </select>
+          <div className="mt-3 pt-3 border-t border-zinc-800/80 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 min-w-0">
+              <span className="text-[10px] uppercase tracking-[0.12em] text-zinc-500 font-medium flex-shrink-0">
+                Node
+              </span>
+              {nodesLoading ? (
+                <span className="text-[11px] text-zinc-500">Loading…</span>
+              ) : nodesError ? (
+                <span className="text-[11px] text-red-400">{nodesError}</span>
+              ) : (
+                <select
+                  value={
+                    nodeList.some((n) => (n.id || n.url) === selectedNode)
+                      ? selectedNode
+                      : 'losthymns'
+                  }
+                  onChange={(e) => onNodeChange?.(e.target.value)}
+                  className="wallet-node-select"
+                  title="Select node"
+                >
+                  {nodeList.map((node) => (
+                    <option key={node.id || node.url} value={node.id || node.url}>
+                      {node.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+            {selectedNode === 'custom' && (
+              <div className="mt-2 flex flex-wrap gap-2 items-center min-w-0">
+                <input
+                  type="text"
+                  value={customIP}
+                  onChange={(e) => onCustomIPChange?.(e.target.value)}
+                  placeholder="Host (e.g. localhost)"
+                  className="wallet-inline-input"
+                  title="Custom node host"
+                />
+                <input
+                  type="text"
+                  value={customPort}
+                  onChange={(e) => onCustomPortChange?.(e.target.value)}
+                  placeholder="Port"
+                  className="wallet-inline-input !max-w-[5.5rem]"
+                  title="Custom node port"
+                />
+                <button
+                  type="button"
+                  onClick={() => onSaveCustomNode?.()}
+                  disabled={!customIP.trim() || !customPort.trim()}
+                  className="compact-btn hover:!text-[#E79300] !m-0 !flex-shrink-0"
+                  title="Save and use this node"
+                >
+                  Save node
+                </button>
+              </div>
             )}
           </div>
 

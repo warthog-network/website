@@ -153,7 +153,10 @@
   box-shadow: 0 0 0 3px rgba(231, 147, 0, 0.2);
 }
 
-/* Primary actions — matches wartbunker .wallet-action-btn (Tools, header Lock, etc.) */
+/*
+ * Default bunker buttons — quiet zinc chips (wallet Contacts / Download style).
+ * Use .bunker-btn--primary sparingly for 1–2 key CTAs (e.g. Send WART, Details).
+ */
 .bunker-btn,
 .container .bunker-btn,
 a.bunker-btn {
@@ -165,15 +168,15 @@ a.bunker-btn {
   justify-content: center;
   gap: 0.35rem;
   margin: 0 0.5rem 0.5rem 0;
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.85rem;
   min-height: 0;
-  border-radius: 12px;
-  border: 1px solid var(--primary-hover);
-  background: var(--primary-hover);
-  color: #fff;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(82, 82, 91, 0.55);
+  background: rgba(39, 39, 42, 0.85);
+  color: #a1a1aa;
   font-family: 'Roboto', sans-serif;
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-size: 0.75rem;
+  font-weight: 500;
   line-height: 1.2;
   text-decoration: none;
   cursor: pointer;
@@ -182,7 +185,7 @@ a.bunker-btn {
   transform: none;
   overflow: hidden;
   position: relative;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
 .container button.bunker-btn::before,
@@ -191,6 +194,38 @@ a.bunker-btn {
 }
 
 .bunker-btn:hover {
+  background: #3f3f46;
+  border-color: rgba(82, 82, 91, 0.65);
+  color: #e4e4e7;
+  transform: none;
+  box-shadow: none;
+}
+
+.bunker-btn:active {
+  transform: none;
+}
+
+.bunker-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Solid orange — only for primary CTAs */
+.bunker-btn--primary,
+a.bunker-btn--primary {
+  border-color: var(--primary-hover);
+  background: var(--primary-hover);
+  color: #fff;
+  font-weight: 600;
+  border-radius: 12px;
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+}
+
+.bunker-btn--primary:hover,
+a.bunker-btn--primary:hover {
   background: color-mix(in srgb, var(--primary-hover) 82%, black);
   border-color: color-mix(in srgb, var(--primary-hover) 82%, black);
   color: #fff;
@@ -198,27 +233,22 @@ a.bunker-btn {
   box-shadow: var(--shadow);
 }
 
-.bunker-btn:active {
+.bunker-btn--primary:active {
   transform: translateY(0);
 }
 
-.bunker-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
+/* Alias: ghost = same quiet default (kept for existing classNames) */
 .bunker-btn--ghost {
-  background: transparent;
-  color: var(--primary-hover);
-  border-color: var(--primary-hover);
+  background: rgba(39, 39, 42, 0.85);
+  color: #a1a1aa;
+  border-color: rgba(82, 82, 91, 0.55);
   font-weight: 500;
 }
 
 .bunker-btn--ghost:hover {
-  background: var(--primary-hover);
-  color: #fff;
+  background: #3f3f46;
+  color: #e4e4e7;
+  border-color: rgba(82, 82, 91, 0.65);
 }
 
 .bunker-btn--danger {
@@ -275,6 +305,118 @@ a.bunker-btn {
   margin-left: auto;
 }
 
+/* Wartscan-style live stats strip */
+.explorer-stats {
+  padding: 0.85rem 1rem !important;
+  margin-bottom: 1rem !important;
+}
+
+.explorer-stats__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(7.5rem, 1.15fr);
+  gap: 0;
+}
+
+.explorer-stats__cell {
+  padding: 0.45rem 0.75rem;
+  border-right: 1px solid var(--border);
+  min-width: 0;
+}
+
+.explorer-stats__cell:nth-child(3),
+.explorer-stats__cell:nth-child(6) {
+  border-right: none;
+}
+
+.explorer-stats__cell--spark {
+  grid-column: 4;
+  grid-row: 1 / span 2;
+  border-right: none;
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.2rem;
+  padding-left: 0.9rem;
+}
+
+.explorer-stats__label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  margin-bottom: 0.15rem;
+}
+
+.explorer-stats__value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.explorer-stats__value.is-loading {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.explorer-stats__spark-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.explorer-stats__spark-head .explorer-stats__label {
+  margin-bottom: 0;
+  color: #a1a1aa;
+}
+
+.explorer-stats__spark {
+  width: 100%;
+  height: 3rem;
+  color: #8b5cf6;
+  display: block;
+  overflow: visible;
+}
+
+.explorer-stats__spark path {
+  /* Extra guard: some browsers need this on the element for stretched sparklines */
+  vector-effect: non-scaling-stroke;
+  paint-order: stroke;
+}
+
+.explorer-stats__error {
+  margin: 0.5rem 0.75rem 0;
+  font-size: 0.75rem;
+}
+
+@media (max-width: 720px) {
+  .explorer-stats__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .explorer-stats__cell {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .explorer-stats__cell:nth-child(odd) {
+    border-right: 1px solid var(--border);
+  }
+
+  .explorer-stats__cell--spark {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    border-left: none;
+    border-bottom: none;
+    padding-left: 0.75rem;
+    padding-top: 0.65rem;
+  }
+}
+
 .explorer-refresh-btn {
   margin: 0;
 }
@@ -282,10 +424,21 @@ a.bunker-btn {
 .explorer-refresh-btn__icon {
   display: inline-block;
   line-height: 1;
+  transition: transform 0.2s ease;
 }
 
-.explorer-refresh-btn:not(:disabled):hover .explorer-refresh-btn__icon {
+.explorer-refresh-btn:not(:disabled):hover .explorer-refresh-btn__icon:not(.explorer-refresh-btn__icon--spin) {
   transform: rotate(-30deg);
+}
+
+.explorer-refresh-btn__icon--spin {
+  animation: explorer-refresh-spin 0.8s linear infinite;
+}
+
+@keyframes explorer-refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .explorer-address {

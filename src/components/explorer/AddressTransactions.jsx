@@ -1,20 +1,24 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { format_height, abbreviate } from './assets/util.js';
 import BunkerShell from '../BunkerShell.jsx';
 import { resolveExplorerHostFromStorage } from '../../lib/explorerNodes.js';
 import { fetchAccountWartBalance } from '../../lib/accountBalance.js';
 import ExplorerAddress from './ExplorerAddress.jsx';
+import ExplorerLink from './ExplorerLink.jsx';
 import ExplorerRefreshButton from './ExplorerRefreshButton.jsx';
 import { createWarthogApi } from './explorerClient.js';
 import { resolveWarthogAddress } from './explorerAddressUtils.js';
+import { formatExplorerError } from './explorerApi.js';
+import { formatWartUsdBalance } from '../../lib/wartPrice.js';
 import {
-  formatExplorerError,
-  isEmptyHistoryError,
-  parseAccountHistory,
-} from './explorerApi.js';
+  ADDRESS_HISTORY_CURSOR,
+  clearAddressHistoryCache,
+  loadAddressHistory,
+  readAddressHistoryCache,
+} from '../../lib/addressHistoryStore.js';
 
 const PAGE_SIZE = 15;
-const INITIAL_CURSOR = '4294967295';
 
 function TransactionItem({ tx, index }) {
   const safeStr = (val) => {
@@ -36,12 +40,12 @@ function TransactionItem({ tx, index }) {
           {abbreviate(safeStr(tx.txid))}
         </span>
         {tx.txid && (
-          <a
-            href={`/transaction/lookup/${tx.txid}`}
+          <ExplorerLink
+            to={`/transaction/lookup/${tx.txid}`}
             className="bunker-link"
           >
             View Details
-          </a>
+          </ExplorerLink>
         )}
       </div>
       {tx.fromAddress && safeStr(tx.fromAddress) !== '—' && (
@@ -78,18 +82,34 @@ function TransactionItem({ tx, index }) {
   );
 }
 
-function AddressTransactions({ address }) {
+function AddressTransactions({ address: addressProp } = {}) {
+  const params = useParams();
+  const navigate = useNavigate();
+  const rawAddress = addressProp ?? params.address;
+
+  const addressKey = useMemo(
+    () => String(rawAddress || '').trim().toLowerCase().replace(/^0x/i, ''),
+    [rawAddress],
+  );
+
   const [resolvedAddress, setResolvedAddress] = useState(null);
   const [allHistory, setAllHistory] = useState([]);
   const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [historyError, setHistoryError] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [balanceLoading, setBalanceLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [nextCursor, setNextCursor] = useState(INITIAL_CURSOR);
+  const [nextCursor, setNextCursor] = useState(ADDRESS_HISTORY_CURSOR);
   const [hasMore, setHasMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
   const [balance, setBalance] = useState(null);
   const [usdBalance, setUsdBalance] = useState(null);
+  const [invalidAddress, setInvalidAddress] = useState(false);
+
+  // Tracks which addressKey the UI is currently bound to (survives strict remounts)
+  const shownKeyRef = useRef(addressKey);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 800);
@@ -103,106 +123,168 @@ function AddressTransactions({ address }) {
       setUsdBalance('N/A');
       return;
     }
-
-    fetch('https://api.coingecko.com/api/v3/simple/price?ids=warthog&vs_currencies=usd')
-      .then((res) => res.json())
-      .then((data) => {
-        const price = data.warthog?.usd || 0;
-        const usd = (parseFloat(bal) * price).toFixed(2);
-        setUsdBalance(`$${usd}`);
-      })
+    formatWartUsdBalance(bal)
+      .then((usd) => setUsdBalance(usd))
       .catch(() => setUsdBalance('N/A'));
   }, []);
 
-  const fetchHistoryPage = useCallback(async (api, account, cursor, { append = false } = {}) => {
-    const result = await api.getAccountHistory(account, cursor);
+  const applyPayloadToUi = useCallback((payload, { append = false } = {}) => {
+    if (!payload) return;
 
-    if (!result.success) {
-      if (isEmptyHistoryError(result.error)) {
-        if (!append) {
-          setAllHistory([]);
-        }
-        setHasMore(false);
-        setNextCursor(null);
-        return [];
-      }
-      throw new Error(result.error || 'Failed to fetch transaction history');
+    if (payload.balance != null) {
+      setBalance((prev) => prev ?? payload.balance);
+      updateUsdBalance(payload.balance);
     }
 
-    const parsed = parseAccountHistory(result.data);
-    if (!parsed) {
-      throw new Error('Unexpected response format from node history endpoint');
+    if (append) {
+      setAllHistory((prev) => [...prev, ...(payload.items || [])]);
+    } else if (payload.items?.length) {
+      setAllHistory(payload.items);
+    } else if (payload.empty && !payload.preserved) {
+      // Confirmed empty account — only clear if we aren't preserving prior data
+      setAllHistory((prev) => (prev.length ? prev : []));
     }
+    // If preserved (non-empty cache kept over empty revalidation), leave list alone
 
-    const { items, fromId } = parsed;
-    setAllHistory((prev) => (append ? [...prev, ...items] : items));
-    setHasMore(items.length > 0 && fromId > 0);
-    setNextCursor(fromId > 0 ? String(fromId) : null);
-    return items;
-  }, []);
+    setNextCursor(payload.nextCursor ?? null);
+    setHasMore(Boolean(payload.hasMore));
+    setHistoryLoaded(true);
+    setHistoryError(null);
+  }, [updateUsdBalance]);
 
-  const loadAddressData = useCallback(async ({ isRefresh = false } = {}) => {
-    if (!address) return;
-
-    if (isRefresh) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-    setError(null);
-
-    try {
-      const normalized = await resolveWarthogAddress(address);
-      if (!normalized) {
-        throw new Error('Invalid Warthog address');
-      }
-
-      setResolvedAddress(normalized);
-
-      if (normalized !== address) {
-        const nextUrl = `/address/${encodeURIComponent(normalized)}`;
-        window.history.replaceState(null, '', nextUrl);
-      }
-
-      const api = await createWarthogApi(resolveExplorerHostFromStorage());
-      const bal = await fetchAccountWartBalance(api, normalized);
-      setBalance(bal);
-      updateUsdBalance(bal);
-
-      await fetchHistoryPage(api, normalized, INITIAL_CURSOR, { append: false });
-      setCurrentPage(1);
-    } catch (err) {
-      console.error('Failed to load address data', err);
-      setError(formatExplorerError(err, 'Failed to fetch address data'));
-      setAllHistory([]);
-      setHasMore(false);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [address, fetchHistoryPage, updateUsdBalance]);
-
+  // Main load — keyed only on addressKey
   useEffect(() => {
-    if (!address) return;
+    if (!addressKey) return undefined;
 
-    setAllHistory([]);
+    shownKeyRef.current = addressKey;
+    const host = resolveExplorerHostFromStorage();
+    const routeParam = rawAddress;
+
+    setError(null);
+    setHistoryError(null);
+    setInvalidAddress(false);
     setCurrentPage(1);
-    setNextCursor(INITIAL_CURSOR);
-    setHasMore(false);
-    setBalance(null);
-    setUsdBalance(null);
+    setRefreshing(false);
+
+    // Instant paint from shared cache (survives explorer → back)
+    const cached = readAddressHistoryCache(addressKey, host);
+    if (cached?.items?.length) {
+      setAllHistory(cached.items);
+      setNextCursor(cached.nextCursor);
+      setHasMore(Boolean(cached.hasMore));
+      setHistoryLoaded(true);
+      setHistoryLoading(true); // revalidating
+      if (cached.balance != null) {
+        setBalance(cached.balance);
+        updateUsdBalance(cached.balance);
+        setBalanceLoading(false);
+      } else {
+        setBalanceLoading(true);
+      }
+    } else {
+      setAllHistory([]);
+      setNextCursor(ADDRESS_HISTORY_CURSOR);
+      setHasMore(false);
+      setHistoryLoaded(false);
+      setHistoryLoading(true);
+      setBalance(null);
+      setUsdBalance(null);
+      setBalanceLoading(true);
+    }
     setResolvedAddress(null);
 
-    loadAddressData();
-  }, [address, loadAddressData]);
+    let cancelled = false;
 
-  useEffect(() => {
-    if (!resolvedAddress) return;
-
-    const pollBalance = async () => {
+    (async () => {
       try {
-        const api = await createWarthogApi(resolveExplorerHostFromStorage());
+        const normalized = await resolveWarthogAddress(routeParam);
+        if (cancelled || shownKeyRef.current !== addressKey) return;
+
+        if (!normalized) {
+          setInvalidAddress(true);
+          setHistoryLoading(false);
+          setBalanceLoading(false);
+          setHistoryLoaded(true);
+          setError('Invalid Warthog address');
+          return;
+        }
+
+        setResolvedAddress(normalized);
+
+        if (String(routeParam) !== normalized) {
+          navigate(`/address/${encodeURIComponent(normalized)}`, { replace: true });
+        }
+
+        // Balance (fast) — independent
+        const balanceTask = (async () => {
+          try {
+            const api = await createWarthogApi(host);
+            if (cancelled || shownKeyRef.current !== addressKey) return;
+            const bal = await fetchAccountWartBalance(api, normalized);
+            if (cancelled || shownKeyRef.current !== addressKey) return;
+            setBalance(bal);
+            updateUsdBalance(bal);
+          } catch (err) {
+            console.error('Failed to fetch balance', err);
+          } finally {
+            if (!cancelled && shownKeyRef.current === addressKey) {
+              setBalanceLoading(false);
+            }
+          }
+        })();
+
+        // History — deduped at store level so remounts share one request
+        const historyTask = (async () => {
+          try {
+            const payload = await loadAddressHistory(normalized, { host, force: false });
+            // Apply if this address is still the one on screen (even if this effect
+            // instance was "cancelled" by Strict Mode — the data is still correct).
+            if (shownKeyRef.current !== addressKey) return;
+            applyPayloadToUi(payload, { append: false });
+          } catch (err) {
+            if (shownKeyRef.current !== addressKey) return;
+            console.error('Failed to fetch history', err);
+            setHistoryError(
+              formatExplorerError(err, 'Failed to fetch transaction history'),
+            );
+            setHistoryLoaded(true);
+          } finally {
+            if (shownKeyRef.current === addressKey) {
+              setHistoryLoading(false);
+            }
+          }
+        })();
+
+        await Promise.all([balanceTask, historyTask]);
+      } catch (err) {
+        if (shownKeyRef.current !== addressKey) return;
+        console.error('Failed to load address page', err);
+        setError(formatExplorerError(err, 'Failed to fetch address data'));
+        setHistoryLoading(false);
+        setBalanceLoading(false);
+        setHistoryLoaded(true);
+      }
+    })();
+
+    return () => {
+      // Do not clear shownKeyRef here — a remount for the same address reuses it.
+      // Only mark this effect instance cancelled for balance updates.
+      cancelled = true;
+    };
+  }, [addressKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Balance poll
+  useEffect(() => {
+    if (!resolvedAddress) return undefined;
+    const key = addressKey;
+
+    const poll = async () => {
+      try {
+        const host = resolveExplorerHostFromStorage();
+        const api = await createWarthogApi(host);
+        if (shownKeyRef.current !== key) return;
         const bal = await fetchAccountWartBalance(api, resolvedAddress);
+        if (shownKeyRef.current !== key) return;
         setBalance(bal);
         updateUsdBalance(bal);
       } catch (err) {
@@ -210,28 +292,78 @@ function AddressTransactions({ address }) {
       }
     };
 
-    const balanceInterval = setInterval(pollBalance, 30000);
-    return () => clearInterval(balanceInterval);
-  }, [resolvedAddress, updateUsdBalance]);
+    const id = setInterval(poll, 30000);
+    return () => clearInterval(id);
+  }, [resolvedAddress, addressKey, updateUsdBalance]);
 
   const fetchMoreHistory = async () => {
-    if (!hasMore || loading || !nextCursor || !resolvedAddress) return;
-
-    setLoading(true);
-    setError(null);
+    if (!hasMore || historyLoading || !nextCursor || !resolvedAddress) return;
+    const key = addressKey;
+    const host = resolveExplorerHostFromStorage();
+    setHistoryLoading(true);
+    setHistoryError(null);
     try {
-      const api = await createWarthogApi(resolveExplorerHostFromStorage());
-      await fetchHistoryPage(api, resolvedAddress, nextCursor, { append: true });
+      const payload = await loadAddressHistory(resolvedAddress, {
+        host,
+        cursor: nextCursor,
+        force: true,
+      });
+      if (shownKeyRef.current !== key) return;
+      applyPayloadToUi(payload, { append: true });
     } catch (err) {
-      setError(formatExplorerError(err, 'Failed to fetch transaction history'));
+      if (shownKeyRef.current !== key) return;
+      setHistoryError(formatExplorerError(err, 'Failed to fetch transaction history'));
     } finally {
-      setLoading(false);
+      if (shownKeyRef.current === key) setHistoryLoading(false);
     }
   };
 
-  const handleRefresh = () => {
-    if (!address || refreshing) return;
-    loadAddressData({ isRefresh: true });
+  const handleRefresh = async () => {
+    if (!resolvedAddress || refreshing) return;
+    const key = addressKey;
+    const host = resolveExplorerHostFromStorage();
+    clearAddressHistoryCache(key, host);
+
+    setRefreshing(true);
+    setHistoryError(null);
+    setError(null);
+    setCurrentPage(1);
+    setHistoryLoading(true);
+    setBalanceLoading(true);
+    shownKeyRef.current = key;
+
+    try {
+      const api = await createWarthogApi(host);
+
+      const balanceTask = fetchAccountWartBalance(api, resolvedAddress)
+        .then((bal) => {
+          if (shownKeyRef.current !== key) return;
+          setBalance(bal);
+          updateUsdBalance(bal);
+        })
+        .catch((err) => console.error('Failed to fetch balance', err))
+        .finally(() => {
+          if (shownKeyRef.current === key) setBalanceLoading(false);
+        });
+
+      const historyTask = loadAddressHistory(resolvedAddress, { host, force: true })
+        .then((payload) => {
+          if (shownKeyRef.current !== key) return;
+          applyPayloadToUi(payload, { append: false });
+        })
+        .catch((err) => {
+          if (shownKeyRef.current !== key) return;
+          setHistoryError(formatExplorerError(err, 'Failed to fetch transaction history'));
+          setHistoryLoaded(true);
+        })
+        .finally(() => {
+          if (shownKeyRef.current === key) setHistoryLoading(false);
+        });
+
+      await Promise.all([balanceTask, historyTask]);
+    } finally {
+      if (shownKeyRef.current === key) setRefreshing(false);
+    }
   };
 
   const handleNext = () => {
@@ -246,31 +378,29 @@ function AddressTransactions({ address }) {
   };
 
   const handlePrev = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
   };
 
-  const displayAddress = resolvedAddress || address;
+  const displayAddress = resolvedAddress || rawAddress;
 
-  if (!address) {
+  if (!rawAddress) {
     return (
       <BunkerShell title="Address Not Found">
         <p className="bunker-muted">No address provided.</p>
-        <a href="/explorer" className="bunker-btn bunker-btn--ghost" style={{ marginTop: '1rem' }}>
+        <ExplorerLink to="/explorer" className="bunker-btn bunker-btn--ghost" style={{ marginTop: '1rem' }}>
           ← Back to Explorer
-        </a>
+        </ExplorerLink>
       </BunkerShell>
     );
   }
 
-  if (loading && allHistory.length === 0 && !error) {
+  if (invalidAddress) {
     return (
-      <BunkerShell
-        title="Address Transactions"
-        actions={<ExplorerRefreshButton onClick={handleRefresh} loading={refreshing} />}
-      >
-        <p className="bunker-muted">Loading transactions...</p>
+      <BunkerShell title="Invalid Address">
+        <p className="bunker-muted">{error || 'Invalid Warthog address.'}</p>
+        <ExplorerLink to="/explorer" className="bunker-btn bunker-btn--ghost" style={{ marginTop: '1rem' }}>
+          ← Back to Explorer
+        </ExplorerLink>
       </BunkerShell>
     );
   }
@@ -279,12 +409,14 @@ function AddressTransactions({ address }) {
   const endIndex = startIndex + PAGE_SIZE;
   const currentHistory = allHistory.slice(startIndex, endIndex);
   const hasNext = (endIndex < allHistory.length) || hasMore;
+  const showHistoryEmpty =
+    historyLoaded && !historyLoading && currentHistory.length === 0 && !historyError;
 
   return (
     <BunkerShell
       title="Address Transactions"
       wide
-      actions={<ExplorerRefreshButton onClick={handleRefresh} loading={refreshing || loading} />}
+      actions={<ExplorerRefreshButton onClick={handleRefresh} loading={refreshing} />}
     >
       <h2 className="bunker-subheading">Address {abbreviate(displayAddress)}</h2>
       <div className="bunker-panel">
@@ -301,29 +433,75 @@ function AddressTransactions({ address }) {
           </div>
           <div className="bunker-dl-row">
             <dt>Balance</dt>
-            <dd>{balance ?? 'Loading...'} {usdBalance && usdBalance !== 'N/A' ? `(${usdBalance})` : ''}</dd>
+            <dd>
+              {balance == null
+                ? (balanceLoading ? 'Loading…' : '—')
+                : `${balance}${usdBalance && usdBalance !== 'N/A' ? ` (${usdBalance})` : ''}`}
+            </dd>
           </div>
         </dl>
         <h3 className="bunker-heading">Transaction History (Page {currentPage})</h3>
-        {loading && <p className="bunker-muted">Loading more...</p>}
-        {error && <div className="bunker-alert"><strong>Error:</strong> {error}</div>}
-        {currentHistory.length > 0 ? (
-          <ul className="bunker-list">
-            {currentHistory.map((tx, index) => (
-              <TransactionItem key={tx.txid || `tx-${startIndex + index}`} tx={tx} index={startIndex + index} />
-            ))}
-          </ul>
-        ) : !error ? (
+        {error && (
+          <div className="bunker-alert"><strong>Error:</strong> {error}</div>
+        )}
+        {historyError && (
+          <div className="bunker-alert">
+            <strong>Error:</strong> {historyError}{' '}
+            <button
+              type="button"
+              className="bunker-btn"
+              style={{ marginLeft: '0.5rem' }}
+              onClick={handleRefresh}
+              disabled={refreshing || historyLoading}
+            >
+              Retry
+            </button>
+          </div>
+        )}
+        {historyLoading && allHistory.length === 0 ? (
+          <p className="bunker-muted">
+            Loading transactions… (busy miners can take several seconds on the node)
+          </p>
+        ) : currentHistory.length > 0 ? (
+          <>
+            {historyLoading && (
+              <p className="bunker-muted">Updating…</p>
+            )}
+            <ul className="bunker-list">
+              {currentHistory.map((tx, index) => (
+                <TransactionItem
+                  key={tx.txid || `tx-${startIndex + index}`}
+                  tx={tx}
+                  index={startIndex + index}
+                />
+              ))}
+            </ul>
+          </>
+        ) : showHistoryEmpty ? (
           <p className="bunker-muted">No transactions found for this address.</p>
-        ) : null}
+        ) : (
+          <p className="bunker-muted">Loading transactions…</p>
+        )}
       </div>
       <div className="bunker-toolbar" style={{ marginTop: '1.5rem' }}>
-        <button onClick={handlePrev} disabled={currentPage === 1} className="bunker-btn bunker-btn--ghost">Previous</button>
-        <button onClick={handleNext} disabled={!hasNext} className="bunker-btn bunker-btn--ghost">Next</button>
+        <button
+          onClick={handlePrev}
+          disabled={currentPage === 1 || historyLoading}
+          className="bunker-btn bunker-btn--ghost"
+        >
+          Previous
+        </button>
+        <button
+          onClick={handleNext}
+          disabled={!hasNext || historyLoading}
+          className="bunker-btn bunker-btn--ghost"
+        >
+          Next
+        </button>
       </div>
-      <a href="/explorer" className="bunker-btn bunker-btn--ghost" style={{ marginTop: '1rem' }}>
+      <ExplorerLink to="/explorer" className="bunker-btn bunker-btn--ghost" style={{ marginTop: '1rem' }}>
         ← Back to Explorer
-      </a>
+      </ExplorerLink>
     </BunkerShell>
   );
 }

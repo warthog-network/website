@@ -1,10 +1,19 @@
 const PROXY_URL = '/api/proxy';
 
-function parseNodeResponse(text) {
+function parseNodeResponse(text, { httpStatus } = {}) {
+  const trimmed = String(text ?? '').trim();
+  if (!trimmed) {
+    throw new Error(
+      httpStatus
+        ? `Node returned empty body (HTTP ${httpStatus})`
+        : 'Node returned empty body',
+    );
+  }
+
   try {
-    return JSON.parse(text);
+    return JSON.parse(trimmed);
   } catch {
-    const preview = text.trim().slice(0, 120).replace(/\s+/g, ' ');
+    const preview = trimmed.slice(0, 120).replace(/\s+/g, ' ');
     const hint = preview.startsWith('<') || preview.startsWith('<!')
       ? 'Node returned HTML instead of JSON. Check the node URL and port (API paths like /chain/head should return JSON). HTTP nodes on the live HTTPS site are reached via the server proxy.'
       : `Node returned non-JSON: ${preview}`;
@@ -51,7 +60,7 @@ export function createBrowserWarthogApi(WarthogApi, baseUrl, { useProxy = false 
         }
         response = await fetch(PROXY_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
           body: JSON.stringify(envelope),
         });
       } else {
@@ -59,17 +68,33 @@ export function createBrowserWarthogApi(WarthogApi, baseUrl, { useProxy = false 
         const body = options.body ? JSON.stringify(options.body, replacer) : undefined;
         response = await fetch(url, {
           method: options.method || 'GET',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
           body,
         });
       }
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      const text = await response.text();
+      let json;
+      try {
+        json = parseNodeResponse(text, { httpStatus: response.status });
+      } catch (err) {
+        // Prefer structured message; still surface HTTP status when body was unusable.
+        if (!response.ok) {
+          throw new Error(
+            `${err.message} (HTTP ${response.status})`,
+          );
+        }
+        throw err;
       }
 
-      const text = await response.text();
-      const json = parseNodeResponse(text);
+      if (!response.ok && (json.code === undefined || json.code === 0)) {
+        // HTTP error without a Warthog `{code,error}` envelope.
+        return {
+          success: false,
+          code: response.status,
+          error: json.error || json.message || `HTTP error! status: ${response.status}`,
+        };
+      }
 
       if (json.code !== 0) {
         return {

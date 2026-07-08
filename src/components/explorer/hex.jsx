@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import BunkerShell from '../BunkerShell.jsx';
 import { resolveExplorerHostFromStorage } from '../../lib/explorerNodes.js';
 import { unwrapApiData } from '../../lib/warthogClient.js';
 import { createWarthogApi } from './explorerClient.js';
+import ExplorerLink from './ExplorerLink.jsx';
 
-export default function BlockHexView({ height }) {
+export default function BlockHexView({ height: heightProp } = {}) {
+  const params = useParams();
+  const height = heightProp ?? params.height;
   const containerRef = useRef(null);
   const breadcrumbsRef = useRef(null);
   const [loading, setLoading] = useState(true);
@@ -129,9 +133,9 @@ export default function BlockHexView({ height }) {
         <code ref={containerRef} className="bunker-hex-code" />
       </div>
 
-      <a href={`/chain/block/${height}`} className="bunker-btn">
+      <ExplorerLink to={`/chain/block/${height}`} className="bunker-btn">
         Back to Block Details
-      </a>
+      </ExplorerLink>
 
       <style>{`
         .bunker-hex-code .leaf {

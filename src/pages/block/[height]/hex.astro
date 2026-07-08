@@ -1,9 +1,9 @@
 ---
-import BlockHexView from '../../../components/explorer/hex.jsx';  // Adjust path
+import ExplorerApp from '../../../components/explorer/ExplorerApp.jsx';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 
 const { height } = Astro.params;
 ---
-<BaseLayout bodyClass="site-body--wartbunker">
-<BlockHexView height={height} client:load />
+<BaseLayout title={`Block ${height} hex`} bodyClass="site-body--wartbunker">
+  <ExplorerApp client:only="react" />
 </BaseLayout>

@@ -1,8 +1,8 @@
 ---
-import ExplorerComponent from '../components/explorer/explorer.jsx';
+import ExplorerApp from '../components/explorer/ExplorerApp.jsx';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import '../styles.css';
 ---
 <BaseLayout bodyClass="site-body--wartbunker">
-<ExplorerComponent client:load />
+  <ExplorerApp client:only="react" />
 </BaseLayout>

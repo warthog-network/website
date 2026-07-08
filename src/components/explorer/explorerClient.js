@@ -3,21 +3,45 @@ import { createWarthogApi, unwrapApiData } from '../../lib/warthogClient.js';
 
 export { createWarthogApi };
 
+function extractChainHeight(data) {
+  if (data == null || typeof data !== 'object') return null;
+  const candidates = [
+    data.height,
+    data.pinHeight,
+    data.chainHead?.pinHeight,
+    data.chainHead?.height,
+  ];
+  for (const value of candidates) {
+    if (value != null && value !== '') {
+      const n = Number(value);
+      if (Number.isFinite(n) && n > 0) return n;
+    }
+  }
+  return null;
+}
+
 export async function fetchChainHeadHeight(api) {
   const data = unwrapApiData(await api.getChainHead());
-  const height = data?.height ?? data?.chainHead?.pinHeight;
+  const height = extractChainHeight(data);
   if (height == null) {
     throw new Error('Unexpected response format from node head endpoint');
   }
-  return Number(height);
+  return height;
 }
 
 export async function fetchExplorerBlock(api, height) {
   const data = unwrapApiData(await api.getBlock(height));
-  if (!data?.header) {
+  if (!data || typeof data !== 'object') {
     throw new Error('Block not found');
   }
-  return new Block({ ...data, height: Number(height) });
+  // Nodes always send a header; tolerate minor envelope differences.
+  if (!data.header && data.block?.header) {
+    return new Block({ ...data.block, height: Number(data.block.height ?? height) });
+  }
+  if (!data.header) {
+    throw new Error('Block not found (missing header in node response)');
+  }
+  return new Block({ ...data, height: Number(data.height ?? height) });
 }
 
 export async function fetchRecentBlocks(api, headHeight, count = 10) {

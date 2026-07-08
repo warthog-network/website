@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { format_height, abbreviate } from './assets/util.js';
 import { Block } from './assets/block.js';
 import BunkerShell from '../BunkerShell.jsx';
 import { resolveExplorerHostFromStorage } from '../../lib/explorerNodes.js';
 import ExplorerAddress from './ExplorerAddress.jsx';
+import ExplorerLink from './ExplorerLink.jsx';
 import ExplorerRefreshButton from './ExplorerRefreshButton.jsx';
 import { createWarthogApi, fetchExplorerBlock } from './explorerClient.js';
+import { fetchIndexerBlock, shouldUseExplorerIndexer } from './explorerIndexerClient.js';
+import { normalizeSelectedNode } from '../../lib/explorerNodes.js';
+import { formatExplorerError } from './explorerApi.js';
 
 function TransactionItem({ tx, index }) {
   const isRewardTx = !tx.fromAddress;
@@ -30,12 +35,12 @@ function TransactionItem({ tx, index }) {
             : abbreviate(safeStr(tx.txHash))}
         </span>
         {tx.txHash && (
-          <a
-            href={`/transaction/lookup/${tx.txHash}`}
+          <ExplorerLink
+            to={`/transaction/lookup/${tx.txHash}`}
             className="bunker-link"
           >
             View Details
-          </a>
+          </ExplorerLink>
         )}
       </div>
       {tx.fromAddress && safeStr(tx.fromAddress) !== '—' && (
@@ -62,10 +67,13 @@ function TransactionItem({ tx, index }) {
   );
 }
 
-function BlockDetails({ height }) {
+function BlockDetails({ height: heightProp } = {}) {
+  const params = useParams();
+  const height = heightProp ?? params.height;
   const [block, setBlock] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(null);
   const [copiedField, setCopiedField] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -84,16 +92,25 @@ function BlockDetails({ height }) {
     let cancelled = false;
     setLoading(true);
     setError(false);
+    setErrorMessage(null);
 
     (async () => {
       try {
-        const api = await createWarthogApi(resolveExplorerHostFromStorage());
-        const fetchedBlock = await fetchExplorerBlock(api, height);
+        const selectedNode = normalizeSelectedNode(
+          typeof window !== 'undefined' ? localStorage.getItem('selectedNode') : 'losthymns',
+        );
+        const fetchedBlock = shouldUseExplorerIndexer(selectedNode)
+          ? await fetchIndexerBlock(height)
+          : await fetchExplorerBlock(
+              await createWarthogApi(resolveExplorerHostFromStorage()),
+              height,
+            );
         if (cancelled) return;
         setBlock(fetchedBlock instanceof Block ? fetchedBlock : new Block(fetchedBlock));
-      } catch {
+      } catch (err) {
         if (!cancelled) {
           setError(true);
+          setErrorMessage(formatExplorerError(err, 'The requested block could not be found.'));
         }
       } finally {
         if (!cancelled) {
@@ -131,10 +148,12 @@ function BlockDetails({ height }) {
         title="Block Not Found"
         actions={<ExplorerRefreshButton onClick={handleRefresh} loading={refreshing} />}
       >
-        <p className="bunker-muted">The requested block could not be found.</p>
-        <a href="/explorer" className="bunker-btn bunker-btn--ghost" style={{ marginTop: '1rem' }}>
+        <p className="bunker-muted">
+          {errorMessage || 'The requested block could not be found.'}
+        </p>
+        <ExplorerLink to="/explorer" className="bunker-btn bunker-btn--ghost" style={{ marginTop: '1rem' }}>
           ← Back to Explorer
-        </a>
+        </ExplorerLink>
       </BunkerShell>
     );
   }
@@ -182,7 +201,7 @@ function BlockDetails({ height }) {
         </dl>
         <div className="bunker-toolbar">
           <h3 className="bunker-heading" style={{ margin: 0 }}>Transactions</h3>
-          <a href={`/block/${block.height}/hex`} className="bunker-link">Show binary</a>
+          <ExplorerLink to={`/block/${block.height}/hex`} className="bunker-link">Show binary</ExplorerLink>
         </div>
         {block.transactions?.length > 0 ? (
           <ul className="bunker-list">
@@ -194,9 +213,9 @@ function BlockDetails({ height }) {
           <p className="bunker-muted">No transactions in this block.</p>
         )}
       </div>
-      <a href="/explorer" className="bunker-btn bunker-btn--ghost" style={{ marginTop: '1rem' }}>
+      <ExplorerLink to="/explorer" className="bunker-btn bunker-btn--ghost" style={{ marginTop: '1rem' }}>
         ← Back to Explorer
-      </a>
+      </ExplorerLink>
     </BunkerShell>
   );
 }

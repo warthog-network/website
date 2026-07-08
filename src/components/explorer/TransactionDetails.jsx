@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { format_height, abbreviate } from './assets/util.js';
 import BunkerShell from '../BunkerShell.jsx';
 import { resolveExplorerHostFromStorage } from '../../lib/explorerNodes.js';
 import { unwrapApiData } from '../../lib/warthogClient.js';
 import ExplorerAddress from './ExplorerAddress.jsx';
+import ExplorerLink from './ExplorerLink.jsx';
 import ExplorerRefreshButton from './ExplorerRefreshButton.jsx';
 import { createWarthogApi } from './explorerClient.js';
 
-function TransactionDetails({ txid }) {
+function TransactionDetails({ txid: txidProp } = {}) {
+  const params = useParams();
+  const txid = txidProp ?? params.txid;
   const [transaction, setTransaction] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -84,9 +88,9 @@ function TransactionDetails({ txid }) {
         actions={<ExplorerRefreshButton onClick={handleRefresh} loading={refreshing} />}
       >
         <p className="bunker-muted">The requested transaction could not be found.</p>
-        <a href="/explorer" className="bunker-btn bunker-btn--ghost" style={{ marginTop: '1rem' }}>
+        <ExplorerLink to="/explorer" className="bunker-btn bunker-btn--ghost" style={{ marginTop: '1rem' }}>
           ← Back to Explorer
-        </a>
+        </ExplorerLink>
       </BunkerShell>
     );
   }
@@ -159,9 +163,9 @@ function TransactionDetails({ txid }) {
               <div className="bunker-dl-row">
                 <dt>Block Height</dt>
                 <dd>
-                  <a href={`/chain/block/${transaction.blockHeight}`} className="bunker-link">
+                  <ExplorerLink to={`/chain/block/${transaction.blockHeight}`} className="bunker-link">
                     {format_height(transaction.blockHeight)}
-                  </a>
+                  </ExplorerLink>
                 </dd>
               </div>
             )}
@@ -195,9 +199,9 @@ function TransactionDetails({ txid }) {
             )}
           </dl>
       </div>
-      <a href="/explorer" className="bunker-btn bunker-btn--ghost" style={{ marginTop: '1rem' }}>
+      <ExplorerLink to="/explorer" className="bunker-btn bunker-btn--ghost" style={{ marginTop: '1rem' }}>
         ← Back to Explorer
-      </a>
+      </ExplorerLink>
     </BunkerShell>
   );
 }

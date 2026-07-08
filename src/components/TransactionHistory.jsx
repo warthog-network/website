@@ -120,9 +120,11 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
     }
 
     return rawData.perBlock.flatMap((block) => {
+      // Node history uses `transactions`; some payloads use `body` (same as chain/block)
+      const group = block.transactions || block.body || {};
       const txs = [
-        ...(block.transactions?.transfers || []),
-        ...(block.transactions?.rewards || []),
+        ...(Array.isArray(group.transfers) ? group.transfers : []),
+        ...(Array.isArray(group.rewards) ? group.rewards : []),
       ];
       return txs.map((tx) => {
         const isReward = !tx.fromAddress;
@@ -133,7 +135,7 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
           asset: 'WART',
           confirmations: block.confirmations,
           height: block.height,
-          txid: tx.txHash,
+          txid: tx.txHash || tx.txid,
           timestamp: tx.timestamp || block.timestamp || timestampMap[block.height],
           amount:
             tx.amount !== undefined

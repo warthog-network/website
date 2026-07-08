@@ -1,8 +1,8 @@
 ---
-import TransactionDetails from '../../../components/explorer/TransactionDetails.jsx';
+import ExplorerApp from '../../../components/explorer/ExplorerApp.jsx';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 const { txid } = Astro.params;
 ---
 <BaseLayout title={`Transaction Details: ${txid}`} bodyClass="site-body--wartbunker">
-  <TransactionDetails txid={txid} client:load />
+  <ExplorerApp client:only="react" />
 </BaseLayout>

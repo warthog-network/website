@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { abbreviate } from './assets/util.js';
 import { normalizeExplorerAddress } from './explorerAddressUtils.js';
 
@@ -15,6 +16,7 @@ export default function ExplorerAddress({
   showCopy = true,
   showLink = true,
 }) {
+  const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const clickTimerRef = useRef(null);
   const normalized = normalizeExplorerAddress(address);
@@ -24,6 +26,7 @@ export default function ExplorerAddress({
   }
 
   const display = abbreviated ? abbreviate(normalized) : normalized;
+  const path = addressPath(normalized);
 
   const copyAddress = async () => {
     try {
@@ -59,7 +62,7 @@ export default function ExplorerAddress({
       clearTimeout(clickTimerRef.current);
       clickTimerRef.current = null;
     }
-    window.location.assign(addressPath(normalized));
+    navigate(path);
   };
 
   const handleKeyDown = (event) => {
@@ -72,13 +75,13 @@ export default function ExplorerAddress({
   if (!showCopy && showLink) {
     return (
       <span className="explorer-address">
-        <a
-          href={addressPath(normalized)}
+        <Link
+          to={path}
           className={`explorer-address__link ${className}`.trim()}
           title={`View address page: ${normalized}`}
         >
           {display}
-        </a>
+        </Link>
       </span>
     );
   }

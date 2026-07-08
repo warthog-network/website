@@ -169,7 +169,7 @@ export default function WalletContactsModal({
             </label>
             {formError ? <div className="bunker-alert" style={{ marginTop: '0.75rem' }}>{formError}</div> : null}
             <div className="wallet-contacts-form__actions">
-              <button type="submit" className="bunker-btn !m-0">
+              <button type="submit" className="bunker-btn bunker-btn--primary !m-0">
                 {editingContact ? 'Save Changes' : 'Add Contact'}
               </button>
               <button

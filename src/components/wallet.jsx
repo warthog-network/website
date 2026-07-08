@@ -4,8 +4,16 @@ import { ethers } from 'ethers';
 import TransactionHistory from './TransactionHistory';
 import WalletOverviewCard from './WalletOverviewCard.jsx';
 import WalletQrExportModal from './WalletQrExportModal.jsx';
-import { fetchNodes, resolveNodeUrl } from '../lib/nodesCache';
+import { buildNodeList, resolveNodeUrl } from '../lib/nodesCache';
+import {
+  ADD_CUSTOM_KEY,
+  OFFICIAL1_KEY,
+  loadSavedCustomNodes,
+  normalizeSelectedNode,
+  saveCustomNode,
+} from '../lib/explorerNodes.js';
 import { encryptWallet, decryptWallet, getSavedWallets } from '../utils/warthogWalletUtils';
+import { formatWartUsdBalance } from '../lib/wartPrice.js';
 import BunkerShell from './BunkerShell.jsx';
 import WalletContactsModal from './WalletContactsModal.jsx';
 import { recordContactUsage } from '../utils/walletContacts';
@@ -43,7 +51,10 @@ const Wallet = () => {
   const [nodeList, setNodeList] = useState([]);
   const [nodesLoading, setNodesLoading] = useState(true);
   const [nodesError, setNodesError] = useState(null);
-  const [selectedNode, setSelectedNode] = useState('');
+  const [selectedNode, setSelectedNode] = useState(OFFICIAL1_KEY);
+  const [customIP, setCustomIP] = useState('localhost');
+  const [customPort, setCustomPort] = useState('3000');
+  const [balanceRefreshing, setBalanceRefreshing] = useState(false);
   const [showDownloadPrompt, setShowDownloadPrompt] = useState(false);
   const [sending, setSending] = useState(false); // New: to disable button during send
   const [failedTransactions, setFailedTransactions] = useState([]); // New: to log failed transactions
@@ -91,37 +102,68 @@ const Wallet = () => {
   const [showPromptPassword, setShowPromptPassword] = useState(false);
   const [showPromptConfirmPassword, setShowPromptConfirmPassword] = useState(false);
 
-  // Fetch nodes and validate savedNode from localStorage
+  // Load node list + restore selection (shared with explorer)
   useEffect(() => {
-    async function loadNodes() {
-      setNodesLoading(true);
-      setNodesError(null);
-      const { nodes, error } = await fetchNodes();
-      if (error) {
-        setNodesError(error);
-        setNodesLoading(false);
-        return;
-      }
-      setNodeList(nodes || []);
-      setNodesLoading(false);
+    setNodesLoading(true);
+    setNodesError(null);
+    try {
+      const list = buildNodeList();
+      setNodeList(list);
 
-      if (nodes && nodes.length > 0) {
-        const savedNode = localStorage.getItem('selectedNode');
-        const savedUrl = resolveNodeUrl(savedNode);
-        const knownUrls = nodes.map((n) => n.url);
-        if (savedUrl && knownUrls.includes(savedUrl)) {
-          setSelectedNode(savedUrl);
-        } else if (savedUrl && savedUrl.startsWith('http')) {
-          setSelectedNode(savedUrl);
-        } else {
-          const defaultUrl = nodes[0].url;
-          setSelectedNode(defaultUrl);
-          localStorage.setItem('selectedNode', defaultUrl);
+      const rawSelected = localStorage.getItem('selectedNode');
+      let next = normalizeSelectedNode(rawSelected);
+      const savedIP = localStorage.getItem('customIP');
+      const savedPort = localStorage.getItem('customPort');
+      if (savedIP) setCustomIP(savedIP);
+      if (savedPort) setCustomPort(savedPort);
+
+      // Promote a free-form URL into the saved list so it appears in the select
+      if (/^https?:\/\//i.test(next)) {
+        const saved = loadSavedCustomNodes();
+        if (!saved.some((n) => n.url === next)) {
+          try {
+            localStorage.setItem(
+              'savedCustomNodes',
+              JSON.stringify([{ url: next, label: next.replace(/^https?:\/\//, '') }, ...saved]),
+            );
+          } catch {
+            // ignore
+          }
+          setNodeList(buildNodeList());
+        }
+        try {
+          const u = new URL(next);
+          setCustomIP(u.hostname);
+          setCustomPort(u.port || (u.protocol === 'https:' ? '443' : '3000'));
+        } catch {
+          // ignore
         }
       }
+
+      setSelectedNode(next);
+      localStorage.setItem('selectedNode', next);
+    } catch (err) {
+      setNodesError(err?.message || 'Failed to load nodes');
+    } finally {
+      setNodesLoading(false);
     }
-    loadNodes();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('customIP', customIP);
+    localStorage.setItem('customPort', customPort);
+  }, [customIP, customPort]);
+
+  const handleSaveCustomNode = () => {
+    try {
+      const url = saveCustomNode(customIP, customPort);
+      setNodeList(buildNodeList());
+      setSelectedNode(url);
+      localStorage.setItem('selectedNode', url);
+    } catch (err) {
+      setNodesError(err?.message || 'Could not save custom node');
+    }
+  };
 
   const abbreviate = (str) => str ? `${str.slice(0,6)}...${str.slice(-4)}` : 'N/A';
 
@@ -173,6 +215,7 @@ const Wallet = () => {
   }, [isLoggedIn, wallet, currentWalletName, namePromptDismissed]);
 
   useEffect(() => {
+    if (selectedNode === ADD_CUSTOM_KEY) return;
     const nodeUrl = resolveNodeUrl(selectedNode);
     if (wallet?.address && nodeUrl) {
       console.log('Fetching balance for address:', wallet.address);
@@ -184,6 +227,7 @@ const Wallet = () => {
 
   // Poll for transaction history update every 30 seconds
   useEffect(() => {
+    if (selectedNode === ADD_CUSTOM_KEY) return;
     if (wallet?.address) {
       const historyInterval = setInterval(() => {
         setRefreshHistory(prev => !prev);
@@ -298,22 +342,15 @@ const Wallet = () => {
       // FIXED: always keep the highest value (persistent localStorage + on-chain + current React state)
       const newNextNonce = Math.max(persistentNonce, fetchedNonce, nextNonce || 0);
 
-      const balanceInWart = balanceData.balance !== undefined ? (balanceData.balance / 1).toFixed(8) : '0';
+      const balanceInWart = balanceData.balance !== undefined
+        ? Number(balanceData.balance).toFixed(8)
+        : '0';
       setBalance(balanceInWart);
 
-      // Fetch USD equivalent
-      if (balanceInWart && balanceInWart !== '0.00000000') {
-        fetch('https://api.coingecko.com/api/v3/simple/price?ids=warthog&vs_currencies=usd')
-          .then(res => res.json())
-          .then(data => {
-            const price = data.warthog?.usd || 0;
-            const usd = (parseFloat(balanceInWart) * price).toFixed(2);
-            setUsdBalance(`$${usd}`);
-          })
-          .catch(() => setUsdBalance('N/A'));
-      } else {
-        setUsdBalance('$0.00');
-      }
+      // USD via CoinGecko → CoinPaprika fallback (cached); never show $0 on API failure
+      formatWartUsdBalance(balanceInWart)
+        .then((usd) => setUsdBalance(usd))
+        .catch(() => setUsdBalance('N/A'));
 
       setNextNonce(newNextNonce);
       setPinHeight(chainHeadData.pinHeight);
@@ -916,7 +953,7 @@ const Wallet = () => {
                 </div>
               </div>
               <div className="flex space-x-2">
-                <button onClick={loadWallet} className="bunker-btn">Unlock Wallet</button>
+                <button onClick={loadWallet} className="bunker-btn bunker-btn--primary">Unlock Wallet</button>
                 <button
                   onClick={() => {
                     setShowPasswordPrompt(false);
@@ -946,14 +983,29 @@ const Wallet = () => {
                   address={wallet.address}
                   walletName={currentWalletName}
                   nodeList={nodeList}
-                  selectedNode={resolveNodeUrl(selectedNode)}
+                  selectedNode={selectedNode}
+                  customIP={customIP}
+                  customPort={customPort}
                   nodesLoading={nodesLoading}
                   nodesError={nodesError}
-                  onNodeChange={(url) => {
-                    setSelectedNode(url);
-                    localStorage.setItem('selectedNode', url);
+                  onNodeChange={(key) => {
+                    setSelectedNode(key);
+                    localStorage.setItem('selectedNode', key);
                   }}
-                  onRefresh={() => fetchBalanceAndNonce(wallet.address)}
+                  onCustomIPChange={setCustomIP}
+                  onCustomPortChange={setCustomPort}
+                  onSaveCustomNode={handleSaveCustomNode}
+                  refreshing={balanceRefreshing}
+                  onRefresh={async () => {
+                    if (!wallet?.address || balanceRefreshing) return;
+                    setBalanceRefreshing(true);
+                    try {
+                      await fetchBalanceAndNonce(wallet.address);
+                      setRefreshHistory((prev) => !prev);
+                    } finally {
+                      setBalanceRefreshing(false);
+                    }
+                  }}
                   onCopyAddress={() =>
                     navigator.clipboard
                       .writeText(wallet.address)
@@ -1063,7 +1115,7 @@ const Wallet = () => {
                           className="bunker-input"
                         />
                       </div>
-                      <button onClick={handleSendTransaction} disabled={sending} className="bunker-btn">
+                      <button onClick={handleSendTransaction} disabled={sending} className="bunker-btn bunker-btn--primary">
                         {sending ? 'Sending...' : 'Send Transaction'}
                       </button>
                     </div>
@@ -1332,7 +1384,7 @@ const Wallet = () => {
               <button
                 onClick={handleWalletAction}
                 disabled={walletAction === 'login-saved' && (!password || !selectedSavedWallet)}
-                className="bunker-btn"
+                className="bunker-btn bunker-btn--primary"
               >
                 {walletAction === 'create'
                   ? 'Create Wallet'
@@ -1615,7 +1667,7 @@ const Wallet = () => {
                   setShowPassword(false);
                   setShowConfirmPassword(false);
                 }}
-                className="bunker-btn"
+                className="bunker-btn bunker-btn--primary"
               >
                 Use Wallet Now
               </button>

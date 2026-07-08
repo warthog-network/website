@@ -20,8 +20,8 @@ export default defineConfig({
 experimental: {
   csp: {
     directives: [
-      "default-src 'self' https://api.coingecko.com",
-      "connect-src 'self' ws: wss: https://api.coingecko.com http://localhost:3000 https://warthognode.duckdns.org http://65.87.7.86:3001",
+      "default-src 'self'",
+      "connect-src 'self' ws: wss: https://api.coingecko.com https://api.coinpaprika.com http://localhost:3000 https://warthognode.duckdns.org",
       "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com",
       "img-src 'self' data:",
       "object-src 'self'",

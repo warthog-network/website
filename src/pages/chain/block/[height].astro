@@ -1,9 +1,9 @@
 ---
-import BlockDetailsComponent from '../../../components/explorer/blockdetails.jsx';
+import ExplorerApp from '../../../components/explorer/ExplorerApp.jsx';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 
 const { height } = Astro.params;
 ---
-<BaseLayout bodyClass="site-body--wartbunker">
-<BlockDetailsComponent height={height} client:load />
+<BaseLayout title={`Block ${height}`} bodyClass="site-body--wartbunker">
+  <ExplorerApp client:only="react" />
 </BaseLayout>
