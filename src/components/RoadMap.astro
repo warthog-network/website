@@ -1,121 +1,95 @@
 ---
 import ContentDiv from "../components/ContentDiv.jsx";
 
-const milestones = [
+/**
+ * Orbit-based priority map — no calendar deadlines.
+ * Closer orbits = higher priority / current focus.
+ */
+const orbits = [
   {
-    title: "Q1 2024",
-    status: "Shipped",
-    tone: "complete",
-    href: "https://docs.warthog.network/roadmap/#q1-2024",
+    id: "core",
+    label: "Core",
+    status: "Active focus",
+    title: "Where we are now",
+    blurb:
+      "Highest priority work in motion. This is our current position on the map — not a calendar promise.",
+    href: "https://docs.warthog.network/roadmap/",
+    accent: "#facc15",
     items: [
-      { text: "Develop world's first PoBW algo", done: true },
-      { text: "Develop stratum pool", done: true },
-      { text: "Listing on Exbitron", done: true },
-      { text: "Listing on Xeggex", done: true },
+      { text: "Sandwich-Proof DeFi matching engine (demo & papers shipped)", done: true },
+      { text: "Native DeFi path: tokens, liquidity, FBM on testnet", done: false },
+      { text: "Browser-node experience polish (usable UI)", done: false },
+      { text: "Exchange & market visibility (e.g. CMC listing)", done: false },
     ],
   },
   {
-    title: "Q2 2024",
-    status: "Shipped",
-    tone: "complete",
-    href: "https://docs.warthog.network/roadmap/#q2-2024",
+    id: "near",
+    label: "Near orbit",
+    status: "Next up",
+    title: "Pulling into range",
+    blurb:
+      "Work we intend to tackle as core items clear. Priority-ordered, not dated.",
+    href: "https://docs.warthog.network/roadmap/",
+    accent: "#38bdf8",
+    orbit: { r: 30, duration: 18, start: -20 },
     items: [
-      {
-        text: "Refactor networking code to support multiple transports",
-        done: true,
-      },
-      { text: "Research Sandwich-Proof DeFi", done: true },
+      { text: "Browser Node infrastructure & docs", done: false },
+      { text: "Lightweight DeFi surface for everyday use", done: false },
+      { text: "Token support + liquidity farming on testnet", done: false },
+      { text: "Sandwich-Proof DeFi fully enabled on testnet", done: false },
     ],
   },
   {
-    title: "Q3 2024",
-    status: "Shipped",
-    tone: "complete",
-    href: "https://docs.warthog.network/roadmap/#q3-2024",
+    id: "mid",
+    label: "Mid orbit",
+    status: "Queued",
+    title: "On the trajectory",
+    blurb:
+      "Clear direction once nearer orbits settle. Scope may flex as the core hardens.",
+    href: "https://docs.warthog.network/roadmap/",
+    accent: "#34d399",
+    orbit: { r: 40, duration: 28, start: 120 },
     items: [
-      {
-        text: "Research in-browser node support (unique in the crypto world)",
-        done: true,
-      },
-      {
-        text: "Implement matching engine C++ code for Sandwich-Proof DeFi",
-        done: true,
-      },
+      { text: "P2P Browser Node communication (WebRTC)", done: false },
+      { text: "Token support on mainnet", done: false },
+      { text: "Copy-balance feature for newly created tokens (testnet)", done: false },
+      { text: "Dividend payout feature for tokens", done: false },
     ],
   },
   {
-    title: "Q4 2024",
-    status: "Shipped",
-    tone: "complete",
-    href: "https://docs.warthog.network/roadmap/#q4-2024",
-    items: [
-      { text: "Listing on CoinEx", done: true },
-      { text: "Listing on Bit.com", done: true },
-      { text: "New website based on Astro", done: true },
-      { text: "Support blogs on the website", done: true },
-      { text: "Publish Warthog browser wallet extension", done: true },
-    ],
-  },
-  {
-    title: "Q1 2025",
-    status: "Active sprint",
-    tone: "current",
-    href: "https://docs.warthog.network/roadmap/#q1-2025",
-    items: [
-      { text: "Create demo of custom matching engine", done: true },
-      { text: "Write scientific paper about Sandwich-Proof DeFi", done: true },
-      { text: "List Warthog on Coinmarketcap", done: false },
-      { text: "Add nice UI for Browser Nodes", done: false },
-    ],
-  },
-  {
-    title: "Q2 2025",
-    status: "Up next",
-    tone: "next",
-    href: "https://docs.warthog.network/roadmap/#q2-2025",
-    items: [
-      { text: "Add infrastructure for Browser Nodes", done: false },
-      { text: "Add documentation for Browser Nodes", done: false },
-      { text: "Implement light-weight DeFi", done: false },
-      { text: "Enable token support in testnet", done: false },
-      { text: "Enable Liquidity Farming in testnet", done: false },
-      { text: "Enable Sandwich-Proof DeFi in testnet", done: false },
-    ],
-  },
-  {
-    title: "Q3 2025",
-    status: "In planning",
-    tone: "planning",
-    href: "https://docs.warthog.network/roadmap/#q3-2025",
-    items: [
-      { text: "Enable P2P Browser Node communication using WebRTC", done: false },
-      { text: "Add token support in mainnet", done: false },
-      {
-        text: "Add \"Copy Balance\" feature for newly created tokens in testnet",
-        done: false,
-      },
-    ],
-  },
-  {
-    title: "Q4 2025",
-    status: "Future focus",
-    tone: "future",
-    href: "https://docs.warthog.network/roadmap/#q4-2025",
-    items: [{ text: "Add Dividend payout feature for tokens", done: false }],
-  },
-  {
-    title: "2026",
+    id: "horizon",
+    label: "Horizon",
     status: "Research",
-    tone: "research",
+    title: "Long-range direction",
+    blurb:
+      "Exploratory and feasibility work. Signals where curiosity points — not a ship commitment.",
     href: "https://docs.warthog.network/roadmap/#2026",
+    accent: "#c084fc",
+    orbit: { r: 48, duration: 40, start: 210 },
     items: [
       {
-        text: "Research atomic swaps and assess feasibility of implementation in Warthog",
+        text: "Atomic swaps — research feasibility for Warthog",
         done: false,
       },
     ],
   },
 ];
+
+const planets = orbits.filter((o) => o.id !== "core");
+
+const foundation = {
+  title: "Foundation (shipped)",
+  href: "https://docs.warthog.network/roadmap/",
+  items: [
+    "World’s first PoBW mining algorithm (Janushash)",
+    "Stratum pool support",
+    "Multi-transport networking refactor",
+    "Sandwich-Proof DeFi research & matching engine code",
+    "In-browser node research",
+    "Major exchange listings & new Astro website",
+    "Browser wallet extension",
+  ],
+};
 ---
 
 <style>
@@ -125,7 +99,7 @@ const milestones = [
     overflow: hidden;
     padding-block: clamp(3rem, 6vw, 6rem);
     padding-inline: clamp(1rem, 4vw, 5rem);
-    background: radial-gradient(circle at 20% 20%, #1f2937 0%, #050810 65%);
+    background: radial-gradient(circle at 50% 35%, #101c34 0%, #050810 68%);
     color: #f8fafc;
   }
 
@@ -158,14 +132,11 @@ const milestones = [
   .roadmap__shell {
     display: flex;
     flex-direction: column;
-    gap: clamp(1rem, 2vw, 1.75rem);
+    gap: clamp(1.25rem, 2.5vw, 2rem);
   }
 
-  .roadmap__eyebrow {
-    font-size: 0.8rem;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: #a5b4fc;
+  .roadmap__heading.section__header {
+    max-width: none;
   }
 
   .roadmap__title-row {
@@ -174,14 +145,11 @@ const milestones = [
     justify-content: space-between;
     gap: 1rem;
     flex-wrap: wrap;
-  }
-
-  .roadmap__title-row h2 {
-    font-size: clamp(2.25rem, 4vw, 3.25rem);
-    margin: 0;
+    width: 100%;
   }
 
   .roadmap__cta {
+    font-family: "Montserrat", var(--font-sans);
     color: var(--color-brand);
     font-size: 0.95rem;
     text-decoration: none;
@@ -197,255 +165,698 @@ const milestones = [
     color: #fde047;
   }
 
-  .roadmap__intro {
-    max-width: 48ch;
-    color: rgba(248, 250, 252, 0.75);
+  .roadmap__note {
+    margin: 0;
+    max-width: 52ch;
+    font-family: "Montserrat", var(--font-sans);
+    font-size: 0.9rem;
+    color: rgba(226, 232, 240, 0.65);
     line-height: 1.5;
   }
 
-  .roadmap-grid {
-    position: relative;
+  .orbit-layout {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: clamp(1.25rem, 3vw, 2.5rem);
-    margin-top: 1rem;
+    align-items: center;
   }
 
   @media (min-width: 960px) {
-    .roadmap-grid::before {
-      content: "";
-      position: absolute;
-      top: 1.5rem;
-      left: clamp(0.5rem, 2vw, 1.25rem);
-      right: clamp(0.5rem, 2vw, 1.25rem);
-      height: 1px;
-      background: linear-gradient(
-        90deg,
-        transparent 0%,
-        rgba(148, 163, 184, 0.4) 25%,
-        rgba(148, 163, 184, 0.4) 75%,
-        transparent 100%
-      );
-      pointer-events: none;
+    .orbit-layout {
+      grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.2fr);
     }
   }
 
-  .milestone-card {
-    --accent: #818cf8;
+  /* ── Solar system (same design as first version) ── */
+  .orbit-map {
+    --map: 400px;
+    --dot: 14px;
+    --dot-hot: 18px;
+    --sun: 72px;
     position: relative;
-    border-radius: 1.25rem;
-    padding: 1.75rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.05),
-        rgba(15, 23, 42, 0.65)
-      ),
-      rgba(8, 12, 24, 0.85);
-    border: 1px solid rgba(226, 232, 240, 0.08);
-    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
-    backdrop-filter: blur(16px);
-    color: inherit;
-    text-decoration: none;
-    transition: transform 0.25s ease, border-color 0.25s ease;
+    width: var(--map);
+    height: var(--map);
+    max-width: 100%;
+    margin-inline: auto;
+    flex-shrink: 0;
   }
 
-  .milestone-card:hover {
-    transform: translateY(-6px);
-    border-color: rgba(250, 204, 21, 0.6);
+  /* Keep square when width is constrained */
+  @supports (aspect-ratio: 1) {
+    .orbit-map {
+      height: auto;
+      aspect-ratio: 1 / 1;
+    }
   }
 
-  .milestone-card:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.8),
-      0 25px 45px rgba(0, 0, 0, 0.35);
+  .orbit-map__glow {
+    position: absolute;
+    inset: 10%;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      rgba(250, 204, 21, 0.16) 0%,
+      rgba(250, 204, 21, 0.05) 40%,
+      transparent 70%
+    );
+    pointer-events: none;
   }
 
-  .milestone-card::after {
+  /* Path diameter = --r % of map width; padding-bottom keeps it circular */
+  .orbit-map__path {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: calc(var(--r) * 1%);
+    height: 0;
+    padding-bottom: calc(var(--r) * 1%);
+    margin-left: calc(var(--r) * -0.5%);
+    margin-top: calc(var(--r) * -0.5%);
+    border-radius: 50%;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    box-sizing: border-box;
+    pointer-events: none;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .orbit-map__path.is-active {
+    border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+    box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+
+  /* Yellow sun — always explicit equal width/height */
+  .orbit-map__sun {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 6;
+    width: var(--sun);
+    height: var(--sun);
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background:
+      radial-gradient(circle at 35% 30%, #fff7ad 0%, #facc15 38%, #e79300 75%, #b45309 100%);
+    box-shadow:
+      0 0 18px rgba(250, 204, 21, 0.55),
+      0 0 42px rgba(250, 204, 21, 0.3),
+      0 0 70px rgba(234, 179, 8, 0.15);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+  }
+
+  .orbit-map__sun::after {
     content: "";
     position: absolute;
+    inset: -22%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(250, 204, 21, 0.4), transparent 70%);
+    z-index: -1;
+    animation: sun-pulse 3s ease-in-out infinite;
+  }
+
+  .orbit-map__sun:hover,
+  .orbit-map__sun:focus-visible {
+    outline: none;
+    transform: translate(-50%, -50%) scale(1.06);
+    box-shadow:
+      0 0 24px rgba(250, 204, 21, 0.75),
+      0 0 55px rgba(250, 204, 21, 0.4);
+  }
+
+  .orbit-map__sun.is-active {
+    transform: translate(-50%, -50%) scale(1.1);
+    filter: brightness(1.08);
+    box-shadow:
+      0 0 28px rgba(250, 204, 21, 0.9),
+      0 0 64px rgba(250, 204, 21, 0.5),
+      0 0 0 3px rgba(250, 204, 21, 0.35);
+  }
+
+  .orbit-map__sun-label {
+    position: absolute;
+    left: 50%;
+    top: calc(50% + var(--sun) / 2 + 0.4rem);
+    transform: translateX(-50%);
+    z-index: 7;
+    font-family: "Montserrat", var(--font-sans);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(250, 204, 21, 0.85);
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.85);
+    pointer-events: none;
+    transition: color 0.2s ease, opacity 0.2s ease;
+  }
+
+  .orbit-map:has(.orbit-map__sun.is-active) .orbit-map__sun-label {
+    color: #fde047;
+  }
+
+  /*
+   * Spinner = full square map (never elliptical).
+   * Dot sits on orbit via top offset from center.
+   */
+  .orbit-map__planet {
+    --accent: #38bdf8;
+    --r: 30;
+    --duration: 20s;
+    --delay: 0s;
+    position: absolute;
     inset: 0;
-    border-radius: 1.25rem;
-    padding: 1px;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    animation: orbit-spin var(--duration) linear infinite;
+    animation-delay: var(--delay);
+    z-index: 4;
+    pointer-events: none;
+  }
+
+  .orbit-map__planet.is-active {
+    z-index: 8;
+  }
+
+  .orbit-map__dot {
+    position: absolute;
+    left: 50%;
+    /* --r is % of map from center to orbit (parent is full square map) */
+    top: calc(50% - (var(--r) * 1%));
+    width: var(--dot);
+    height: var(--dot);
+    margin: 0;
+    padding: 0;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+    box-sizing: border-box;
+    transform: translate(-50%, -50%);
+    background: var(--accent);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 60%, transparent);
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    pointer-events: auto;
+    transition:
+      width 0.2s ease,
+      height 0.2s ease,
+      box-shadow 0.2s ease,
+      border-color 0.2s ease,
+      filter 0.2s ease;
+  }
+
+  .orbit-map__dot:hover,
+  .orbit-map__dot:focus-visible {
+    outline: none;
+    width: var(--dot-hot);
+    height: var(--dot-hot);
+    border-color: #fff;
+    filter: brightness(1.15);
+  }
+
+  .orbit-map__planet.is-active .orbit-map__dot {
+    width: var(--dot-hot);
+    height: var(--dot-hot);
+    border-color: #fff;
+    box-shadow:
+      0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent),
+      0 0 18px var(--accent),
+      0 0 32px color-mix(in srgb, var(--accent) 45%, transparent);
+    filter: brightness(1.2);
+  }
+
+  @keyframes orbit-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes sun-pulse {
+    0%,
+    100% {
+      opacity: 0.55;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.08);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .orbit-map__planet,
+    .orbit-map__sun::after {
+      animation: none;
+    }
+
+    .orbit-map__planet {
+      transform: rotate(calc(var(--park, 0) * 1deg));
+    }
+  }
+
+  /* Mobile: same system, smaller */
+  @media (max-width: 959px) {
+    .orbit-map {
+      --map: min(280px, 72vw);
+      --dot: 12px;
+      --dot-hot: 15px;
+      --sun: 56px;
+      width: var(--map);
+    }
+  }
+
+  @media (max-width: 480px) {
+    .orbit-map {
+      --map: min(240px, 78vw);
+      --dot: 11px;
+      --dot-hot: 14px;
+      --sun: 48px;
+    }
+
+    .orbit-map__sun-label {
+      font-size: 0.62rem;
+    }
+  }
+
+  /* Priority cards */
+  .orbit-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .orbit-card {
+    --accent: #facc15;
+    border-radius: 1.1rem;
+    padding: 1.15rem 1.25rem;
     background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.08),
-      rgba(255, 255, 255, 0)
-    );
-    -webkit-mask:
-      linear-gradient(#fff 0 0) content-box,
-      linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
+        135deg,
+        rgba(255, 255, 255, 0.04),
+        rgba(15, 23, 42, 0.55)
+      ),
+      rgba(8, 12, 24, 0.88);
+    border: 1px solid rgba(226, 232, 240, 0.08);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.3);
+    color: inherit;
+    text-decoration: none;
+    transition: border-color 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+    scroll-margin-top: 5rem;
   }
 
-  .milestone-card[data-tone="complete"] {
-    --accent: #818cf8;
+  .orbit-card:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--accent) 55%, transparent);
   }
 
-  .milestone-card[data-tone="current"] {
+  .orbit-card:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--accent), 0 16px 36px rgba(0, 0, 0, 0.3);
+  }
+
+  .orbit-card[data-orbit="core"] {
     --accent: #facc15;
   }
 
-  .milestone-card[data-tone="next"] {
+  .orbit-card[data-orbit="near"] {
     --accent: #38bdf8;
   }
 
-  .milestone-card[data-tone="planning"] {
+  .orbit-card[data-orbit="mid"] {
     --accent: #34d399;
   }
 
-  .milestone-card[data-tone="future"] {
+  .orbit-card[data-orbit="horizon"] {
     --accent: #c084fc;
   }
 
-  .milestone-card[data-tone="research"] {
-    --accent: #f472b6;
+  .orbit-card.is-dimmed {
+    opacity: 0.55;
   }
 
-  .milestone-card__meta {
+  .orbit-card.is-spotlight {
+    opacity: 1;
+    border-color: color-mix(in srgb, var(--accent) 65%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent),
+      0 18px 40px rgba(0, 0, 0, 0.35);
+  }
+
+  .orbit-card__meta {
     display: flex;
-    justify-content: space-between;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 0.75rem;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: rgba(226, 232, 240, 0.75);
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
   }
 
-  .milestone-card__phase {
-    font-weight: 700;
+  .orbit-card__ring {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
+    font-family: "Montserrat", var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(226, 232, 240, 0.8);
   }
 
-  .milestone-card__phase::before {
+  .orbit-card__ring::before {
     content: "";
-    width: 0.6rem;
-    height: 0.6rem;
+    width: 0.55rem;
+    height: 0.55rem;
     border-radius: 999px;
     background: var(--accent);
-    box-shadow: 0 0 15px var(--accent);
+    box-shadow: 0 0 12px var(--accent);
   }
 
-  .milestone-card__status {
+  .orbit-card__status {
+    font-family: "Montserrat", var(--font-sans);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     padding: 0.2rem 0.55rem;
     border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: rgba(248, 250, 252, 0.85);
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    color: color-mix(in srgb, var(--accent) 90%, #fff);
   }
 
-  .milestone-card h3 {
-    margin: 0.5rem 0 0;
-    font-size: 1.4rem;
+  .orbit-card h3 {
+    margin: 0;
+    font-family: "Montserrat", var(--font-sans);
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #f8fafc;
   }
 
-  .milestone-card ul {
-    margin: 0.75rem 0 0;
+  .orbit-card__blurb {
+    margin: 0.35rem 0 0.65rem;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    color: rgba(226, 232, 240, 0.7);
+  }
+
+  .orbit-card ul {
+    margin: 0;
     padding: 0;
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
-    font-size: 0.95rem;
-    color: rgba(226, 232, 240, 0.9);
+    gap: 0.45rem;
   }
 
-  .milestone-card li {
+  .orbit-card li {
     display: flex;
-    gap: 0.85rem;
+    gap: 0.65rem;
+    font-size: 0.9rem;
     line-height: 1.4;
-    position: relative;
+    color: rgba(226, 232, 240, 0.72);
   }
 
-  .milestone-card li::before {
+  .orbit-card li::before {
     content: "";
-    width: 1.2rem;
-    height: 1.2rem;
-    margin-top: 0.1rem;
-    border-radius: 0.45rem;
+    width: 0.95rem;
+    height: 0.95rem;
+    margin-top: 0.15rem;
+    border-radius: 0.3rem;
     flex-shrink: 0;
-    border: 1px solid rgba(226, 232, 240, 0.35);
+    border: 1px solid rgba(226, 232, 240, 0.3);
     background: rgba(15, 23, 42, 0.5);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
   }
 
-  .milestone-card li[data-done="true"] {
+  .orbit-card li[data-done="true"] {
     color: rgba(248, 250, 252, 0.95);
   }
 
-  .milestone-card li[data-done="true"]::before {
+  .orbit-card li[data-done="true"]::before {
     content: "✔";
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     font-weight: 700;
     color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border-color: transparent;
     background: linear-gradient(135deg, var(--accent), #a855f7);
-    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.35),
-      0 0 14px rgba(129, 140, 248, 0.75);
-    text-shadow: 0 0 8px rgba(15, 23, 42, 0.65);
   }
 
-  .milestone-card li[data-done="false"] {
-    color: rgba(226, 232, 240, 0.65);
+  .foundation {
+    margin-top: 0.5rem;
+    border-radius: 1.1rem;
+    padding: 1.15rem 1.25rem;
+    border: 1px solid rgba(129, 140, 248, 0.2);
+    background: rgba(15, 23, 42, 0.45);
+  }
+
+  .foundation__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .foundation__title {
+    margin: 0;
+    font-family: "Montserrat", var(--font-sans);
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: rgba(199, 210, 254, 0.95);
+  }
+
+  .foundation__link {
+    font-family: "Montserrat", var(--font-sans);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-brand);
+    text-decoration: none;
+  }
+
+  .foundation__link:hover {
+    color: #fde047;
+  }
+
+  .foundation__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+
+  .foundation__chip {
+    font-family: "Montserrat", var(--font-sans);
+    font-size: 0.78rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid rgba(129, 140, 248, 0.25);
+    background: rgba(99, 102, 241, 0.1);
+    color: rgba(226, 232, 240, 0.85);
   }
 </style>
 
-<div class="roadmap-blanket [text-shadow:_5px_1px_5px_rgb(0_0_0_)]">
+<div class="roadmap-blanket" id="roadmap">
   <ContentDiv>
     <div class="roadmap__shell">
-      <div class="roadmap__heading">
-        <p class="roadmap__eyebrow">Product Direction</p>
+      <div class="roadmap__heading section__header">
+        <p class="section__eyebrow">Product Direction</p>
         <div class="roadmap__title-row">
-          <h2>Roadmap</h2>
+          <h2 class="section__title">Priority orbit</h2>
           <a
             class="roadmap__cta"
             href="https://docs.warthog.network/roadmap/"
             target="_blank"
             rel="noreferrer"
           >
-            See completed milestones »
+            Full history on docs »
           </a>
         </div>
-        <p class="roadmap__intro">
-          Follow where Warthog is headed next—from the protocol work we are running
-          right now through longer-range research that pushes the limits of
-          Sandwich-Proof DeFi and browser-native nodes.
+        <p class="section__lede">
+          We plan by priority, not by calendar. Closer orbits are what we’re
+          focused on now; outer rings show direction of travel without locking
+          dates we can’t honestly promise.
+        </p>
+        <p class="roadmap__note">
+          Rings can shift as research lands or priorities change — the map shows
+          intent and position, not a shipping schedule.
         </p>
       </div>
 
-      <section class="roadmap-grid" aria-label="Warthog roadmap 2024 through 2026">
-        {
-          milestones.map((milestone, index) => (
-            <a
-              class="milestone-card"
-              data-tone={milestone.tone}
-              href={milestone.href}
-              target="_blank"
-              rel="noreferrer noopener"
-              aria-label={`${milestone.title} milestone (${milestone.status})`}
-            >
-              <div class="milestone-card__meta">
-                <span class="milestone-card__phase">Phase {index + 1}</span>
-                <span class="milestone-card__status">{milestone.status}</span>
-              </div>
-              <h3>{milestone.title}</h3>
-              <ul>
-                {milestone.items.map((item) => (
-                  <li data-done={item.done}>{item.text}</li>
-                ))}
-              </ul>
-            </a>
-          ))
-        }
-      </section>
+      <div class="orbit-layout">
+        <div class="orbit-map" role="group" aria-label="Priority solar system">
+          <div class="orbit-map__glow" aria-hidden="true"></div>
+
+          {
+            planets.map((planet) => (
+              <div
+                class="orbit-map__path"
+                data-orbit-path={planet.id}
+                style={`--r: ${planet.orbit.r * 2}; --accent: ${planet.accent}`}
+                aria-hidden="true"
+              />
+            ))
+          }
+
+          <button
+            type="button"
+            class="orbit-map__sun is-active"
+            data-orbit-target="core"
+            aria-label="Show core priorities"
+            title="Core — active focus"
+          />
+          <span class="orbit-map__sun-label" aria-hidden="true">Core</span>
+
+          {
+            planets.map((planet) => {
+              const delay = (
+                -(planet.orbit.start / 360) *
+                planet.orbit.duration
+              ).toFixed(3);
+              return (
+                <div
+                  class="orbit-map__planet"
+                  data-orbit-planet={planet.id}
+                  style={`--r: ${planet.orbit.r}; --duration: ${planet.orbit.duration}s; --delay: ${delay}s; --accent: ${planet.accent}; --park: ${planet.orbit.start}`}
+                >
+                  <button
+                    type="button"
+                    class="orbit-map__dot"
+                    data-orbit-target={planet.id}
+                    aria-label={`Show ${planet.label} priorities`}
+                    title={planet.label}
+                  />
+                </div>
+              );
+            })
+          }
+        </div>
+
+        <section class="orbit-cards" aria-label="Warthog priority orbit">
+          {
+            orbits.map((orbit) => (
+              <a
+                class={`orbit-card${orbit.id === "core" ? " is-spotlight" : ""}`}
+                data-orbit={orbit.id}
+                id={`orbit-${orbit.id}`}
+                href={orbit.href}
+                target="_blank"
+                rel="noreferrer noopener"
+                aria-label={`${orbit.label}: ${orbit.title} (${orbit.status})`}
+              >
+                <div class="orbit-card__meta">
+                  <span class="orbit-card__ring">{orbit.label}</span>
+                  <span class="orbit-card__status">{orbit.status}</span>
+                </div>
+                <h3>{orbit.title}</h3>
+                <p class="orbit-card__blurb">{orbit.blurb}</p>
+                <ul>
+                  {orbit.items.map((item) => (
+                    <li data-done={item.done}>{item.text}</li>
+                  ))}
+                </ul>
+              </a>
+            ))
+          }
+        </section>
+      </div>
+
+      <aside class="foundation" aria-label="Shipped foundation">
+        <div class="foundation__head">
+          <h3 class="foundation__title">{foundation.title}</h3>
+          <a
+            class="foundation__link"
+            href={foundation.href}
+            target="_blank"
+            rel="noreferrer"
+          >
+            See archived quarters »
+          </a>
+        </div>
+        <div class="foundation__chips">
+          {
+            foundation.items.map((item) => (
+              <span class="foundation__chip">{item}</span>
+            ))
+          }
+        </div>
+      </aside>
     </div>
   </ContentDiv>
 </div>
+
+<script>
+  function initOrbitMap() {
+    const root = document.getElementById("roadmap");
+    if (!root || root.dataset.orbitReady === "1") return;
+    root.dataset.orbitReady = "1";
+
+    const cards = Array.from(root.querySelectorAll(".orbit-card"));
+    const targets = Array.from(root.querySelectorAll("[data-orbit-target]"));
+    const planets = Array.from(root.querySelectorAll("[data-orbit-planet]"));
+    const paths = Array.from(root.querySelectorAll("[data-orbit-path]"));
+    const sun = root.querySelector(".orbit-map__sun");
+
+    const setActive = (id) => {
+      cards.forEach((card) => {
+        const match = card.getAttribute("data-orbit") === id;
+        card.classList.toggle("is-spotlight", match);
+        card.classList.toggle("is-dimmed", !match);
+      });
+
+      targets.forEach((btn) => {
+        btn.classList.toggle(
+          "is-active",
+          btn.getAttribute("data-orbit-target") === id,
+        );
+      });
+
+      planets.forEach((planet) => {
+        planet.classList.toggle(
+          "is-active",
+          planet.getAttribute("data-orbit-planet") === id,
+        );
+      });
+
+      paths.forEach((path) => {
+        path.classList.toggle(
+          "is-active",
+          path.getAttribute("data-orbit-path") === id,
+        );
+      });
+
+      if (sun) {
+        sun.classList.toggle("is-active", id === "core");
+      }
+    };
+
+    targets.forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const id = btn.getAttribute("data-orbit-target");
+        if (!id) return;
+        setActive(id);
+        root.querySelector(`#orbit-${id}`)?.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+        });
+      });
+    });
+
+    cards.forEach((card) => {
+      const on = () => {
+        const id = card.getAttribute("data-orbit");
+        if (id) setActive(id);
+      };
+      card.addEventListener("mouseenter", on);
+      card.addEventListener("focus", on);
+    });
+  }
+
+  initOrbitMap();
+  document.addEventListener("astro:page-load", initOrbitMap);
+</script>

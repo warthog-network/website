@@ -75,8 +75,12 @@ const GetArticleImage = (category) => {
     justify-content: space-between;
     gap: 1rem;
     flex-wrap: wrap;
-    align-items: center;
+    align-items: flex-end;
     margin-bottom: clamp(1.25rem, 3vw, 2rem);
+  }
+
+  .news-header .section__header {
+    margin-bottom: 0;
   }
 
   .news-grid {
@@ -214,7 +218,7 @@ const GetArticleImage = (category) => {
 <section class="news-section section--surface section-blend">
   <div class="news-container">
     <div class="news-header">
-      <div>
+      <div class="section__header">
         <p class="section__eyebrow">Articles</p>
         <h2 class="section__title">Latest from the blog & dev diary</h2>
       </div>

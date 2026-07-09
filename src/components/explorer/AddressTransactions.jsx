@@ -25,6 +25,8 @@ import { pushRecentView } from '../../lib/explorerRecent.js';
 import { copyWithToast } from '../../lib/explorerToast.js';
 
 const PAGE_SIZE = 15;
+/** Safety cap so a stuck hasMore flag cannot spin forever. */
+const MAX_AUTO_HISTORY_PAGES = 100;
 
 const HISTORY_FILTERS = [
   { id: 'all', label: 'All' },
@@ -33,6 +35,25 @@ const HISTORY_FILTERS = [
   { id: 'in', label: 'In' },
   { id: 'out', label: 'Out' },
 ];
+
+function filterLabel(filter) {
+  return HISTORY_FILTERS.find((f) => f.id === filter)?.label || filter;
+}
+
+function filterEmptyMessage(filter) {
+  switch (filter) {
+    case 'rewards':
+      return 'No rewards found for this address.';
+    case 'transfers':
+      return 'No transfers found for this address.';
+    case 'in':
+      return 'No incoming transactions found for this address.';
+    case 'out':
+      return 'No outgoing transactions found for this address.';
+    default:
+      return 'No transactions found for this address.';
+  }
+}
 
 function txKind(tx) {
   const type = String(tx?.type || '').toLowerCase();
@@ -209,6 +230,10 @@ function AddressTransactions({ address: addressProp } = {}) {
 
   // Tracks which addressKey the UI is currently bound to (survives strict remounts)
   const shownKeyRef = useRef(addressKey);
+  /** Auto-fetch pages used while hunting for the current filter / page. */
+  const autoFetchCountRef = useRef(0);
+  /** Prevent concurrent page loads (Strict Mode / rapid re-entry). */
+  const fetchMoreInFlightRef = useRef(false);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 800);
@@ -263,6 +288,7 @@ function AddressTransactions({ address: addressProp } = {}) {
     setHistoryError(null);
     setInvalidAddress(false);
     setCurrentPage(1);
+    autoFetchCountRef.current = 0;
     setRefreshing(false);
 
     // Instant paint from shared cache (survives explorer → back)
@@ -420,10 +446,19 @@ function AddressTransactions({ address: addressProp } = {}) {
     return () => clearInterval(id);
   }, [resolvedAddress, addressKey, updateUsdBalance]);
 
-  const fetchMoreHistory = async () => {
-    if (!hasMore || historyLoading || !nextCursor || !resolvedAddress) return;
+  const fetchMoreHistory = useCallback(async () => {
+    if (
+      !hasMore
+      || historyLoading
+      || fetchMoreInFlightRef.current
+      || !nextCursor
+      || !resolvedAddress
+    ) {
+      return false;
+    }
     const key = addressKey;
     const host = resolveExplorerHostFromStorage();
+    fetchMoreInFlightRef.current = true;
     setHistoryLoading(true);
     setHistoryError(null);
     try {
@@ -432,15 +467,25 @@ function AddressTransactions({ address: addressProp } = {}) {
         cursor: nextCursor,
         force: true,
       });
-      if (shownKeyRef.current !== key) return;
+      if (shownKeyRef.current !== key) return false;
       applyPayloadToUi(payload, { append: true });
+      return true;
     } catch (err) {
-      if (shownKeyRef.current !== key) return;
+      if (shownKeyRef.current !== key) return false;
       setHistoryError(formatExplorerError(err, 'Failed to fetch transaction history'));
+      return false;
     } finally {
+      fetchMoreInFlightRef.current = false;
       if (shownKeyRef.current === key) setHistoryLoading(false);
     }
-  };
+  }, [
+    hasMore,
+    historyLoading,
+    nextCursor,
+    resolvedAddress,
+    addressKey,
+    applyPayloadToUi,
+  ]);
 
   const handleRefresh = async () => {
     if (!resolvedAddress || refreshing) return;
@@ -452,6 +497,7 @@ function AddressTransactions({ address: addressProp } = {}) {
     setHistoryError(null);
     setError(null);
     setCurrentPage(1);
+    autoFetchCountRef.current = 0;
     setHistoryLoading(true);
     setBalanceLoading(true);
     shownKeyRef.current = key;
@@ -495,23 +541,70 @@ function AddressTransactions({ address: addressProp } = {}) {
     [allHistory, historyFilter],
   );
 
+  /**
+   * Keep loading history pages until:
+   * - filter "all": enough raw items for the current page, or
+   * - other filters: at least one match on page 1, or enough matches for later pages
+   * Stops when history is exhausted or the safety cap is hit.
+   */
+  useEffect(() => {
+    if (!resolvedAddress || historyLoading || refreshing || historyError) return;
+    if (!hasMore || !nextCursor) return;
+    if (autoFetchCountRef.current >= MAX_AUTO_HISTORY_PAGES) return;
+
+    const need = currentPage * PAGE_SIZE;
+
+    if (historyFilter === 'all') {
+      if (allHistory.length >= need) return;
+    } else {
+      const matchCount = filteredHistory.length;
+      // Page 1: only hunt until the first match of this kind (then show all found so far).
+      if (currentPage === 1) {
+        if (matchCount > 0) return;
+      } else if (matchCount >= need) {
+        return;
+      }
+    }
+
+    autoFetchCountRef.current += 1;
+    fetchMoreHistory();
+  }, [
+    resolvedAddress,
+    historyLoading,
+    refreshing,
+    historyError,
+    hasMore,
+    nextCursor,
+    historyFilter,
+    currentPage,
+    allHistory.length,
+    filteredHistory.length,
+    fetchMoreHistory,
+  ]);
+
+  // If Next advanced past available filtered rows and history is exhausted, clamp page.
+  useEffect(() => {
+    if (historyLoading) return;
+    // Still searching for the first match of this filter — leave page alone.
+    if (historyFilter !== 'all' && filteredHistory.length === 0 && hasMore) return;
+    const maxPage = Math.max(1, Math.ceil(filteredHistory.length / PAGE_SIZE) || 1);
+    if (currentPage > maxPage) setCurrentPage(maxPage);
+  }, [
+    historyLoading,
+    historyFilter,
+    filteredHistory.length,
+    hasMore,
+    currentPage,
+  ]);
+
   const handleFilterChange = (id) => {
     setHistoryFilter(id);
     setCurrentPage(1);
+    autoFetchCountRef.current = 0;
   };
 
   const handleNext = () => {
-    const nextPage = currentPage + 1;
-    const requiredLength = nextPage * PAGE_SIZE;
-    if (filteredHistory.length < requiredLength && hasMore) {
-      fetchMoreHistory();
-    }
-    if (
-      filteredHistory.length >= requiredLength
-      || (filteredHistory.length < requiredLength && !hasMore)
-    ) {
-      setCurrentPage(nextPage);
-    }
+    setCurrentPage((p) => p + 1);
   };
 
   const handlePrev = () => {
@@ -546,8 +639,17 @@ function AddressTransactions({ address: addressProp } = {}) {
   const endIndex = startIndex + PAGE_SIZE;
   const currentHistory = filteredHistory.slice(startIndex, endIndex);
   const hasNext = (endIndex < filteredHistory.length) || hasMore;
+  const isFilterSearching =
+    historyFilter !== 'all'
+    && historyLoading
+    && filteredHistory.length === 0
+    && (allHistory.length > 0 || historyLoaded);
   const showHistoryEmpty =
-    historyLoaded && !historyLoading && currentHistory.length === 0 && !historyError;
+    historyLoaded
+    && !historyLoading
+    && currentHistory.length === 0
+    && !historyError
+    && !isFilterSearching;
 
   return (
     <BunkerShell
@@ -616,7 +718,7 @@ function AddressTransactions({ address: addressProp } = {}) {
             </button>
           </div>
         )}
-        {historyLoading && allHistory.length === 0 ? (
+        {historyLoading && allHistory.length === 0 && !isFilterSearching ? (
           <p className="bunker-muted">
             Loading transactions…
           </p>
@@ -635,19 +737,13 @@ function AddressTransactions({ address: addressProp } = {}) {
               ))}
             </ul>
           </>
+        ) : isFilterSearching ? (
+          <p className="bunker-muted">
+            Looking for {filterLabel(historyFilter).toLowerCase()} transactions…
+          </p>
         ) : showHistoryEmpty ? (
           <p className="bunker-muted">
-            {historyFilter !== 'all' && allHistory.length > 0
-              ? `No ${historyFilter} transactions in the loaded pages. Try “All” or load more.`
-              : 'No transactions found for this address.'}
-            {historyFilter !== 'all' && hasMore && (
-              <>
-                {' '}
-                <button type="button" className="bunker-btn bunker-btn--ghost" onClick={fetchMoreHistory}>
-                  Load more
-                </button>
-              </>
-            )}
+            {filterEmptyMessage(historyFilter)}
           </p>
         ) : (
           <p className="bunker-muted">Loading transactions…</p>
