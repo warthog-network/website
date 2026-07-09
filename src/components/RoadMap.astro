@@ -3,7 +3,7 @@ import ContentDiv from "../components/ContentDiv.jsx";
 
 /**
  * Orbit-based priority map — no calendar deadlines.
- * Closer orbits = higher priority / current focus.
+ * Visual map is pure SVG so dots/sun stay true circles at every viewport size.
  */
 const orbits = [
   {
@@ -31,7 +31,8 @@ const orbits = [
       "Work we intend to tackle as core items clear. Priority-ordered, not dated.",
     href: "https://docs.warthog.network/roadmap/",
     accent: "#38bdf8",
-    orbit: { r: 30, duration: 18, start: -20 },
+    /** r = radius in viewBox units (center 50,50); duration s; start deg */
+    orbit: { r: 28, duration: 18, start: -20 },
     items: [
       { text: "Browser Node infrastructure & docs", done: false },
       { text: "Lightweight DeFi surface for everyday use", done: false },
@@ -48,7 +49,7 @@ const orbits = [
       "Clear direction once nearer orbits settle. Scope may flex as the core hardens.",
     href: "https://docs.warthog.network/roadmap/",
     accent: "#34d399",
-    orbit: { r: 40, duration: 28, start: 120 },
+    orbit: { r: 37, duration: 28, start: 120 },
     items: [
       { text: "P2P Browser Node communication (WebRTC)", done: false },
       { text: "Token support on mainnet", done: false },
@@ -65,7 +66,7 @@ const orbits = [
       "Exploratory and feasibility work. Signals where curiosity points — not a ship commitment.",
     href: "https://docs.warthog.network/roadmap/#2026",
     accent: "#c084fc",
-    orbit: { r: 48, duration: 40, start: 210 },
+    orbit: { r: 45, duration: 40, start: 210 },
     items: [
       {
         text: "Atomic swaps — research feasibility for Warthog",
@@ -186,64 +187,41 @@ const foundation = {
     }
   }
 
-  /* ── Solar system (same design as first version) ── */
+  /*
+   * Hybrid map: SVG rings + dots (always true circles at any width).
+   * Core sun = original CSS yellow ball with pulse / hover glow.
+   */
   .orbit-map {
-    --map: 400px;
-    --dot: 14px;
-    --dot-hot: 18px;
-    --sun: 72px;
+    --sun: 5.25rem;
     position: relative;
-    width: var(--map);
-    height: var(--map);
-    max-width: 100%;
+    width: min(400px, 100%);
     margin-inline: auto;
-    flex-shrink: 0;
+    line-height: 0;
   }
 
-  /* Keep square when width is constrained */
-  @supports (aspect-ratio: 1) {
-    .orbit-map {
-      height: auto;
-      aspect-ratio: 1 / 1;
-    }
+  .orbit-map__svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    overflow: visible;
   }
 
-  .orbit-map__glow {
-    position: absolute;
-    inset: 10%;
-    border-radius: 50%;
-    background: radial-gradient(
-      circle,
-      rgba(250, 204, 21, 0.16) 0%,
-      rgba(250, 204, 21, 0.05) 40%,
-      transparent 70%
-    );
-    pointer-events: none;
-  }
-
-  /* Path diameter = --r % of map width; padding-bottom keeps it circular */
   .orbit-map__path {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: calc(var(--r) * 1%);
-    height: 0;
-    padding-bottom: calc(var(--r) * 1%);
-    margin-left: calc(var(--r) * -0.5%);
-    margin-top: calc(var(--r) * -0.5%);
-    border-radius: 50%;
-    border: 1px solid rgba(148, 163, 184, 0.22);
-    box-sizing: border-box;
-    pointer-events: none;
-    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    fill: none;
+    stroke: rgba(148, 163, 184, 0.3);
+    stroke-width: 0.35;
+    transition: stroke 0.25s ease, stroke-width 0.25s ease, opacity 0.25s ease;
+    opacity: 0.85;
   }
 
   .orbit-map__path.is-active {
-    border-color: color-mix(in srgb, var(--accent) 60%, transparent);
-    box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 22%, transparent);
+    stroke: var(--accent, #38bdf8);
+    stroke-width: 0.65;
+    opacity: 1;
   }
 
-  /* Yellow sun — always explicit equal width/height */
+  /* —— Original core sun (first solar-system version) —— */
   .orbit-map__sun {
     position: absolute;
     left: 50%;
@@ -260,132 +238,122 @@ const foundation = {
     appearance: none;
     -webkit-appearance: none;
     background:
-      radial-gradient(circle at 35% 30%, #fff7ad 0%, #facc15 38%, #e79300 75%, #b45309 100%);
+      radial-gradient(circle at 32% 28%, #fffceb 0%, #fff7ad 12%, #facc15 42%, #e79300 78%, #b45309 100%);
     box-shadow:
-      0 0 18px rgba(250, 204, 21, 0.55),
-      0 0 42px rgba(250, 204, 21, 0.3),
-      0 0 70px rgba(234, 179, 8, 0.15);
+      0 0 20px rgba(250, 204, 21, 0.55),
+      0 0 48px rgba(250, 204, 21, 0.28),
+      0 0 80px rgba(234, 179, 8, 0.14),
+      inset 0 -6px 14px rgba(180, 83, 9, 0.35),
+      inset 0 4px 10px rgba(255, 255, 255, 0.35);
     transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
   }
 
+  /* Outer pulse halo (original) */
   .orbit-map__sun::after {
     content: "";
     position: absolute;
-    inset: -22%;
+    inset: -28%;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(250, 204, 21, 0.4), transparent 70%);
+    background: radial-gradient(circle, rgba(250, 204, 21, 0.45) 0%, rgba(250, 204, 21, 0.12) 45%, transparent 70%);
     z-index: -1;
-    animation: sun-pulse 3s ease-in-out infinite;
+    animation: sun-pulse 3.2s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  /* Specular highlight */
+  .orbit-map__sun::before {
+    content: "";
+    position: absolute;
+    left: 18%;
+    top: 14%;
+    width: 38%;
+    height: 30%;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.75), transparent 70%);
+    pointer-events: none;
   }
 
   .orbit-map__sun:hover,
   .orbit-map__sun:focus-visible {
     outline: none;
-    transform: translate(-50%, -50%) scale(1.06);
+    transform: translate(-50%, -50%) scale(1.07);
     box-shadow:
-      0 0 24px rgba(250, 204, 21, 0.75),
-      0 0 55px rgba(250, 204, 21, 0.4);
+      0 0 28px rgba(250, 204, 21, 0.8),
+      0 0 60px rgba(250, 204, 21, 0.42),
+      0 0 90px rgba(234, 179, 8, 0.2),
+      inset 0 -6px 14px rgba(180, 83, 9, 0.35),
+      inset 0 4px 10px rgba(255, 255, 255, 0.4);
   }
 
   .orbit-map__sun.is-active {
-    transform: translate(-50%, -50%) scale(1.1);
-    filter: brightness(1.08);
+    transform: translate(-50%, -50%) scale(1.12);
+    filter: brightness(1.1);
     box-shadow:
-      0 0 28px rgba(250, 204, 21, 0.9),
-      0 0 64px rgba(250, 204, 21, 0.5),
-      0 0 0 3px rgba(250, 204, 21, 0.35);
+      0 0 32px rgba(250, 204, 21, 0.95),
+      0 0 70px rgba(250, 204, 21, 0.5),
+      0 0 100px rgba(234, 179, 8, 0.22),
+      0 0 0 3px rgba(250, 204, 21, 0.4),
+      inset 0 -6px 14px rgba(180, 83, 9, 0.3),
+      inset 0 4px 10px rgba(255, 255, 255, 0.45);
   }
 
   .orbit-map__sun-label {
     position: absolute;
     left: 50%;
     top: calc(50% + var(--sun) / 2 + 0.4rem);
-    transform: translateX(-50%);
     z-index: 7;
+    transform: translateX(-50%);
     font-family: "Montserrat", var(--font-sans);
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: rgba(250, 204, 21, 0.85);
-    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.85);
+    color: rgba(250, 204, 21, 0.88);
+    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.9);
     pointer-events: none;
-    transition: color 0.2s ease, opacity 0.2s ease;
+    line-height: 1.2;
+    transition: color 0.2s ease, text-shadow 0.2s ease;
   }
 
   .orbit-map:has(.orbit-map__sun.is-active) .orbit-map__sun-label {
     color: #fde047;
+    text-shadow: 0 0 12px rgba(250, 204, 21, 0.55), 0 1px 10px rgba(0, 0, 0, 0.9);
   }
 
-  /*
-   * Spinner = full square map (never elliptical).
-   * Dot sits on orbit via top offset from center.
-   */
-  .orbit-map__planet {
-    --accent: #38bdf8;
-    --r: 30;
-    --duration: 20s;
-    --delay: 0s;
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    animation: orbit-spin var(--duration) linear infinite;
-    animation-delay: var(--delay);
-    z-index: 4;
-    pointer-events: none;
+  .orbit-map__spinner {
+    transform-box: view-box;
+    transform-origin: 50px 50px;
+    animation: orbit-spin var(--duration, 20s) linear infinite;
+    animation-delay: var(--delay, 0s);
   }
 
-  .orbit-map__planet.is-active {
-    z-index: 8;
+  .orbit-map__dot-hit {
+    cursor: pointer;
+  }
+
+  .orbit-map__dot-hit:focus {
+    outline: none;
   }
 
   .orbit-map__dot {
-    position: absolute;
-    left: 50%;
-    /* --r is % of map from center to orbit (parent is full square map) */
-    top: calc(50% - (var(--r) * 1%));
-    width: var(--dot);
-    height: var(--dot);
-    margin: 0;
-    padding: 0;
-    border: 2px solid rgba(255, 255, 255, 0.4);
-    border-radius: 50%;
-    box-sizing: border-box;
-    transform: translate(-50%, -50%);
-    background: var(--accent);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 60%, transparent);
-    cursor: pointer;
-    appearance: none;
-    -webkit-appearance: none;
-    pointer-events: auto;
+    stroke: rgba(255, 255, 255, 0.4);
+    stroke-width: 0.35;
+    transform-box: fill-box;
+    transform-origin: center;
     transition:
-      width 0.2s ease,
-      height 0.2s ease,
-      box-shadow 0.2s ease,
-      border-color 0.2s ease,
+      stroke 0.2s ease,
+      stroke-width 0.2s ease,
+      transform 0.2s ease,
       filter 0.2s ease;
   }
 
-  .orbit-map__dot:hover,
-  .orbit-map__dot:focus-visible {
-    outline: none;
-    width: var(--dot-hot);
-    height: var(--dot-hot);
-    border-color: #fff;
-    filter: brightness(1.15);
-  }
-
-  .orbit-map__planet.is-active .orbit-map__dot {
-    width: var(--dot-hot);
-    height: var(--dot-hot);
-    border-color: #fff;
-    box-shadow:
-      0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent),
-      0 0 18px var(--accent),
-      0 0 32px color-mix(in srgb, var(--accent) 45%, transparent);
-    filter: brightness(1.2);
+  /* Hover / active highlight — uniform scale keeps circles circular */
+  .orbit-map__planet.is-active .orbit-map__dot,
+  .orbit-map__spinner:hover .orbit-map__dot {
+    stroke: #fff;
+    stroke-width: 0.7;
+    transform: scale(1.55);
+    filter: url(#orbit-dot-glow);
   }
 
   @keyframes orbit-spin {
@@ -397,47 +365,37 @@ const foundation = {
   @keyframes sun-pulse {
     0%,
     100% {
-      opacity: 0.55;
+      opacity: 0.5;
       transform: scale(1);
     }
     50% {
       opacity: 1;
-      transform: scale(1.08);
+      transform: scale(1.1);
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .orbit-map__planet,
+    .orbit-map__spinner,
     .orbit-map__sun::after {
       animation: none;
     }
-
-    .orbit-map__planet {
-      transform: rotate(calc(var(--park, 0) * 1deg));
-    }
   }
 
-  /* Mobile: same system, smaller */
-  @media (max-width: 959px) {
+  @media (max-width: 759px) {
     .orbit-map {
-      --map: min(280px, 72vw);
-      --dot: 12px;
-      --dot-hot: 15px;
-      --sun: 56px;
-      width: var(--map);
-    }
-  }
-
-  @media (max-width: 480px) {
-    .orbit-map {
-      --map: min(240px, 78vw);
-      --dot: 11px;
-      --dot-hot: 14px;
-      --sun: 48px;
+      --sun: 3.6rem;
+      width: min(260px, 78vw);
     }
 
     .orbit-map__sun-label {
       font-size: 0.62rem;
+    }
+  }
+
+  @media (max-width: 400px) {
+    .orbit-map {
+      --sun: 3.1rem;
+      width: min(220px, 82vw);
     }
   }
 
@@ -689,19 +647,89 @@ const foundation = {
 
       <div class="orbit-layout">
         <div class="orbit-map" role="group" aria-label="Priority solar system">
-          <div class="orbit-map__glow" aria-hidden="true"></div>
+          <svg
+            class="orbit-map__svg"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="xMidYMid meet"
+          >
+            <defs>
+              <filter
+                id="orbit-dot-glow"
+                x="-150%"
+                y="-150%"
+                width="400%"
+                height="400%"
+                color-interpolation-filters="sRGB"
+              >
+                <feGaussianBlur in="SourceGraphic" stdDeviation="1.4" result="b"></feGaussianBlur>
+                <feMerge>
+                  <feMergeNode in="b"></feMergeNode>
+                  <feMergeNode in="SourceGraphic"></feMergeNode>
+                </feMerge>
+              </filter>
+            </defs>
 
-          {
-            planets.map((planet) => (
-              <div
-                class="orbit-map__path"
-                data-orbit-path={planet.id}
-                style={`--r: ${planet.orbit.r * 2}; --accent: ${planet.accent}`}
-                aria-hidden="true"
-              />
-            ))
-          }
+            <!-- Ambient glow under the CSS sun -->
+            <circle cx="50" cy="50" r="18" fill="rgba(250,204,21,0.08)"></circle>
+            <circle cx="50" cy="50" r="12" fill="rgba(250,204,21,0.12)"></circle>
 
+            {
+              planets.map((planet) => (
+                <circle
+                  class="orbit-map__path"
+                  data-orbit-path={planet.id}
+                  cx="50"
+                  cy="50"
+                  r={planet.orbit.r}
+                  style={`--accent: ${planet.accent}`}
+                ></circle>
+              ))
+            }
+
+            {
+              planets.map((planet) => {
+                const delay = (
+                  -(planet.orbit.start / 360) *
+                  planet.orbit.duration
+                ).toFixed(3);
+                const cy = 50 - planet.orbit.r;
+                return (
+                  <g
+                    class="orbit-map__planet"
+                    data-orbit-planet={planet.id}
+                  >
+                    <g
+                      class="orbit-map__spinner"
+                      style={`--duration: ${planet.orbit.duration}s; --delay: ${delay}s`}
+                    >
+                      {/* Invisible larger hit target for easier hover/click */}
+                      <circle
+                        class="orbit-map__dot-hit"
+                        data-orbit-target={planet.id}
+                        cx="50"
+                        cy={cy}
+                        r="5"
+                        fill="transparent"
+                        role="button"
+                        tabindex="0"
+                        aria-label={`Show ${planet.label} priorities`}
+                      ></circle>
+                      <circle
+                        class="orbit-map__dot"
+                        cx="50"
+                        cy={cy}
+                        r="2.5"
+                        fill={planet.accent}
+                        pointer-events="none"
+                      ></circle>
+                    </g>
+                  </g>
+                );
+              })
+            }
+          </svg>
+
+          <!-- Original CSS core sun -->
           <button
             type="button"
             class="orbit-map__sun is-active"
@@ -710,30 +738,6 @@ const foundation = {
             title="Core — active focus"
           />
           <span class="orbit-map__sun-label" aria-hidden="true">Core</span>
-
-          {
-            planets.map((planet) => {
-              const delay = (
-                -(planet.orbit.start / 360) *
-                planet.orbit.duration
-              ).toFixed(3);
-              return (
-                <div
-                  class="orbit-map__planet"
-                  data-orbit-planet={planet.id}
-                  style={`--r: ${planet.orbit.r}; --duration: ${planet.orbit.duration}s; --delay: ${delay}s; --accent: ${planet.accent}; --park: ${planet.orbit.start}`}
-                >
-                  <button
-                    type="button"
-                    class="orbit-map__dot"
-                    data-orbit-target={planet.id}
-                    aria-label={`Show ${planet.label} priorities`}
-                    title={planet.label}
-                  />
-                </div>
-              );
-            })
-          }
         </div>
 
         <section class="orbit-cards" aria-label="Warthog priority orbit">
@@ -792,33 +796,31 @@ const foundation = {
 <script>
   function initOrbitMap() {
     const root = document.getElementById("roadmap");
-    if (!root || root.dataset.orbitReady === "1") return;
-    root.dataset.orbitReady = "1";
+    if (!root) return;
+
+    // Allow re-bind after Astro client navigations
+    if (root.dataset.orbitBound === "1") return;
+    root.dataset.orbitBound = "1";
 
     const cards = Array.from(root.querySelectorAll(".orbit-card"));
     const targets = Array.from(root.querySelectorAll("[data-orbit-target]"));
-    const planets = Array.from(root.querySelectorAll("[data-orbit-planet]"));
     const paths = Array.from(root.querySelectorAll("[data-orbit-path]"));
+    const planets = Array.from(root.querySelectorAll(".orbit-map__planet"));
     const sun = root.querySelector(".orbit-map__sun");
 
     const setActive = (id) => {
+      if (!id) return;
+
       cards.forEach((card) => {
         const match = card.getAttribute("data-orbit") === id;
         card.classList.toggle("is-spotlight", match);
         card.classList.toggle("is-dimmed", !match);
       });
 
-      targets.forEach((btn) => {
-        btn.classList.toggle(
+      planets.forEach((el) => {
+        el.classList.toggle(
           "is-active",
-          btn.getAttribute("data-orbit-target") === id,
-        );
-      });
-
-      planets.forEach((planet) => {
-        planet.classList.toggle(
-          "is-active",
-          planet.getAttribute("data-orbit-planet") === id,
+          el.getAttribute("data-orbit-planet") === id,
         );
       });
 
@@ -829,34 +831,50 @@ const foundation = {
         );
       });
 
-      if (sun) {
-        sun.classList.toggle("is-active", id === "core");
-      }
+      sun?.classList.toggle("is-active", id === "core");
     };
 
-    targets.forEach((btn) => {
-      btn.addEventListener("click", (e) => {
+    const activate = (id) => {
+      if (!id) return;
+      setActive(id);
+      root.querySelector(`#orbit-${id}`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    };
+
+    // Map controls: hover highlights, click scrolls card
+    targets.forEach((el) => {
+      el.addEventListener("mouseenter", () => {
+        setActive(el.getAttribute("data-orbit-target"));
+      });
+      el.addEventListener("focus", () => {
+        setActive(el.getAttribute("data-orbit-target"));
+      });
+      el.addEventListener("click", (e) => {
         e.preventDefault();
-        const id = btn.getAttribute("data-orbit-target");
-        if (!id) return;
-        setActive(id);
-        root.querySelector(`#orbit-${id}`)?.scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
-        });
+        activate(el.getAttribute("data-orbit-target"));
+      });
+      el.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          activate(el.getAttribute("data-orbit-target"));
+        }
       });
     });
 
+    // Cards: hover highlights matching sun/dot
     cards.forEach((card) => {
-      const on = () => {
-        const id = card.getAttribute("data-orbit");
-        if (id) setActive(id);
-      };
+      const on = () => setActive(card.getAttribute("data-orbit"));
       card.addEventListener("mouseenter", on);
       card.addEventListener("focus", on);
     });
   }
 
   initOrbitMap();
-  document.addEventListener("astro:page-load", initOrbitMap);
+  document.addEventListener("astro:page-load", () => {
+    const root = document.getElementById("roadmap");
+    if (root) root.dataset.orbitBound = "";
+    initOrbitMap();
+  });
 </script>
