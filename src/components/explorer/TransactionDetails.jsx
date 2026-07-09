@@ -8,6 +8,8 @@ import ExplorerAddress from './ExplorerAddress.jsx';
 import ExplorerLink from './ExplorerLink.jsx';
 import ExplorerRefreshButton from './ExplorerRefreshButton.jsx';
 import { createWarthogApi } from './explorerClient.js';
+import { copyWithToast } from '../../lib/explorerToast.js';
+import { pushRecentView } from '../../lib/explorerRecent.js';
 
 function TransactionDetails({ txid: txidProp } = {}) {
   const params = useParams();
@@ -16,7 +18,6 @@ function TransactionDetails({ txid: txidProp } = {}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [copiedField, setCopiedField] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -47,6 +48,11 @@ function TransactionDetails({ txid: txidProp } = {}) {
           throw new Error('Transaction not found');
         }
         setTransaction(transactionData);
+        pushRecentView({
+          type: 'tx',
+          id: String(transactionData.txHash || transactionData.hash || txid),
+          label: String(transactionData.txHash || transactionData.hash || txid),
+        });
       } catch {
         if (!cancelled) {
           setError(true);
@@ -97,14 +103,8 @@ function TransactionDetails({ txid: txidProp } = {}) {
 
   const isRewardTx = !transaction.fromAddress || transaction.type === 'Reward';
 
-  const handleCopy = async (text, field) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedField(field);
-      setTimeout(() => setCopiedField(null), 2000);
-    } catch (err) {
-      console.error('Failed to copy', err);
-    }
+  const handleCopy = async (text, label = 'Copied') => {
+    await copyWithToast(text, label);
   };
 
   return (
@@ -118,9 +118,13 @@ function TransactionDetails({ txid: txidProp } = {}) {
         <dl className="bunker-dl">
             <div className="bunker-dl-row">
               <dt>Hash</dt>
-              <dd className="bunker-link" style={{ cursor: 'pointer' }} onClick={() => handleCopy(transaction.txHash, 'txhash')}>
+              <dd
+                className="bunker-link"
+                style={{ cursor: 'pointer' }}
+                onClick={() => handleCopy(transaction.txHash, 'Tx hash copied')}
+                title="Click to copy"
+              >
                 {transaction.txHash ?? 'N/A'}
-                {copiedField === 'txhash' && <span> (Copied!)</span>}
               </dd>
             </div>
             <div className="bunker-dl-row">

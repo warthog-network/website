@@ -11,9 +11,11 @@ import { createWarthogApi, fetchExplorerBlock } from './explorerClient.js';
 import { fetchIndexerBlock, shouldUseExplorerIndexer } from './explorerIndexerClient.js';
 import { normalizeSelectedNode } from '../../lib/explorerNodes.js';
 import { formatExplorerError } from './explorerApi.js';
+import { copyWithToast } from '../../lib/explorerToast.js';
+import { pushRecentView } from '../../lib/explorerRecent.js';
 
 function TransactionItem({ tx, index }) {
-  const isRewardTx = !tx.fromAddress;
+  const isRewardTx = !tx.fromAddress || tx.type === 'Reward';
   const safeStr = (val) => {
     if (val === null || val === undefined) return '—';
     if (typeof val === 'string') return val;
@@ -53,12 +55,12 @@ function TransactionItem({ tx, index }) {
           To: <ExplorerAddress address={tx.toAddress} />
         </div>
       )}
-      {tx.amount && safeStr(tx.amount) !== '—' && (
+      {tx.amount != null && safeStr(tx.amount) !== '—' && (
         <div className="bunker-meta">
-          Amount: {safeStr(tx.amount)}
+          Amount: {safeStr(tx.amount)} WART
         </div>
       )}
-      {tx.fee && safeStr(tx.fee) !== '—' && (
+      {tx.fee != null && Number(tx.fee) > 0 && (
         <div className="bunker-meta">
           Fee: {safeStr(tx.fee)}
         </div>
@@ -74,18 +76,11 @@ function BlockDetails({ height: heightProp } = {}) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
-  const [copiedField, setCopiedField] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const handleCopy = async (text, field) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedField(field);
-      setTimeout(() => setCopiedField(null), 2000);
-    } catch (err) {
-      console.error('Failed to copy', err);
-    }
+  const handleCopy = async (text, label = 'Copied') => {
+    await copyWithToast(text, label);
   };
 
   useEffect(() => {
@@ -106,7 +101,13 @@ function BlockDetails({ height: heightProp } = {}) {
               height,
             );
         if (cancelled) return;
-        setBlock(fetchedBlock instanceof Block ? fetchedBlock : new Block(fetchedBlock));
+        const next = fetchedBlock instanceof Block ? fetchedBlock : new Block(fetchedBlock);
+        setBlock(next);
+        pushRecentView({
+          type: 'block',
+          id: String(next.height),
+          label: `Block ${next.height}`,
+        });
       } catch (err) {
         if (!cancelled) {
           setError(true);
@@ -158,20 +159,46 @@ function BlockDetails({ height: heightProp } = {}) {
     );
   }
 
+  const heightNum = Number(block.height);
+  const prevHeight = Number.isFinite(heightNum) && heightNum > 1 ? heightNum - 1 : null;
+  const nextHeight = Number.isFinite(heightNum) ? heightNum + 1 : null;
+
   return (
     <BunkerShell
       title="Block Details"
       wide
       actions={<ExplorerRefreshButton onClick={handleRefresh} loading={refreshing} />}
     >
-      <h2 className="bunker-subheading">Block {format_height(block.height)}</h2>
+      <div className="bunker-toolbar explorer-block-nav">
+        {prevHeight ? (
+          <ExplorerLink to={`/chain/block/${prevHeight}`} className="bunker-btn bunker-btn--ghost">
+            ← {format_height(prevHeight)}
+          </ExplorerLink>
+        ) : (
+          <span className="bunker-btn bunker-btn--ghost" style={{ opacity: 0.4, pointerEvents: 'none' }}>
+            ← Prev
+          </span>
+        )}
+        <h2 className="bunker-subheading" style={{ margin: 0 }}>
+          Block {format_height(block.height)}
+        </h2>
+        {nextHeight ? (
+          <ExplorerLink to={`/chain/block/${nextHeight}`} className="bunker-btn bunker-btn--ghost">
+            {format_height(nextHeight)} →
+          </ExplorerLink>
+        ) : null}
+      </div>
       <div className="bunker-panel">
         <dl className="bunker-dl" style={{ marginBottom: '1rem' }}>
           <div className="bunker-dl-row">
             <dt>Hash</dt>
-            <dd className="bunker-link" style={{ cursor: 'pointer' }} onClick={() => handleCopy(block.header?.hash, 'hash')}>
+            <dd
+              className="bunker-link"
+              style={{ cursor: 'pointer' }}
+              onClick={() => handleCopy(block.header?.hash, 'Block hash copied')}
+              title="Click to copy"
+            >
               {block.header?.hash ?? 'N/A'}
-              {copiedField === 'hash' && <span> (Copied!)</span>}
             </dd>
           </div>
           <div className="bunker-dl-row">

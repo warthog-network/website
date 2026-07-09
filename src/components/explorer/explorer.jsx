@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { format_height, abbreviate } from './assets/util.js';
 import { Block } from './assets/block.js';
 import BunkerShell from '../BunkerShell.jsx';
@@ -28,8 +27,9 @@ import {
     saveCustomNode,
 } from '../../lib/explorerNodes.js';
 import { formatExplorerError } from './explorerApi.js';
-import { resolveWarthogAddress } from './explorerAddressUtils.js';
 import ExplorerStatsBar from './ExplorerStatsBar.jsx';
+import ExplorerUnifiedSearch from './ExplorerUnifiedSearch.jsx';
+import ExplorerRecentViews from './ExplorerRecentViews.jsx';
 import {
     readExplorerChainCache,
     writeExplorerChainCache,
@@ -55,7 +55,7 @@ async function fetchWithRetry(fn) {
 }
 
 function Explorer() {
-    const navigate = useNavigate();
+    // Navigation lives in ExplorerUnifiedSearch (no useNavigate here).
     const [selectedNode, setSelectedNode] = useState(OFFICIAL1_KEY);
     const [host, setHost] = useState(OFFICIAL1_URL);
     const [customIP, setCustomIP] = useState('localhost');
@@ -153,9 +153,6 @@ function Explorer() {
     const [page, setPage] = useState(1);
     const [currentBlocks, setCurrentBlocks] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [searchInput, setSearchInput] = useState('');
-    const [txSearchInput, setTxSearchInput] = useState('');
-    const [addressSearchInput, setAddressSearchInput] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [connectionError, setConnectionError] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
@@ -195,7 +192,6 @@ function Explorer() {
         if (!hasCache || refreshToken > 0) {
             setPage(1);
             setIsSearching(false);
-            setSearchInput('');
         }
 
         let hasConnected = hasCache;
@@ -361,90 +357,53 @@ function Explorer() {
         setMode(mode === 'latest' ? 'all' : 'latest');
         setPage(1);
         setIsSearching(false);
-        setSearchInput('');
     };
 
-    const handleSearch = async (e) => {
-        e.preventDefault();
-        if (!searchInput.trim()) return;
+    /** Multi-height search from unified search box (e.g. 100-110). */
+    const handleBlockHeights = async (heights) => {
+        if (!heights?.length) return;
+        setMode('all');
         setLoading(true);
         setIsSearching(true);
-        const items = parseSearchInput(searchInput);
-        const promises = items.map(async (item) => {
-            if (item.type === 'height') {
-                const existing = chain.blocks.find(b => b.height === item.value);
-                if (existing) return existing;
-                if (useIndexer) return fetchIndexerBlock(item.value);
-                return fetchExplorerBlock(client, item.value);
-            }
-        });
+        setPage(1);
         try {
+            const promises = heights.map(async (height) => {
+                const existing = chain.blocks.find((b) => b.height === height);
+                if (existing) return existing;
+                if (useIndexer) return fetchIndexerBlock(height);
+                if (client) return fetchExplorerBlock(client, height);
+                throw new Error('No client');
+            });
             const results = await Promise.allSettled(promises);
             const blocks = results
-                .filter(result => result.status === 'fulfilled')
-                .map(result => result.value);
-            setCurrentBlocks(blocks.map(b => b instanceof Block ? b : new Block(b)).sort((a, b) => b.height - a.height));
+                .filter((result) => result.status === 'fulfilled')
+                .map((result) => result.value)
+                .map((b) => (b instanceof Block ? b : new Block(b)))
+                .sort((a, b) => b.height - a.height);
+            setCurrentBlocks(blocks);
+            if (!blocks.length) {
+                setConnectionError('No blocks found for that range.');
+            } else {
+                setConnectionError(null);
+            }
         } catch (error) {
-            console.error('Error searching:', error);
+            console.error('Error searching blocks:', error);
             setCurrentBlocks([]);
-            setConnectionError('Error searching. Connection may be unstable.');
+            setConnectionError('Error searching blocks.');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleTxSearch = (e) => {
-        e.preventDefault();
-        if (!txSearchInput.trim()) return;
-        navigate(`/transaction/lookup/${encodeURIComponent(txSearchInput.trim())}`);
-        setTxSearchInput('');
-    };
-
-    const handleAddressSearch = async (e) => {
-        e.preventDefault();
-        if (!addressSearchInput.trim()) return;
-        const resolved = await resolveWarthogAddress(addressSearchInput);
-        if (!resolved) {
-            setConnectionError('Invalid Warthog address.');
-            return;
-        }
-        navigate(`/address/${encodeURIComponent(resolved)}`);
-        setAddressSearchInput('');
-    };
-
-    const parseSearchInput = (input) => {
-        const items = [];
-        const parts = input.split(/\s+/).map(p => p.trim()).filter(p => p);
-        parts.forEach(part => {
-            if (part.includes('-')) {
-                const [startStr, endStr] = part.split('-');
-                const start = Number(startStr.replace(/,/g, ''));
-                const end = Number(endStr.replace(/,/g, ''));
-                if (!isNaN(start) && !isNaN(end) && start <= end) {
-                    for (let h = start; h <= end; h++) {
-                        items.push({ type: 'height', value: h });
-                    }
-                }
-            } else {
-                const h = Number(part.replace(/,/g, ''));
-                if (!isNaN(h)) {
-                    items.push({ type: 'height', value: h });
-                }
-            }
-        });
-        return items;
-    };
-
     const resetSearch = () => {
-        setSearchInput('');
         setIsSearching(false);
+        setMode('latest');
+        setCurrentBlocks(chain.blocks || []);
     };
 
     const tipHeight = chain.blocks[0]?.height || chain.blocks[chain.blocks.length - 1]?.height || 0;
-    const maxPage = Math.ceil(tipHeight / perPage);
+    const maxPage = Math.ceil(tipHeight / perPage) || 1;
     const hasNext = page < maxPage;
-
-    const isLocal = host.includes('localhost');
 
     const formatTimeAgo = (timestamp) => {
         if (!timestamp) return 'N/A';
@@ -458,7 +417,7 @@ function Explorer() {
 
     if (!isInitialized) {
         return (
-            <BunkerShell title="Explorer">
+            <BunkerShell title="Explorer" showBrand={false}>
                 <p className="bunker-muted">Loading settings...</p>
             </BunkerShell>
         );
@@ -473,22 +432,33 @@ function Explorer() {
         <BunkerShell
             title="Explorer"
             wide
+            showBrand={false}
             actions={<ExplorerRefreshButton onClick={handleRefresh} loading={refreshing} />}
         >
-            <div className="bunker-panel">
-                <label htmlFor="node-select" className="bunker-label">Select Node:</label>
-                <select
-                    id="node-select"
-                    value={nodeOptions.some((o) => o.value === selectedNode) ? selectedNode : OFFICIAL1_KEY}
-                    onChange={(e) => setSelectedNode(e.target.value)}
-                    className="bunker-select"
-                >
-                    {nodeOptions.map((option) => (
-                        <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                </select>
+            <div className="bunker-panel explorer-search-card">
+                <div className="explorer-search-card__header">
+                    <div className="explorer-node-select-wrap">
+                        <label htmlFor="node-select" className="explorer-node-select-label">
+                            Node
+                        </label>
+                        <select
+                            id="node-select"
+                            value={nodeOptions.some((o) => o.value === selectedNode) ? selectedNode : OFFICIAL1_KEY}
+                            onChange={(e) => setSelectedNode(e.target.value)}
+                            className="explorer-node-select"
+                            title="Select node"
+                        >
+                            {nodeOptions.map((option) => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                <ExplorerUnifiedSearch onBlockHeights={handleBlockHeights} />
+
                 {showCustomForm && (
-                    <div className="bunker-form-row" style={{ marginTop: '0.75rem', alignItems: 'flex-end' }}>
+                    <div className="bunker-form-row explorer-search-card__custom" style={{ marginTop: '0.75rem', alignItems: 'flex-end' }}>
                         <div style={{ flex: '1 1 12rem' }}>
                             <label htmlFor="custom-ip" className="bunker-label">Host</label>
                             <input
@@ -521,52 +491,24 @@ function Explorer() {
                         </button>
                     </div>
                 )}
+
+                {isSearching && (
+                    <div className="bunker-toolbar" style={{ marginTop: '0.5rem' }}>
+                        <span className="bunker-muted">Showing search results</span>
+                        <button type="button" onClick={resetSearch} className="bunker-btn bunker-btn--ghost">
+                            Clear search
+                        </button>
+                    </div>
+                )}
             </div>
+
+            <ExplorerRecentViews />
 
             <div className="bunker-toolbar">
                 <button onClick={toggleMode} className="bunker-btn">
-                    {mode === 'latest' ? 'Switch to Deep Search (All Blocks)' : 'Switch to Latest Blocks'}
+                    {mode === 'latest' ? 'Browse all blocks' : 'Back to latest blocks'}
                 </button>
             </div>
-            {mode === 'all' && (
-                <div className="bunker-panel">
-                    <form onSubmit={handleSearch} className="bunker-form-row">
-                        <input
-                            type="text"
-                            value={searchInput}
-                            onChange={(e) => setSearchInput(e.target.value)}
-                            placeholder="Search blocks: 123 100-200"
-                            className="bunker-input"
-                        />
-                        <button type="submit" className="bunker-btn">Search Blocks</button>
-                        {isSearching && (
-                            <button type="button" onClick={resetSearch} className="bunker-btn bunker-btn--ghost">
-                                Clear Search
-                            </button>
-                        )}
-                    </form>
-                    <form onSubmit={handleTxSearch} className="bunker-form-row">
-                        <input
-                            type="text"
-                            value={txSearchInput}
-                            onChange={(e) => setTxSearchInput(e.target.value)}
-                            placeholder="Enter TX Hash: e.g., 0x123..."
-                            className="bunker-input"
-                        />
-                        <button type="submit" className="bunker-btn">Lookup TX</button>
-                    </form>
-                    <form onSubmit={handleAddressSearch} className="bunker-form-row">
-                        <input
-                            type="text"
-                            value={addressSearchInput}
-                            onChange={(e) => setAddressSearchInput(e.target.value)}
-                            placeholder="Enter Address: e.g., bc1q..."
-                            className="bunker-input"
-                        />
-                        <button type="submit" className="bunker-btn">Lookup Address</button>
-                    </form>
-                </div>
-            )}
 
             <ExplorerStatsBar host={host} refreshToken={refreshToken} />
 

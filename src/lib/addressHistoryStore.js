@@ -6,18 +6,25 @@
  * sticks on "No transactions found" until a manual refresh.
  *
  * Strategy:
+ * - Prefer the site indexer for official node (fast even for mega-miners)
+ * - Fall back to node cursor history for custom nodes
  * - One in-flight promise per account+host (shared across remounts)
  * - Always write successful results to cache
- * - Components subscribe; late arrivals still apply if the address is still shown
  */
 
 import { createWarthogApi } from '../components/explorer/explorerClient.js';
 import { parseAccountHistory, isEmptyHistoryError } from '../components/explorer/explorerApi.js';
 import { parseWartBalanceFromApi } from '../components/explorer/explorerAddressUtils.js';
-import { resolveExplorerHostFromStorage } from './explorerNodes.js';
+import {
+  resolveExplorerHostFromStorage,
+  nodeHasIndexer,
+  normalizeSelectedNode,
+} from './explorerNodes.js';
+import { fetchIndexerAccountTransactions } from '../components/explorer/explorerIndexerClient.js';
 
 const INITIAL_CURSOR = '4294967295';
 const CACHE_TTL_MS = 120_000;
+const INDEXER_PAGE_SIZE = 15;
 
 /** @type {Map<string, { items: any[], nextCursor: string|null, hasMore: boolean, balance: string|null, at: number }>} */
 const cache = new Map();
@@ -42,6 +49,28 @@ async function apiForHost(host) {
   return apiByHost.get(h);
 }
 
+function useIndexerForHost(host) {
+  // Official indexer host → always use indexed history.
+  // Custom nodes keep node RPC history.
+  if (typeof window === 'undefined') {
+    return true;
+  }
+  const selected = normalizeSelectedNode(localStorage.getItem('selectedNode'));
+  if (nodeHasIndexer(selected)) return true;
+  // Also match when host is official even if selection key is odd/legacy
+  const h = String(host || '').replace(/\/$/, '');
+  return /warthognode\.duckdns\.org$/i.test(h.replace(/^https?:\/\//, '').split('/')[0]);
+}
+
+/** Map UI cursor → indexer page number. */
+function cursorToPage(cursor) {
+  if (cursor == null || cursor === '' || cursor === INITIAL_CURSOR) return 1;
+  const n = Number(cursor);
+  if (Number.isFinite(n) && n >= 1 && n < 1e9) return Math.floor(n);
+  // Legacy node cursors are huge numbers — treat as first page for indexer path
+  return 1;
+}
+
 export function readAddressHistoryCache(account, host) {
   const key = keyFor(account, host);
   const entry = cache.get(key);
@@ -63,12 +92,84 @@ export function clearAddressHistoryCache(account, host) {
   inflight.clear();
 }
 
+async function loadFromIndexer(account, cursor, isFirstPage) {
+  const page = cursorToPage(cursor);
+
+  // History only — balance is loaded in parallel by AddressTransactions via
+  // fetchIndexerAccount so we don't pay for a second account round-trip here.
+  const history = await fetchIndexerAccountTransactions(account, page, INDEXER_PAGE_SIZE);
+
+  const items = history.items || [];
+  const nextCursor = history.nextPage != null ? String(history.nextPage) : null;
+  const hasMore = Boolean(history.hasMore);
+
+  return {
+    items,
+    nextCursor,
+    hasMore,
+    balance: null,
+    empty: items.length === 0 && isFirstPage,
+    blockCount: items.length,
+    source: 'indexer',
+    page: history.page,
+  };
+}
+
+async function loadFromNode(account, host, cursor, isFirstPage) {
+  const api = await apiForHost(host);
+  let lastErr = null;
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const result = await api.getAccountHistory(account, cursor);
+
+      if (!result?.success) {
+        if (isEmptyHistoryError(result?.error)) {
+          return {
+            items: [],
+            nextCursor: null,
+            hasMore: false,
+            balance: null,
+            empty: true,
+            source: 'node',
+          };
+        }
+        throw new Error(result?.error || 'Failed to fetch transaction history');
+      }
+
+      const parsed = parseAccountHistory(result.data);
+      if (!parsed) {
+        throw new Error('Unexpected response format from node history endpoint');
+      }
+
+      const balance = parseWartBalanceFromApi(result.data);
+      const nextCursor = parsed.fromId > 0 ? String(parsed.fromId) : null;
+      const hasMore = parsed.items.length > 0 && parsed.fromId > 0;
+
+      return {
+        items: parsed.items,
+        nextCursor,
+        hasMore,
+        balance,
+        empty: parsed.items.length === 0,
+        blockCount: parsed.blockCount || 0,
+        source: 'node',
+      };
+    } catch (err) {
+      lastErr = err;
+      await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+    }
+  }
+
+  throw lastErr || new Error('Failed to fetch transaction history');
+}
+
 /**
- * Fetch first page of account history (shared / deduped).
+ * Fetch a page of account history (shared / deduped).
  * @param {string} account normalized address
  * @param {object} [opts]
  * @param {string} [opts.host]
- * @param {string} [opts.cursor]
+ * @param {string} [opts.cursor] node cursor OR indexer page number
  * @param {boolean} [opts.force] bypass cache & inflight reuse for a hard refresh
  */
 export async function loadAddressHistory(account, opts = {}) {
@@ -76,87 +177,40 @@ export async function loadAddressHistory(account, opts = {}) {
   const cursor = opts.cursor || INITIAL_CURSOR;
   const force = Boolean(opts.force);
   const key = keyFor(account, host);
-  const isFirstPage = cursor === INITIAL_CURSOR;
+  const isFirstPage = cursor === INITIAL_CURSOR || cursorToPage(cursor) === 1;
+  const preferIndexer = useIndexerForHost(host);
 
-  if (isFirstPage && !force) {
-    const cached = readAddressHistoryCache(account, host);
-    // Return cache immediately only when caller wants it — fetch still happens via ensureFresh
-  }
-
-  // Deduplicate concurrent first-page loads for the same account
-  const inflightKey = `${key}::${cursor}`;
+  // Deduplicate concurrent loads for the same account+page
+  const inflightKey = `${key}::${preferIndexer ? `p${cursorToPage(cursor)}` : cursor}::${preferIndexer ? 'idx' : 'node'}`;
   if (!force && inflight.has(inflightKey)) {
     return inflight.get(inflightKey);
   }
 
   const promise = (async () => {
-    const api = await apiForHost(host);
-    let lastErr = null;
+    let payload;
 
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        const result = await api.getAccountHistory(account, cursor);
-
-        if (!result?.success) {
-          if (isEmptyHistoryError(result?.error)) {
-            const empty = {
-              items: [],
-              nextCursor: null,
-              hasMore: false,
-              balance: null,
-              empty: true,
-            };
-            if (isFirstPage) {
-              // Only cache true empties; never clobber a good cache with empty
-              const existing = cache.get(key);
-              if (!existing?.items?.length) {
-                cache.set(key, { ...empty, at: Date.now() });
-              }
-            }
-            return empty;
-          }
-          throw new Error(result?.error || 'Failed to fetch transaction history');
-        }
-
-        const parsed = parseAccountHistory(result.data);
-        if (!parsed) {
-          throw new Error('Unexpected response format from node history endpoint');
-        }
-
-        const balance = parseWartBalanceFromApi(result.data);
-        const nextCursor = parsed.fromId > 0 ? String(parsed.fromId) : null;
-        const hasMore = parsed.items.length > 0 && parsed.fromId > 0;
-        const payload = {
-          items: parsed.items,
-          nextCursor,
-          hasMore,
-          balance,
-          empty: parsed.items.length === 0,
-          blockCount: parsed.blockCount || 0,
-        };
-
-        if (isFirstPage) {
-          const existing = cache.get(key);
-          // Never replace a non-empty cache with an empty parse of a successful response
-          // that still had blocks (indicates a transient parse/shape issue).
-          if (
-            payload.items.length === 0
-            && existing?.items?.length
-            && !force
-          ) {
-            return { ...existing, balance: balance ?? existing.balance, preserved: true };
-          }
-          cache.set(key, { ...payload, at: Date.now() });
-        }
-
-        return payload;
-      } catch (err) {
-        lastErr = err;
-        await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
-      }
+    if (preferIndexer) {
+      // Do NOT fall back to node history for official/indexer selection.
+      // Node /account/.../history on mega-miners is 7–15s and looks "broken".
+      // Surface indexer errors instead so we can fix them.
+      payload = await loadFromIndexer(account, cursor, isFirstPage);
+    } else {
+      payload = await loadFromNode(account, host, cursor, isFirstPage);
     }
 
-    throw lastErr || new Error('Failed to fetch transaction history');
+    if (isFirstPage) {
+      const existing = cache.get(key);
+      if (
+        payload.items.length === 0
+        && existing?.items?.length
+        && !force
+      ) {
+        return { ...existing, balance: payload.balance ?? existing.balance, preserved: true };
+      }
+      cache.set(key, { ...payload, at: Date.now() });
+    }
+
+    return payload;
   })().finally(() => {
     inflight.delete(inflightKey);
   });

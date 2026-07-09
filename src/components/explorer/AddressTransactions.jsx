@@ -17,8 +17,75 @@ import {
   loadAddressHistory,
   readAddressHistoryCache,
 } from '../../lib/addressHistoryStore.js';
+import {
+  fetchIndexerAccount,
+  shouldUseExplorerIndexerFromStorage,
+} from './explorerIndexerClient.js';
+import { pushRecentView } from '../../lib/explorerRecent.js';
+import { copyWithToast } from '../../lib/explorerToast.js';
 
 const PAGE_SIZE = 15;
+
+const HISTORY_FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'rewards', label: 'Rewards' },
+  { id: 'transfers', label: 'Transfers' },
+  { id: 'in', label: 'In' },
+  { id: 'out', label: 'Out' },
+];
+
+function txKind(tx) {
+  const type = String(tx?.type || '').toLowerCase();
+  if (type === 'reward' || (!tx?.fromAddress && (tx?.toAddress || tx?.recipient))) {
+    return 'reward';
+  }
+  return 'transfer';
+}
+
+function txDirection(tx) {
+  if (tx?.direction === 'in' || tx?.direction === 'out' || tx?.direction === 'self') {
+    return tx.direction;
+  }
+  if (txKind(tx) === 'reward') return 'in';
+  return 'unknown';
+}
+
+function matchesHistoryFilter(tx, filter) {
+  if (!filter || filter === 'all') return true;
+  const kind = txKind(tx);
+  const dir = txDirection(tx);
+  if (filter === 'rewards') return kind === 'reward';
+  if (filter === 'transfers') return kind === 'transfer';
+  if (filter === 'in') return dir === 'in' || kind === 'reward';
+  if (filter === 'out') return dir === 'out';
+  return true;
+}
+
+function formatSignedAmount(tx) {
+  const raw = tx?.amount;
+  if (raw == null || raw === '') return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return { text: String(raw), tone: 'neutral' };
+  const dir = txDirection(tx);
+  const pretty = Math.abs(n).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 8,
+  });
+  if (dir === 'out') return { text: `−${pretty}`, tone: 'out' };
+  if (dir === 'in' || txKind(tx) === 'reward') return { text: `+${pretty}`, tone: 'in' };
+  return { text: pretty, tone: 'neutral' };
+}
+
+function formatRelativeTime(timestamp) {
+  if (timestamp == null) return null;
+  const now = Date.now() / 1000;
+  const diff = now - Number(timestamp);
+  if (!Number.isFinite(diff)) return null;
+  if (diff < 60) return `${Math.max(0, Math.floor(diff))}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
 
 function TransactionItem({ tx, index }) {
   const safeStr = (val) => {
@@ -33,20 +100,48 @@ function TransactionItem({ tx, index }) {
     return String(val);
   };
 
+  const kind = txKind(tx);
+  const dir = txDirection(tx);
+  const signed = formatSignedAmount(tx);
+  const rel = formatRelativeTime(tx.timestamp);
+  const badge =
+    kind === 'reward' ? 'Reward'
+      : dir === 'in' ? 'IN'
+        : dir === 'out' ? 'OUT'
+          : dir === 'self' ? 'SELF'
+            : 'Tx';
+
   return (
-    <li key={tx.txid || `tx-${index}`} className="bunker-list-item">
-      <div className="flex justify-between items-center">
-        <span className="bunker-tx-title">
-          {abbreviate(safeStr(tx.txid))}
-        </span>
-        {tx.txid && (
-          <ExplorerLink
-            to={`/transaction/lookup/${tx.txid}`}
-            className="bunker-link"
+    <li key={tx.txid || `tx-${index}`} className="bunker-list-item explorer-tx-item">
+      <div className="flex justify-between items-center gap-2">
+        <div className="explorer-tx-item__title-row">
+          <span className={`explorer-chip explorer-chip--${kind === 'reward' ? 'reward' : dir}`}>
+            {badge}
+          </span>
+          <span
+            className="bunker-tx-title"
+            style={{ cursor: 'pointer' }}
+            title={safeStr(tx.txid)}
+            onClick={() => copyWithToast(tx.txid, 'Tx hash copied')}
           >
-            View Details
-          </ExplorerLink>
-        )}
+            {abbreviate(safeStr(tx.txid))}
+          </span>
+        </div>
+        <div className="explorer-tx-item__right">
+          {signed && (
+            <span className={`explorer-amount explorer-amount--${signed.tone}`}>
+              {signed.text} WART
+            </span>
+          )}
+          {tx.txid && (
+            <ExplorerLink
+              to={`/transaction/lookup/${tx.txid}`}
+              className="bunker-link"
+            >
+              Details
+            </ExplorerLink>
+          )}
+        </div>
       </div>
       {tx.fromAddress && safeStr(tx.fromAddress) !== '—' && (
         <div className="bunker-meta">
@@ -58,26 +153,29 @@ function TransactionItem({ tx, index }) {
           To: <ExplorerAddress address={tx.toAddress} />
         </div>
       )}
-      {tx.amount && safeStr(tx.amount) !== '—' && (
-        <div className="bunker-meta">
-          Amount: {safeStr(tx.amount)}
-        </div>
-      )}
-      {tx.fee && safeStr(tx.fee) !== '—' && (
+      {tx.fee != null && Number(tx.fee) > 0 && (
         <div className="bunker-meta">
           Fee: {safeStr(tx.fee)}
         </div>
       )}
-      {tx.height && (
-        <div className="bunker-meta">
-          Block: {format_height(tx.height)}
-        </div>
-      )}
-      {tx.confirmations !== undefined && (
-        <div className="bunker-meta">
-          Confirmations: {tx.confirmations}
-        </div>
-      )}
+      <div className="bunker-meta explorer-tx-item__meta-row">
+        {tx.height != null && (
+          <span>
+            Block:{' '}
+            <ExplorerLink to={`/chain/block/${tx.height}`} className="bunker-link">
+              {format_height(tx.height)}
+            </ExplorerLink>
+          </span>
+        )}
+        {tx.confirmations !== undefined && tx.confirmations !== null && (
+          <span>{tx.confirmations} conf</span>
+        )}
+        {rel && (
+          <span title={tx.timestamp ? new Date(Number(tx.timestamp) * 1000).toLocaleString() : undefined}>
+            {rel}
+          </span>
+        )}
+      </div>
     </li>
   );
 }
@@ -107,6 +205,7 @@ function AddressTransactions({ address: addressProp } = {}) {
   const [balance, setBalance] = useState(null);
   const [usdBalance, setUsdBalance] = useState(null);
   const [invalidAddress, setInvalidAddress] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState('all');
 
   // Tracks which addressKey the UI is currently bound to (survives strict remounts)
   const shownKeyRef = useRef(addressKey);
@@ -210,17 +309,33 @@ function AddressTransactions({ address: addressProp } = {}) {
         }
 
         setResolvedAddress(normalized);
+        pushRecentView({
+          type: 'address',
+          id: normalized,
+          label: normalized,
+        });
 
         if (String(routeParam) !== normalized) {
           navigate(`/address/${encodeURIComponent(normalized)}`, { replace: true });
         }
 
-        // Balance (fast) — independent
+        // Balance (fast) — prefer indexer on official node
         const balanceTask = (async () => {
           try {
-            const api = await createWarthogApi(host);
-            if (cancelled || shownKeyRef.current !== addressKey) return;
-            const bal = await fetchAccountWartBalance(api, normalized);
+            let bal = null;
+            if (shouldUseExplorerIndexerFromStorage()) {
+              try {
+                const acct = await fetchIndexerAccount(normalized);
+                bal = acct.balance;
+              } catch (idxErr) {
+                console.warn('Indexer balance failed, trying node', idxErr);
+              }
+            }
+            if (bal == null) {
+              const api = await createWarthogApi(host);
+              if (cancelled || shownKeyRef.current !== addressKey) return;
+              bal = await fetchAccountWartBalance(api, normalized);
+            }
             if (cancelled || shownKeyRef.current !== addressKey) return;
             setBalance(bal);
             updateUsdBalance(bal);
@@ -280,10 +395,19 @@ function AddressTransactions({ address: addressProp } = {}) {
 
     const poll = async () => {
       try {
-        const host = resolveExplorerHostFromStorage();
-        const api = await createWarthogApi(host);
-        if (shownKeyRef.current !== key) return;
-        const bal = await fetchAccountWartBalance(api, resolvedAddress);
+        let bal = null;
+        if (shouldUseExplorerIndexerFromStorage()) {
+          try {
+            const acct = await fetchIndexerAccount(resolvedAddress);
+            bal = acct.balance;
+          } catch (_) { /* fall through */ }
+        }
+        if (bal == null) {
+          const host = resolveExplorerHostFromStorage();
+          const api = await createWarthogApi(host);
+          if (shownKeyRef.current !== key) return;
+          bal = await fetchAccountWartBalance(api, resolvedAddress);
+        }
         if (shownKeyRef.current !== key) return;
         setBalance(bal);
         updateUsdBalance(bal);
@@ -366,13 +490,26 @@ function AddressTransactions({ address: addressProp } = {}) {
     }
   };
 
+  const filteredHistory = useMemo(
+    () => allHistory.filter((tx) => matchesHistoryFilter(tx, historyFilter)),
+    [allHistory, historyFilter],
+  );
+
+  const handleFilterChange = (id) => {
+    setHistoryFilter(id);
+    setCurrentPage(1);
+  };
+
   const handleNext = () => {
     const nextPage = currentPage + 1;
     const requiredLength = nextPage * PAGE_SIZE;
-    if (allHistory.length < requiredLength && hasMore) {
+    if (filteredHistory.length < requiredLength && hasMore) {
       fetchMoreHistory();
     }
-    if (allHistory.length >= requiredLength || (allHistory.length < requiredLength && !hasMore)) {
+    if (
+      filteredHistory.length >= requiredLength
+      || (filteredHistory.length < requiredLength && !hasMore)
+    ) {
       setCurrentPage(nextPage);
     }
   };
@@ -407,8 +544,8 @@ function AddressTransactions({ address: addressProp } = {}) {
 
   const startIndex = (currentPage - 1) * PAGE_SIZE;
   const endIndex = startIndex + PAGE_SIZE;
-  const currentHistory = allHistory.slice(startIndex, endIndex);
-  const hasNext = (endIndex < allHistory.length) || hasMore;
+  const currentHistory = filteredHistory.slice(startIndex, endIndex);
+  const hasNext = (endIndex < filteredHistory.length) || hasMore;
   const showHistoryEmpty =
     historyLoaded && !historyLoading && currentHistory.length === 0 && !historyError;
 
@@ -440,7 +577,28 @@ function AddressTransactions({ address: addressProp } = {}) {
             </dd>
           </div>
         </dl>
-        <h3 className="bunker-heading">Transaction History (Page {currentPage})</h3>
+        <div className="bunker-toolbar" style={{ marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <h3 className="bunker-heading" style={{ margin: 0 }}>
+            Transaction History
+            <span className="bunker-muted" style={{ fontWeight: 400, marginLeft: '0.5rem' }}>
+              (Page {currentPage})
+            </span>
+          </h3>
+          <div className="explorer-filter-bar" role="tablist" aria-label="History filter">
+            {HISTORY_FILTERS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                role="tab"
+                aria-selected={historyFilter === f.id}
+                className={`bunker-btn explorer-filter-btn${historyFilter === f.id ? ' is-active' : ''}`}
+                onClick={() => handleFilterChange(f.id)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
         {error && (
           <div className="bunker-alert"><strong>Error:</strong> {error}</div>
         )}
@@ -460,7 +618,7 @@ function AddressTransactions({ address: addressProp } = {}) {
         )}
         {historyLoading && allHistory.length === 0 ? (
           <p className="bunker-muted">
-            Loading transactions… (busy miners can take several seconds on the node)
+            Loading transactions…
           </p>
         ) : currentHistory.length > 0 ? (
           <>
@@ -478,7 +636,19 @@ function AddressTransactions({ address: addressProp } = {}) {
             </ul>
           </>
         ) : showHistoryEmpty ? (
-          <p className="bunker-muted">No transactions found for this address.</p>
+          <p className="bunker-muted">
+            {historyFilter !== 'all' && allHistory.length > 0
+              ? `No ${historyFilter} transactions in the loaded pages. Try “All” or load more.`
+              : 'No transactions found for this address.'}
+            {historyFilter !== 'all' && hasMore && (
+              <>
+                {' '}
+                <button type="button" className="bunker-btn bunker-btn--ghost" onClick={fetchMoreHistory}>
+                  Load more
+                </button>
+              </>
+            )}
+          </p>
         ) : (
           <p className="bunker-muted">Loading transactions…</p>
         )}

@@ -1,7 +1,8 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { abbreviate } from './assets/util.js';
 import { normalizeExplorerAddress } from './explorerAddressUtils.js';
+import { copyWithToast } from '../../lib/explorerToast.js';
 
 const COPY_DELAY_MS = 280;
 
@@ -17,7 +18,6 @@ export default function ExplorerAddress({
   showLink = true,
 }) {
   const navigate = useNavigate();
-  const [copied, setCopied] = useState(false);
   const clickTimerRef = useRef(null);
   const normalized = normalizeExplorerAddress(address);
 
@@ -29,13 +29,7 @@ export default function ExplorerAddress({
   const path = addressPath(normalized);
 
   const copyAddress = async () => {
-    try {
-      await navigator.clipboard.writeText(normalized);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy address', err);
-    }
+    await copyWithToast(normalized, 'Address copied');
   };
 
   const handleCopyClick = () => {
@@ -111,15 +105,10 @@ export default function ExplorerAddress({
               ? `Click to copy · double-click to view history: ${normalized}`
               : `Click to copy: ${normalized}`
           }
-          aria-label={copied ? 'Address copied' : `Copy address ${display}`}
+          aria-label={`Copy address ${display}`}
         >
           {display}
         </span>
-        {copied ? (
-          <span className="explorer-address__copied" aria-live="polite">
-            Copied
-          </span>
-        ) : null}
       </span>
       {showLink ? (
         <span className="explorer-address__hint">Double-click to view address history</span>

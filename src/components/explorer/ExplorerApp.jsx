@@ -5,6 +5,7 @@ import BlockDetails from './blockdetails.jsx';
 import TransactionDetails from './TransactionDetails.jsx';
 import AddressTransactions from './AddressTransactions.jsx';
 import BlockHexView from './hex.jsx';
+import ExplorerToastHost from './ExplorerToastHost.jsx';
 
 
 function DocumentTitle() {
@@ -67,6 +68,7 @@ function ExplorerRoutes() {
 export default function ExplorerApp() {
   return (
     <BrowserRouter>
+      <ExplorerToastHost />
       <ExplorerRoutes />
     </BrowserRouter>
   );
