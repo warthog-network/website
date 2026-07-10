@@ -44,7 +44,7 @@ const orbits = [
     href: `${ROADMAP_MD}#q2-2025`,
     accent: "#38bdf8",
     /** r = radius in viewBox units (center 50,50); duration s; start deg */
-    orbit: { r: 28, duration: 18, start: -20 },
+    orbit: { r: 26, duration: 18, start: -20 },
     items: [
       { text: "Infrastructure for Browser Nodes", done: false },
       { text: "Documentation for Browser Nodes", done: false },
@@ -64,7 +64,7 @@ const orbits = [
       "Estimated mid-range window. Scope may flex as nearer orbits land.",
     href: `${ROADMAP_MD}#q3-2025`,
     accent: "#34d399",
-    orbit: { r: 37, duration: 28, start: 120 },
+    orbit: { r: 38, duration: 28, start: 120 },
     items: [
       {
         text: "P2P Browser Node communication (WebRTC)",
@@ -87,7 +87,7 @@ const orbits = [
       "Later draft-roadmap targets: late 2025 token features and 2026 research. Exploratory — not a ship commitment.",
     href: `${ROADMAP_MD}#q4-2025`,
     accent: "#c084fc",
-    orbit: { r: 45, duration: 40, start: 210 },
+    orbit: { r: 49, duration: 40, start: 210 },
     items: [
       {
         text: "Dividend payout feature for tokens (~Q4 2025)",
@@ -312,10 +312,19 @@ const foundation = {
     gap: 0.75rem;
   }
 
+  /*
+   * Square field via padding-bottom (not aspect-ratio alone).
+   * Mobile WebKit often resolves % top/left on absolute children against a
+   * 0 content-height when the parent is sized only by aspect-ratio and every
+   * child is position:absolute — foundation dots then collapse toward the
+   * core. The padding trick gives a real used height for the containing block.
+   */
   .orbit-stage__field {
     position: relative;
     width: 100%;
-    aspect-ratio: 1 / 1;
+    height: 0;
+    padding-bottom: 100%;
+    overflow: visible;
   }
 
   /* Soft ambient wash — no circular guide (keeps foundation looking scattered) */
@@ -335,7 +344,7 @@ const foundation = {
   }
 
   .orbit-map {
-    --sun: 4.6rem;
+    --sun: 3.85rem;
     position: absolute;
     inset: 16%;
     width: auto;
@@ -529,24 +538,19 @@ const foundation = {
 
   @media (max-width: 759px) {
     .orbit-stage {
-      /* Slightly wider than before so outer foundation dots have room */
+      /* Slightly wider so outer foundation dots have room */
       width: min(380px, 100%);
       padding-inline: 0.15rem;
     }
 
-    .orbit-stage__field {
-      /* Keep labels/glows from clipping at the stage edge */
-      overflow: visible;
-    }
-
     .orbit-map {
-      --sun: 3.4rem;
+      --sun: 2.85rem;
       /* Pull solar system in so foundation ring reads as a clear outer band */
       inset: 20%;
     }
 
     .orbit-map__sun-label {
-      font-size: 0.62rem;
+      font-size: 0.58rem;
     }
   }
 
@@ -556,7 +560,7 @@ const foundation = {
     }
 
     .orbit-map {
-      --sun: 2.9rem;
+      --sun: 2.45rem;
       inset: 21%;
     }
   }
@@ -763,9 +767,12 @@ const foundation = {
     --size: 1;
     --dot: 0.55rem;
     position: absolute;
-    /* left/top set in % of field via --x / --y (true polar layout) */
-    left: var(--x, 50%);
-    top: var(--y, 50%);
+    /*
+     * left/top: inline % for first paint, then pixel-layout script on real
+     * devices (see layoutFoundationNodes) so WebKit can't collapse the ring.
+     */
+    left: 50%;
+    top: 50%;
     transform: translate(-50%, -50%);
     display: flex;
     flex-direction: column;
@@ -782,7 +789,7 @@ const foundation = {
     pointer-events: auto;
     appearance: none;
     -webkit-appearance: none;
-    transition: opacity 0.25s ease, transform 0.22s ease;
+    transition: opacity 0.25s ease;
     z-index: 1;
     /* Expand hit area without moving the visual center */
     touch-action: manipulation;
@@ -1009,16 +1016,10 @@ const foundation = {
 
   @media (max-width: 759px) {
     /*
-     * Mobile: the finished foundation cluster was hard to read —
-     * dots shrank into noise and labels were clipped away. Scale dots,
-     * keep short labels, and nudge the ring slightly inward so edge
-     * points stay inside the stage.
+     * Mobile: larger dots + label plates so the shipped cluster stays readable.
+     * Do NOT scale the ring with transform — that fought percentage layout on
+     * WebKit and pulled nodes toward the core.
      */
-    .foundation-ring {
-      transform: scale(0.94);
-      transform-origin: center center;
-    }
-
     .foundation-node {
       --dot: 0.78rem;
       max-width: 4.4rem;
@@ -1060,10 +1061,6 @@ const foundation = {
   }
 
   @media (max-width: 400px) {
-    .foundation-ring {
-      transform: scale(0.9);
-    }
-
     .foundation-node {
       --dot: 0.86rem;
       max-width: 3.8rem;
@@ -1144,8 +1141,8 @@ const foundation = {
                 </defs>
 
                 <!-- Ambient glow under the CSS sun -->
-                <circle cx="50" cy="50" r="18" fill="rgba(250,204,21,0.08)"></circle>
-                <circle cx="50" cy="50" r="12" fill="rgba(250,204,21,0.12)"></circle>
+                <circle cx="50" cy="50" r="15" fill="rgba(250,204,21,0.08)"></circle>
+                <circle cx="50" cy="50" r="10" fill="rgba(250,204,21,0.12)"></circle>
 
                 {
                   planets.map((planet) => (
@@ -1224,7 +1221,9 @@ const foundation = {
                       type="button"
                       class="foundation-node"
                       data-foundation-item={item.id}
-                      style={`--x: ${item.left.toFixed(2)}%; --y: ${item.top.toFixed(2)}%; --size: ${item.size}; --twinkle: ${twinkle}s; --twinkle-delay: ${twinkleDelay}s`}
+                      data-angle={item.angle}
+                      data-radius={item.radius}
+                      style={`left: ${item.left.toFixed(2)}%; top: ${item.top.toFixed(2)}%; --size: ${item.size}; --twinkle: ${twinkle}s; --twinkle-delay: ${twinkleDelay}s`}
                       aria-label={`${item.title}. ${item.detail}`}
                       aria-pressed="false"
                       data-title={item.title}
@@ -1394,6 +1393,34 @@ const foundation = {
     initFoundationRing(root);
   }
 
+  /**
+   * Place foundation nodes in pixel space from angle/radius.
+   * Avoids mobile WebKit % containing-block bugs that collapse the ring
+   * onto the core (desktop DevTools often still looks fine).
+   */
+  function layoutFoundationNodes(field, nodes) {
+    if (!field || !nodes?.length) return;
+    // Measure the ring (offset parent) — padding-box size, not content height 0
+    const ring = field.querySelector(".foundation-ring") || field;
+    const rect = ring.getBoundingClientRect();
+    const w = rect.width;
+    const h = rect.height;
+    if (w < 8 || h < 8) return;
+
+    nodes.forEach((el) => {
+      const angle = parseFloat(el.getAttribute("data-angle") || "0");
+      const radius = parseFloat(el.getAttribute("data-radius") || "40");
+      if (!Number.isFinite(angle) || !Number.isFinite(radius)) return;
+
+      const rad = (angle * Math.PI) / 180;
+      // Same polar math as foundationPoint(), applied to real box size
+      const x = ((50 + radius * Math.sin(rad)) / 100) * w;
+      const y = ((50 - radius * Math.cos(rad)) / 100) * h;
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
+    });
+  }
+
   function initFoundationRing(root) {
     const stage = root.querySelector("[data-foundation]");
     if (!stage || stage.dataset.foundationBound === "1") return;
@@ -1423,6 +1450,16 @@ const foundation = {
         short: el.getAttribute("data-short") || id,
       };
     });
+
+    const relayout = () => layoutFoundationNodes(field, nodes);
+    relayout();
+    // Second pass after fonts/layout settle (iOS often reports 0 height first)
+    requestAnimationFrame(relayout);
+    window.addEventListener("resize", relayout, { passive: true });
+    if (typeof ResizeObserver !== "undefined" && field) {
+      const ro = new ResizeObserver(relayout);
+      ro.observe(field);
+    }
 
     let pinnedId = null;
     let hoverId = null;
