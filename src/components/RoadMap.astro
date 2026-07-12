@@ -30,7 +30,7 @@ const orbits = [
         done: true,
       },
       { text: "List Warthog on CoinMarketCap", done: false },
-      { text: "Usable UI for Browser Nodes", done: false },
+      { text: "Polished UI for Browser Nodes", done: true },
     ],
   },
   {
@@ -48,10 +48,10 @@ const orbits = [
     items: [
       { text: "Infrastructure for Browser Nodes", done: false },
       { text: "Documentation for Browser Nodes", done: false },
-      { text: "Implement light-weight DeFi", done: false },
-      { text: "Enable token support on testnet", done: false },
-      { text: "Enable liquidity farming on testnet", done: false },
-      { text: "Enable Sandwich-Proof DeFi on testnet", done: false },
+      { text: "Implement light-weight DeFi on testnet", done: true },
+      { text: "Enable token support on testnet", done: true },
+      { text: "Enable liquidity farming on testnet", done: true },
+      { text: "Enable Sandwich-Proof DeFi on testnet", done: true },
     ],
   },
   {
@@ -300,7 +300,7 @@ const foundation = {
   /*
    * Stage: orbit map centered, foundation milestones ringed around it.
    * Hybrid map: SVG rings + dots (always true circles at any width).
-   * Core sun = original CSS yellow ball with pulse / hover glow.
+   * Core sun = SVG circle in the map (true circle on all viewports).
    */
   .orbit-stage {
     position: relative;
@@ -344,7 +344,8 @@ const foundation = {
   }
 
   .orbit-map {
-    --sun: 3.85rem;
+    /* Label offset under SVG core (r≈7 in 100×100 viewBox ≈ 7% of map) */
+    --sun-label-gap: 9.5%;
     position: absolute;
     inset: 16%;
     width: auto;
@@ -376,86 +377,41 @@ const foundation = {
     opacity: 1;
   }
 
-  /* —— Original core sun (first solar-system version) —— */
-  .orbit-map__sun {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    z-index: 6;
-    width: var(--sun);
-    height: var(--sun);
-    margin: 0;
-    padding: 0;
-    border: none;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
+  /*
+   * Core sun lives in SVG (true circle in viewBox space).
+   * Highlight language matches planet dots: white stroke, scale, glow.
+   */
+  .orbit-map__sun-hit {
     cursor: pointer;
-    appearance: none;
-    -webkit-appearance: none;
-    background:
-      radial-gradient(circle at 32% 28%, #fffceb 0%, #fff7ad 12%, #facc15 42%, #e79300 78%, #b45309 100%);
-    box-shadow:
-      0 0 20px rgba(250, 204, 21, 0.55),
-      0 0 48px rgba(250, 204, 21, 0.28),
-      0 0 80px rgba(234, 179, 8, 0.14),
-      inset 0 -6px 14px rgba(180, 83, 9, 0.35),
-      inset 0 4px 10px rgba(255, 255, 255, 0.35);
-    transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
-  }
-
-  /* Outer pulse halo (original) */
-  .orbit-map__sun::after {
-    content: "";
-    position: absolute;
-    inset: -28%;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(250, 204, 21, 0.45) 0%, rgba(250, 204, 21, 0.12) 45%, transparent 70%);
-    z-index: -1;
-    animation: sun-pulse 3.2s ease-in-out infinite;
-    pointer-events: none;
-  }
-
-  /* Specular highlight */
-  .orbit-map__sun::before {
-    content: "";
-    position: absolute;
-    left: 18%;
-    top: 14%;
-    width: 38%;
-    height: 30%;
-    border-radius: 50%;
-    background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.75), transparent 70%);
-    pointer-events: none;
-  }
-
-  .orbit-map__sun:hover,
-  .orbit-map__sun:focus-visible {
     outline: none;
-    transform: translate(-50%, -50%) scale(1.07);
-    box-shadow:
-      0 0 28px rgba(250, 204, 21, 0.8),
-      0 0 60px rgba(250, 204, 21, 0.42),
-      0 0 90px rgba(234, 179, 8, 0.2),
-      inset 0 -6px 14px rgba(180, 83, 9, 0.35),
-      inset 0 4px 10px rgba(255, 255, 255, 0.4);
   }
 
-  .orbit-map__sun.is-active {
-    transform: translate(-50%, -50%) scale(1.12);
-    filter: brightness(1.1);
-    box-shadow:
-      0 0 32px rgba(250, 204, 21, 0.95),
-      0 0 70px rgba(250, 204, 21, 0.5),
-      0 0 100px rgba(234, 179, 8, 0.22),
-      0 0 0 3px rgba(250, 204, 21, 0.4),
-      inset 0 -6px 14px rgba(180, 83, 9, 0.3),
-      inset 0 4px 10px rgba(255, 255, 255, 0.45);
+  .orbit-map__sun-disc {
+    stroke: rgba(255, 255, 255, 0.4);
+    stroke-width: 0.35;
+    transform-box: fill-box;
+    transform-origin: center;
+    transition:
+      stroke 0.2s ease,
+      stroke-width 0.2s ease,
+      transform 0.2s ease,
+      filter 0.2s ease;
+  }
+
+  /* Same hover / active treatment as .orbit-map__dot (scale softer — disc is larger) */
+  .orbit-map__sun.is-active .orbit-map__sun-disc,
+  .orbit-map__sun:hover .orbit-map__sun-disc,
+  .orbit-map__sun:focus-within .orbit-map__sun-disc {
+    stroke: #fff;
+    stroke-width: 0.7;
+    transform: scale(1.22);
+    filter: url(#orbit-dot-glow);
   }
 
   .orbit-map__sun-label {
     position: absolute;
     left: 50%;
-    top: calc(50% + var(--sun) / 2 + 0.4rem);
+    top: calc(50% + var(--sun-label-gap));
     z-index: 7;
     transform: translateX(-50%);
     font-family: "Montserrat", var(--font-sans);
@@ -463,7 +419,7 @@ const foundation = {
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: rgba(250, 204, 21, 0.88);
+    color: rgba(212, 184, 106, 0.85);
     text-shadow: 0 1px 10px rgba(0, 0, 0, 0.9);
     pointer-events: none;
     line-height: 1.2;
@@ -471,8 +427,8 @@ const foundation = {
   }
 
   .orbit-map:has(.orbit-map__sun.is-active) .orbit-map__sun-label {
-    color: #fde047;
-    text-shadow: 0 0 12px rgba(250, 204, 21, 0.55), 0 1px 10px rgba(0, 0, 0, 0.9);
+    color: #fff;
+    text-shadow: 0 0 12px rgba(255, 255, 255, 0.35), 0 1px 10px rgba(0, 0, 0, 0.9);
   }
 
   .orbit-map__spinner {
@@ -517,21 +473,8 @@ const foundation = {
     }
   }
 
-  @keyframes sun-pulse {
-    0%,
-    100% {
-      opacity: 0.5;
-      transform: scale(1);
-    }
-    50% {
-      opacity: 1;
-      transform: scale(1.1);
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .orbit-map__spinner,
-    .orbit-map__sun::after {
+    .orbit-map__spinner {
       animation: none;
     }
   }
@@ -544,13 +487,13 @@ const foundation = {
     }
 
     .orbit-map {
-      --sun: 2.85rem;
       /* Pull solar system in so foundation ring reads as a clear outer band */
       inset: 20%;
+      --sun-label-gap: 9%;
     }
 
     .orbit-map__sun-label {
-      font-size: 0.58rem;
+      font-size: 0.55rem;
     }
   }
 
@@ -560,8 +503,8 @@ const foundation = {
     }
 
     .orbit-map {
-      --sun: 2.45rem;
       inset: 21%;
+      --sun-label-gap: 8.5%;
     }
   }
 
@@ -1138,11 +1081,22 @@ const foundation = {
                       <feMergeNode in="SourceGraphic"></feMergeNode>
                     </feMerge>
                   </filter>
+                  {/* Muted amber core — single disc, no outer halo */}
+                  <radialGradient
+                    id="orbit-core-grad"
+                    cx="35%"
+                    cy="32%"
+                    r="68%"
+                    fx="32%"
+                    fy="28%"
+                  >
+                    <stop offset="0%" stop-color="#f5edd4"></stop>
+                    <stop offset="22%" stop-color="#d4b86a"></stop>
+                    <stop offset="52%" stop-color="#b8860b"></stop>
+                    <stop offset="80%" stop-color="#8a5a0a"></stop>
+                    <stop offset="100%" stop-color="#5c3a0a"></stop>
+                  </radialGradient>
                 </defs>
-
-                <!-- Ambient glow under the CSS sun -->
-                <circle cx="50" cy="50" r="15" fill="rgba(250,204,21,0.08)"></circle>
-                <circle cx="50" cy="50" r="10" fill="rgba(250,204,21,0.12)"></circle>
 
                 {
                   planets.map((planet) => (
@@ -1156,6 +1110,29 @@ const foundation = {
                     ></circle>
                   ))
                 }
+
+                {/* SVG core: mathematically circular at every viewport size */}
+                <g class="orbit-map__sun is-active">
+                  <circle
+                    class="orbit-map__sun-hit"
+                    data-orbit-target="core"
+                    cx="50"
+                    cy="50"
+                    r="9"
+                    fill="transparent"
+                    role="button"
+                    tabindex="0"
+                    aria-label="Show core priorities"
+                  ></circle>
+                  <circle
+                    class="orbit-map__sun-disc"
+                    cx="50"
+                    cy="50"
+                    r="7"
+                    fill="url(#orbit-core-grad)"
+                    pointer-events="none"
+                  ></circle>
+                </g>
 
                 {
                   planets.map((planet) => {
@@ -1200,14 +1177,6 @@ const foundation = {
                 }
               </svg>
 
-              <!-- Original CSS core sun -->
-              <button
-                type="button"
-                class="orbit-map__sun is-active"
-                data-orbit-target="core"
-                aria-label="Show core priorities"
-                title="Core — active focus"
-              />
               <span class="orbit-map__sun-label" aria-hidden="true">Core</span>
             </div>
 
