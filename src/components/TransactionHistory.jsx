@@ -1,9 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { resolveNodeUrl } from '../lib/nodesCache';
 
 const API_URL = '/api/proxy';
 const PAGE_SIZE = 15;
+/** Safety cap so a stuck hasMore flag cannot spin forever while hunting a filter. */
+const MAX_AUTO_HISTORY_PAGES = 100;
+
+const HISTORY_FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'rewards', label: 'Rewards' },
+  { id: 'transfers', label: 'Transfers' },
+  { id: 'in', label: 'In' },
+  { id: 'out', label: 'Out' },
+];
 
 const formatHistoryError = (err, fallback) => {
   const status = err.response?.status;
@@ -33,6 +43,88 @@ const TX_THEME = {
   labelColor: '#caa21eff',
 };
 
+function normalizeAddress(value) {
+  return String(value || '').trim().toLowerCase().replace(/^0x/i, '');
+}
+
+function filterLabel(filter) {
+  return HISTORY_FILTERS.find((f) => f.id === filter)?.label || filter;
+}
+
+function filterEmptyMessage(filter) {
+  switch (filter) {
+    case 'rewards':
+      return 'No rewards found for this address.';
+    case 'transfers':
+      return 'No transfers found for this address.';
+    case 'in':
+      return 'No incoming transactions found for this address.';
+    case 'out':
+      return 'No outgoing transactions found for this address.';
+    default:
+      return 'No transactions found.';
+  }
+}
+
+function txKind(tx) {
+  const type = String(tx?.type || '').toLowerCase();
+  if (
+    type === 'reward'
+    || tx?.isReward
+    || (!tx?.fromAddress && (tx?.toAddress || tx?.recipient))
+  ) {
+    return 'reward';
+  }
+  return 'transfer';
+}
+
+function txDirection(tx, accountAddress) {
+  if (tx?.direction === 'in' || tx?.direction === 'out' || tx?.direction === 'self') {
+    return tx.direction;
+  }
+  if (txKind(tx) === 'reward') return 'in';
+
+  const account = normalizeAddress(accountAddress);
+  if (!account) return 'unknown';
+
+  const from = normalizeAddress(tx?.fromAddress);
+  const to = normalizeAddress(tx?.toAddress || tx?.recipient);
+  if (from && from === account && to && to === account) return 'self';
+  if (from && from === account) return 'out';
+  if (to && to === account) return 'in';
+  return 'unknown';
+}
+
+function matchesHistoryFilter(tx, filter, accountAddress) {
+  if (!filter || filter === 'all') return true;
+  const kind = txKind(tx);
+  const dir = txDirection(tx, accountAddress);
+  if (filter === 'rewards') return kind === 'reward';
+  if (filter === 'transfers') return kind === 'transfer';
+  if (filter === 'in') return dir === 'in' || kind === 'reward';
+  if (filter === 'out') return dir === 'out';
+  return true;
+}
+
+function resolveTxDirection(tx, accountAddress) {
+  if (tx?.direction === 'in' || tx?.direction === 'out' || tx?.direction === 'self') {
+    return tx.direction;
+  }
+  const isReward =
+    !tx?.fromAddress
+    || String(tx?.type || '').toLowerCase() === 'reward'
+    || tx?.isReward;
+  if (isReward) return 'in';
+
+  const account = normalizeAddress(accountAddress);
+  const from = normalizeAddress(tx?.fromAddress);
+  const to = normalizeAddress(tx?.toAddress || tx?.recipient);
+  if (from && from === account && to && to === account) return 'self';
+  if (from && from === account) return 'out';
+  if (to && to === account) return 'in';
+  return 'unknown';
+}
+
 const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refreshTrigger }) => {
   const [allHistory, setAllHistory] = useState([]);
   const [error, setError] = useState(null);
@@ -40,12 +132,18 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
   const [nextCursor, setNextCursor] = useState('4294967295');
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [historyFilter, setHistoryFilter] = useState('all');
   const [showTooltip24h, setShowTooltip24h] = useState(false);
   const [showTooltipWeek, setShowTooltipWeek] = useState(false);
   const [showTooltipMonth, setShowTooltipMonth] = useState(false);
   const [timeoutId24h, setTimeoutId24h] = useState(null);
   const [timeoutIdWeek, setTimeoutIdWeek] = useState(null);
   const [timeoutIdMonth, setTimeoutIdMonth] = useState(null);
+
+  /** Auto-fetch pages used while hunting for the current filter / page. */
+  const autoFetchCountRef = useRef(0);
+  /** Prevent concurrent page loads. */
+  const fetchMoreInFlightRef = useRef(false);
 
   const abbreviate = (str) => {
     if (!str) return 'N/A';
@@ -67,12 +165,16 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
     setNextCursor('4294967295');
     setHasMore(true);
     setError(null);
+    setHistoryFilter('all');
+    autoFetchCountRef.current = 0;
+    fetchMoreInFlightRef.current = false;
   }, [address, nodeUrl]);
 
   useEffect(() => {
     if (address && nodeUrl) {
       fetchInitialHistory();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: re-fetch on address/node/refresh
   }, [address, nodeUrl, refreshTrigger]);
 
   useEffect(() => {
@@ -81,7 +183,7 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
       const oneDayAgo = now - 24 * 60 * 60;
       const oneWeekAgo = now - 7 * 24 * 60 * 60;
       const oneMonthAgo = now - 30 * 24 * 60 * 60;
-      const rewards = allHistory.filter((tx) => !tx.fromAddress && tx.timestamp);
+      const rewards = allHistory.filter((tx) => txKind(tx) === 'reward' && tx.timestamp);
       const rewards24h = rewards.filter((tx) => tx.timestamp >= oneDayAgo);
       const rewardsWeek = rewards.filter((tx) => tx.timestamp >= oneWeekAgo);
       const rewardsMonth = rewards.filter((tx) => tx.timestamp >= oneMonthAgo);
@@ -96,7 +198,7 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
     }
   }, [allHistory, onCountsUpdate]);
 
-  const parseHistoryBlocks = async (rawData, nodeBaseParam) => {
+  const parseHistoryBlocks = async (rawData, nodeBaseParam, accountAddress) => {
     const timestampMap = {};
     rawData.perBlock.forEach((block) => {
       const ts = blockTimestamp(block, null);
@@ -127,11 +229,15 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
         ...(Array.isArray(group.rewards) ? group.rewards : []),
       ];
       return txs.map((tx) => {
-        const isReward = !tx.fromAddress;
+        const isReward =
+          !tx.fromAddress
+          || String(tx.type || '').toLowerCase() === 'reward';
+        const direction = resolveTxDirection({ ...tx, isReward }, accountAddress);
         return {
           ...tx,
           isReward,
           type: isReward ? 'reward' : 'wart_transfer',
+          direction,
           asset: 'WART',
           confirmations: block.confirmations,
           height: block.height,
@@ -154,6 +260,7 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
     if (!nodeUrl) return;
     setLoading(true);
     setError(null);
+    autoFetchCountRef.current = 0;
     try {
       const nodeBaseParam = `nodeBase=${encodeURIComponent(nodeUrl)}`;
       const path = `account/${address}/history/4294967295`;
@@ -162,7 +269,7 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
       });
       const rawData = response.data.data || response.data;
       if (rawData.perBlock && Array.isArray(rawData.perBlock)) {
-        const newItems = await parseHistoryBlocks(rawData, nodeBaseParam);
+        const newItems = await parseHistoryBlocks(rawData, nodeBaseParam, address);
         setAllHistory(newItems);
         setNextCursor(rawData.fromId > 0 ? rawData.fromId : null);
         setHasMore(newItems.length > 0 && rawData.fromId > 0);
@@ -177,8 +284,9 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
     }
   };
 
-  const fetchMoreHistory = async () => {
-    if (!hasMore || loading || !nodeUrl) return;
+  const fetchMoreHistory = useCallback(async () => {
+    if (!hasMore || loading || !nodeUrl || !nextCursor || fetchMoreInFlightRef.current) return;
+    fetchMoreInFlightRef.current = true;
     setLoading(true);
     try {
       const nodeBaseParam = `nodeBase=${encodeURIComponent(nodeUrl)}`;
@@ -188,7 +296,7 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
       });
       const rawData = response.data.data || response.data;
       if (rawData.perBlock && Array.isArray(rawData.perBlock)) {
-        const newItems = await parseHistoryBlocks(rawData, nodeBaseParam);
+        const newItems = await parseHistoryBlocks(rawData, nodeBaseParam, address);
         setAllHistory((prev) => [...prev, ...newItems]);
         setHasMore(newItems.length > 0 && rawData.fromId > 0);
         setNextCursor(rawData.fromId > 0 ? rawData.fromId : null);
@@ -198,19 +306,74 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
     } catch (err) {
       setError(formatHistoryError(err, 'Failed to fetch transaction history'));
     } finally {
+      fetchMoreInFlightRef.current = false;
       setLoading(false);
     }
+  }, [hasMore, loading, nodeUrl, nextCursor, address]);
+
+  const filteredHistory = useMemo(
+    () => allHistory.filter((tx) => matchesHistoryFilter(tx, historyFilter, address)),
+    [allHistory, historyFilter, address],
+  );
+
+  /**
+   * Keep loading history pages until:
+   * - filter "all": enough raw items for the current page, or
+   * - other filters: at least one match on page 1, or enough matches for later pages
+   * Stops when history is exhausted or the safety cap is hit.
+   */
+  useEffect(() => {
+    if (!address || !nodeUrl || loading || error) return;
+    if (!hasMore || !nextCursor) return;
+    if (autoFetchCountRef.current >= MAX_AUTO_HISTORY_PAGES) return;
+
+    const need = currentPage * PAGE_SIZE;
+
+    if (historyFilter === 'all') {
+      if (allHistory.length >= need) return;
+    } else {
+      const matchCount = filteredHistory.length;
+      // Page 1: only hunt until the first match of this kind (then show all found so far).
+      if (currentPage === 1) {
+        if (matchCount > 0) return;
+      } else if (matchCount >= need) {
+        return;
+      }
+    }
+
+    autoFetchCountRef.current += 1;
+    fetchMoreHistory();
+  }, [
+    address,
+    nodeUrl,
+    loading,
+    error,
+    hasMore,
+    nextCursor,
+    historyFilter,
+    currentPage,
+    allHistory.length,
+    filteredHistory.length,
+    fetchMoreHistory,
+  ]);
+
+  // If Next advanced past available filtered rows and history is exhausted, clamp page.
+  useEffect(() => {
+    if (loading) return;
+    // Still searching for the first match of this filter — leave page alone.
+    if (historyFilter !== 'all' && filteredHistory.length === 0 && hasMore) return;
+    const maxPage = Math.max(1, Math.ceil(filteredHistory.length / PAGE_SIZE) || 1);
+    if (currentPage > maxPage) setCurrentPage(maxPage);
+  }, [loading, historyFilter, filteredHistory.length, hasMore, currentPage]);
+
+  const handleFilterChange = (id) => {
+    setHistoryFilter(id);
+    setCurrentPage(1);
+    autoFetchCountRef.current = 0;
   };
 
   const handleNext = () => {
-    const nextPage = currentPage + 1;
-    const requiredLength = nextPage * PAGE_SIZE;
-    if (allHistory.length < requiredLength && hasMore) {
-      fetchMoreHistory();
-    }
-    if (allHistory.length >= requiredLength || (allHistory.length < requiredLength && !hasMore)) {
-      setCurrentPage(nextPage);
-    }
+    setCurrentPage((p) => p + 1);
   };
 
   const handlePrev = () => {
@@ -228,8 +391,27 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
 
   const startIndex = (currentPage - 1) * PAGE_SIZE;
   const endIndex = startIndex + PAGE_SIZE;
-  const currentHistory = allHistory.slice(startIndex, endIndex);
-  const hasNext = endIndex < allHistory.length || hasMore;
+  const currentHistory = filteredHistory.slice(startIndex, endIndex);
+  const hasNext = endIndex < filteredHistory.length || hasMore;
+  const isFilterSearching =
+    historyFilter !== 'all'
+    && loading
+    && filteredHistory.length === 0
+    && allHistory.length > 0;
+  const showHistoryEmpty =
+    !loading
+    && currentHistory.length === 0
+    && !error
+    && !isFilterSearching
+    && allHistory.length === 0;
+  const showFilterEmpty =
+    !loading
+    && currentHistory.length === 0
+    && !error
+    && !isFilterSearching
+    && allHistory.length > 0
+    && historyFilter !== 'all'
+    && !hasMore;
 
   const { sectionColor, txBackground, txBorder, txColor, labelColor } = TX_THEME;
 
@@ -272,7 +454,7 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
     : [];
 
   const getTypeBadge = (tx) => {
-    if (tx.isReward || tx.type === 'reward') {
+    if (txKind(tx) === 'reward') {
       return { label: 'REWARD', bg: '#166534', color: '#86efac' };
     }
     return { label: 'TRANSFER', bg: '#1e3a8a', color: '#93c5fd' };
@@ -283,7 +465,7 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
       className="!p-0 !bg-transparent !border-0 !shadow-none !mb-0 mt-8"
       style={{ fontFamily: 'Montserrat, sans-serif', color: sectionColor }}
     >
-      <div className="flex flex-col md:flex-row justify-between md:items-center">
+      <div className="flex flex-col md:flex-row justify-between md:items-center gap-2">
         {periodBadges.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap order-1 md:order-2 mt-2 md:mt-0 mb-1">
             {periodBadges.map((period) => (
@@ -343,22 +525,52 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
         </h2>
       </div>
 
+      <div
+        className="flex flex-wrap items-center gap-1 mt-3"
+        role="tablist"
+        aria-label="History filter"
+      >
+        {HISTORY_FILTERS.map((f) => (
+          <button
+            key={f.id}
+            type="button"
+            role="tab"
+            aria-selected={historyFilter === f.id}
+            className={`compact-btn !mx-0 !my-0 !px-3 !py-1${historyFilter === f.id ? ' compact-btn--active' : ''}`}
+            onClick={() => handleFilterChange(f.id)}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       {error && (
         <div className="error mt-4">
           <strong>Error:</strong> {error}
         </div>
       )}
-      {allHistory.length === 0 && !loading && (
+      {isFilterSearching && (
+        <p className="text-zinc-400 text-sm mt-4">
+          Looking for {filterLabel(historyFilter).toLowerCase()} transactions…
+        </p>
+      )}
+      {showHistoryEmpty && (
         <p className="text-zinc-400 text-sm mt-4">No transactions found.</p>
+      )}
+      {showFilterEmpty && (
+        <p className="text-zinc-400 text-sm mt-4">{filterEmptyMessage(historyFilter)}</p>
       )}
 
       {currentHistory.length > 0 && (
         <div className="mt-4" style={{ maxHeight: '420px', overflowY: 'auto', paddingRight: '10px' }}>
+          {loading && historyFilter !== 'all' && (
+            <p className="text-zinc-500 text-xs mb-2">Updating…</p>
+          )}
           {currentHistory.map((tx, index) => {
             const badge = getTypeBadge(tx);
             return (
               <div
-                key={`${tx.txid || 'tx'}-${index}`}
+                key={`${tx.txid || 'tx'}-${startIndex + index}`}
                 id={`tx-${tx.txid}`}
                 style={{
                   backgroundColor: txBackground,
@@ -400,7 +612,7 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
                   </span>
                 </div>
 
-                {(tx.fromAddress || tx.isReward) && (
+                {(tx.fromAddress || tx.isReward || txKind(tx) === 'reward') && (
                   <div
                     style={{
                       display: 'flex',
