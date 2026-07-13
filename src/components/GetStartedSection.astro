@@ -9,6 +9,11 @@ import Book from "../BalkyImages/getstartedimgs/book.svg";
 const webWalletUrl = "/webwallet";
 const mobileWalletApk = "/defi-mobile.apk";
 
+/** In-browser full node (Netlify). Extension zip is packaged there on deploy. */
+const browserNodeUrl = "https://browser-node-bodega.netlify.app/";
+/** Same-site path → Netlify redirect to browser-node zip (see public/_redirects). */
+const browserNodeExtensionZip = "/downloads/warthog-browser-node-extension.zip";
+
 const wallets = [
   {
     title: "Wart DAPP (GUI)",
@@ -34,8 +39,9 @@ const wallets = [
   {
     title: "Browser Extension Wallet",
     description:
-      "Browser extension for Chrome and Firefox. Uses public nodes or manually add your node IP.",
-    download: "https://github.com/warthog-network/warthog-extension/releases",
+      "Browser extension for Chrome and Firefox. Mainnet + DeFi testnet, assets, DEX, and activity. Uses public nodes or add your node URL.",
+    // Shipped from extension-update (built browser-wallet). Unzip → Load unpacked.
+    download: "https://github.com/warthog-network/extension-update/releases",
     guide: "https://docs.warthog.network/guides/wallet/browser-extension-wallet/",
   },
 ];
@@ -303,11 +309,38 @@ const wallets = [
             </p>
             <div class="gs-card-actions">
               <a
-                href="https://browser-node-bodega.netlify.app/"
+                href={browserNodeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 Open Browser Node
+              </a>
+            </div>
+          </div>
+          <div class="gs-card">
+            <div class="gs-card-icon">
+              <img src={Nodes.src} alt="" />
+            </div>
+            <h3>Browser Node Extension</h3>
+            <p>
+              Same full WASM node as a Chrome / Brave / Edge extension. Side
+              panel stays open while you browse. Download the zip, unzip, then
+              Load unpacked in Developer mode.
+            </p>
+            <div class="gs-card-actions">
+              <a
+                href={browserNodeExtensionZip}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Download
+              </a>
+              <a
+                href={browserNodeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open site
               </a>
             </div>
           </div>
