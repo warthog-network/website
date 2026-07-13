@@ -1,0 +1,3 @@
+# Browser Node extension zip lives on the browser-node Netlify site (packaged on deploy).
+# Same path on this site so Get Started / deep links can use a warthog.network-style URL.
+/downloads/warthog-browser-node-extension.zip  https://browser-node-bodega.netlify.app/downloads/warthog-browser-node-extension.zip  302
