@@ -1,142 +1,253 @@
 ---
 import ContentDiv from "../components/ContentDiv.jsx";
 
-const milestones = [
+/**
+ * Priority orbit aligned with the draft roadmap.md (GitHub).
+ * Quarters are approximate target windows from that document — not hard deadlines.
+ * Source: https://github.com/warthog-network/docs/blob/master/_roadmap/roadmap.md
+ */
+const ROADMAP_MD =
+  "https://github.com/warthog-network/docs/blob/master/_roadmap/roadmap.md";
+
+const orbits = [
   {
-    title: "Q1 2024",
-    status: "Shipped",
-    tone: "complete",
-    href: "https://docs.warthog.network/roadmap/#q1-2024",
-    items: [
-      { text: "Develop world's first PoBW algo", done: true },
-      { text: "Develop stratum pool", done: true },
-      { text: "Listing on Exbitron", done: true },
-      { text: "Listing on Xeggex", done: true },
-    ],
-  },
-  {
-    title: "Q2 2024",
-    status: "Shipped",
-    tone: "complete",
-    href: "https://docs.warthog.network/roadmap/#q2-2024",
-    items: [
-      {
-        text: "Refactor networking code to support multiple transports",
-        done: true,
-      },
-      { text: "Research Sandwich-Proof DeFi", done: true },
-    ],
-  },
-  {
-    title: "Q3 2024",
-    status: "Shipped",
-    tone: "complete",
-    href: "https://docs.warthog.network/roadmap/#q3-2024",
+    id: "core",
+    label: "Core",
+    quarter: "Q1 2025",
+    status: "Active focus",
+    title: "Where we are now",
+    blurb:
+      "Approximate target window from the draft roadmap. Highest-priority work still open in this band — dates can slip.",
+    href: `${ROADMAP_MD}#q1-2025`,
+    accent: "#facc15",
     items: [
       {
-        text: "Research in-browser node support (unique in the crypto world)",
+        text: "Demo of the custom Sandwich-Proof matching engine",
         done: true,
       },
       {
-        text: "Implement matching engine C++ code for Sandwich-Proof DeFi",
+        text: "Scientific paper on Sandwich-Proof DeFi (Fair Batch Matching)",
         done: true,
       },
+      { text: "List Warthog on CoinMarketCap", done: false },
+      { text: "Polished UI for Browser Nodes", done: true },
     ],
   },
   {
-    title: "Q4 2024",
-    status: "Shipped",
-    tone: "complete",
-    href: "https://docs.warthog.network/roadmap/#q4-2024",
+    id: "near",
+    label: "Near orbit",
+    quarter: "Q2 2025",
+    status: "Next up",
+    title: "Pulling into range",
+    blurb:
+      "Estimated next quarter on the draft roadmap. Intended once core items clear — still an approximate window.",
+    href: `${ROADMAP_MD}#q2-2025`,
+    accent: "#38bdf8",
+    /** r = radius in viewBox units (center 50,50); duration s; start deg */
+    orbit: { r: 26, duration: 18, start: -20 },
     items: [
-      { text: "Listing on CoinEx", done: true },
-      { text: "Listing on Bit.com", done: true },
-      { text: "New website based on Astro", done: true },
-      { text: "Support blogs on the website", done: true },
-      { text: "Publish Warthog browser wallet extension", done: true },
+      { text: "Infrastructure for Browser Nodes", done: false },
+      { text: "Documentation for Browser Nodes", done: false },
+      { text: "Implement light-weight DeFi on testnet", done: true },
+      { text: "Enable token support on testnet", done: true },
+      { text: "Enable liquidity farming on testnet", done: true },
+      { text: "Enable Sandwich-Proof DeFi on testnet", done: true },
     ],
   },
   {
-    title: "Q1 2025",
-    status: "Active sprint",
-    tone: "current",
-    href: "https://docs.warthog.network/roadmap/#q1-2025",
+    id: "mid",
+    label: "Mid orbit",
+    quarter: "Q3 2025",
+    status: "Queued",
+    title: "On the trajectory",
+    blurb:
+      "Estimated mid-range window. Scope may flex as nearer orbits land.",
+    href: `${ROADMAP_MD}#q3-2025`,
+    accent: "#34d399",
+    orbit: { r: 38, duration: 28, start: 120 },
     items: [
-      { text: "Create demo of custom matching engine", done: true },
-      { text: "Write scientific paper about Sandwich-Proof DeFi", done: true },
-      { text: "List Warthog on Coinmarketcap", done: false },
-      { text: "Add nice UI for Browser Nodes", done: false },
-    ],
-  },
-  {
-    title: "Q2 2025",
-    status: "Up next",
-    tone: "next",
-    href: "https://docs.warthog.network/roadmap/#q2-2025",
-    items: [
-      { text: "Add infrastructure for Browser Nodes", done: false },
-      { text: "Add documentation for Browser Nodes", done: false },
-      { text: "Implement light-weight DeFi", done: false },
-      { text: "Enable token support in testnet", done: false },
-      { text: "Enable Liquidity Farming in testnet", done: false },
-      { text: "Enable Sandwich-Proof DeFi in testnet", done: false },
-    ],
-  },
-  {
-    title: "Q3 2025",
-    status: "In planning",
-    tone: "planning",
-    href: "https://docs.warthog.network/roadmap/#q3-2025",
-    items: [
-      { text: "Enable P2P Browser Node communication using WebRTC", done: false },
-      { text: "Add token support in mainnet", done: false },
       {
-        text: "Add \"Copy Balance\" feature for newly created tokens in testnet",
+        text: "P2P Browser Node communication (WebRTC)",
+        done: false,
+      },
+      { text: "Add token support on mainnet", done: false },
+      {
+        text: "“Copy Balance” for newly created tokens (testnet)",
         done: false,
       },
     ],
   },
   {
-    title: "Q4 2025",
-    status: "Future focus",
-    tone: "future",
-    href: "https://docs.warthog.network/roadmap/#q4-2025",
-    items: [{ text: "Add Dividend payout feature for tokens", done: false }],
-  },
-  {
-    title: "2026",
-    status: "Research",
-    tone: "research",
-    href: "https://docs.warthog.network/roadmap/#2026",
+    id: "horizon",
+    label: "Horizon",
+    quarter: "Q4 2025 – 2026",
+    status: "Longer range",
+    title: "Long-range direction",
+    blurb:
+      "Later draft-roadmap targets: late 2025 token features and 2026 research. Exploratory — not a ship commitment.",
+    href: `${ROADMAP_MD}#q4-2025`,
+    accent: "#c084fc",
+    orbit: { r: 49, duration: 40, start: 210 },
     items: [
       {
-        text: "Research atomic swaps and assess feasibility of implementation in Warthog",
+        text: "Dividend payout feature for tokens (~Q4 2025)",
+        done: false,
+      },
+      {
+        text: "Research atomic swaps and assess feasibility for Warthog (~2026)",
         done: false,
       },
     ],
   },
 ];
+
+const planets = orbits.filter((o) => o.id !== "core");
+
+/**
+ * Shipped foundation milestones — arranged around (and past) the outer orbit.
+ * angle: degrees from 12 o’clock, clockwise.
+ * radius: % of half-field from center (outer SVG orbit ≈ 31%; dashed ring ≈ 44%).
+ * Positions are computed as left/top % — transform % is relative to the node itself.
+ */
+function foundationPoint(angleDeg, radiusPct) {
+  const rad = (angleDeg * Math.PI) / 180;
+  return {
+    left: 50 + radiusPct * Math.sin(rad),
+    top: 50 - radiusPct * Math.cos(rad),
+  };
+}
+
+const foundation = {
+  title: "Foundation (shipped)",
+  href: `${ROADMAP_MD}#q1-2024`,
+  idle: {
+    kicker: "Foundation · shipped",
+    title: "Delivered milestones",
+    text: "Select a point around the map to review completed roadmap items (Q1 2024 – Q1 2025).",
+  },
+  items: [
+    {
+      id: "pobw",
+      short: "PoBW",
+      title: "Proof-of-Balanced-Work (Janushash)",
+      detail:
+        "Q1 2024 — Developed the world’s first PoBW mining algorithm (Janushash), pairing CPU and GPU work for fairer hardware participation.",
+      angle: -62,
+      radius: 41,
+      size: 1.25,
+    },
+    {
+      id: "stratum",
+      short: "Stratum",
+      title: "Stratum pool protocol",
+      detail:
+        "Q1 2024 — Stratum pool support so mining pools can coordinate hashpower against Warthog nodes with standard pool software.",
+      angle: -8,
+      radius: 48,
+      size: 1,
+    },
+    {
+      id: "network",
+      short: "Networking",
+      title: "Multi-transport networking",
+      detail:
+        "Q2 2024 — Networking stack refactored to support multiple transports for more resilient peer connectivity.",
+      angle: 95,
+      radius: 47,
+      size: 1.05,
+    },
+    {
+      id: "defi",
+      short: "FBM engine",
+      title: "Sandwich-proof DeFi matching",
+      detail:
+        "Q2–Q3 2024 — Sandwich-Proof DeFi research and C++ matching-engine implementation (Fair Batch Matching path).",
+      angle: 48,
+      radius: 36,
+      size: 1.2,
+    },
+    {
+      id: "browser-node",
+      short: "Browser node",
+      title: "In-browser node research",
+      detail:
+        "Q3 2024 — Research on in-browser node support — uncommon in crypto and groundwork for lighter client access.",
+      angle: 148,
+      radius: 39,
+      size: 1,
+    },
+    {
+      id: "listings",
+      short: "Listings",
+      title: "Exchange listings & public site",
+      detail:
+        "Q1 & Q4 2024 — Listings including Exbitron, Xeggex, CoinEx, and Bit.com, plus the Astro website and blog support.",
+      angle: 268,
+      radius: 37,
+      size: 1.05,
+    },
+    {
+      id: "wallet",
+      short: "Wallet",
+      title: "Browser wallet extension",
+      detail:
+        "Q4 2024 — Published the Warthog browser wallet extension for key management and on-chain transfers.",
+      angle: 205,
+      radius: 46,
+      size: 1.1,
+    },
+  ].map((item) => ({
+    ...item,
+    ...foundationPoint(item.angle, item.radius),
+  })),
+};
 ---
 
 <style>
   .roadmap-blanket {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
     padding-block: clamp(3rem, 6vw, 6rem);
     padding-inline: clamp(1rem, 4vw, 5rem);
-    background: radial-gradient(circle at 20% 20%, #1f2937 0%, #050810 65%);
+    background: radial-gradient(circle at 50% 35%, #101c34 0%, #050810 68%);
     color: #f8fafc;
+  }
+
+  .roadmap-blanket::before,
+  .roadmap-blanket::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: clamp(3rem, 8vw, 6rem);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .roadmap-blanket::before {
+    top: 0;
+    background: linear-gradient(to bottom, var(--color-bg), transparent);
+  }
+
+  .roadmap-blanket::after {
+    bottom: 0;
+    background: linear-gradient(to top, var(--color-bg), transparent);
+  }
+
+  .roadmap-blanket > * {
+    position: relative;
+    z-index: 1;
   }
 
   .roadmap__shell {
     display: flex;
     flex-direction: column;
-    gap: clamp(1rem, 2vw, 1.75rem);
+    gap: clamp(1.25rem, 2.5vw, 2rem);
   }
 
-  .roadmap__eyebrow {
-    font-size: 0.8rem;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: #a5b4fc;
+  .roadmap__heading.section__header {
+    max-width: none;
   }
 
   .roadmap__title-row {
@@ -145,14 +256,11 @@ const milestones = [
     justify-content: space-between;
     gap: 1rem;
     flex-wrap: wrap;
-  }
-
-  .roadmap__title-row h2 {
-    font-size: clamp(2.25rem, 4vw, 3.25rem);
-    margin: 0;
+    width: 100%;
   }
 
   .roadmap__cta {
+    font-family: "Montserrat", var(--font-sans);
     color: var(--color-brand);
     font-size: 0.95rem;
     text-decoration: none;
@@ -168,255 +276,1226 @@ const milestones = [
     color: #fde047;
   }
 
-  .roadmap__intro {
-    max-width: 48ch;
-    color: rgba(248, 250, 252, 0.75);
+  .roadmap__note {
+    margin: 0;
+    max-width: 52ch;
+    font-family: "Montserrat", var(--font-sans);
+    font-size: 0.9rem;
+    color: rgba(226, 232, 240, 0.65);
     line-height: 1.5;
   }
 
-  .roadmap-grid {
-    position: relative;
+  .orbit-layout {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: clamp(1.25rem, 3vw, 2.5rem);
-    margin-top: 1rem;
+    align-items: center;
   }
 
   @media (min-width: 960px) {
-    .roadmap-grid::before {
-      content: "";
-      position: absolute;
-      top: 1.5rem;
-      left: clamp(0.5rem, 2vw, 1.25rem);
-      right: clamp(0.5rem, 2vw, 1.25rem);
-      height: 1px;
-      background: linear-gradient(
-        90deg,
-        transparent 0%,
-        rgba(148, 163, 184, 0.4) 25%,
-        rgba(148, 163, 184, 0.4) 75%,
-        transparent 100%
-      );
-      pointer-events: none;
+    .orbit-layout {
+      grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.2fr);
     }
   }
 
-  .milestone-card {
-    --accent: #818cf8;
+  /*
+   * Stage: orbit map centered, foundation milestones ringed around it.
+   * Hybrid map: SVG rings + dots (always true circles at any width).
+   * Core sun = SVG circle in the map (true circle on all viewports).
+   */
+  .orbit-stage {
     position: relative;
-    border-radius: 1.25rem;
-    padding: 1.75rem;
+    width: min(480px, 100%);
+    margin-inline: auto;
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 0.75rem;
-    background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.05),
-        rgba(15, 23, 42, 0.65)
-      ),
-      rgba(8, 12, 24, 0.85);
-    border: 1px solid rgba(226, 232, 240, 0.08);
-    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
-    backdrop-filter: blur(16px);
-    color: inherit;
-    text-decoration: none;
-    transition: transform 0.25s ease, border-color 0.25s ease;
   }
 
-  .milestone-card:hover {
-    transform: translateY(-6px);
-    border-color: rgba(250, 204, 21, 0.6);
+  /*
+   * Square field via padding-bottom (not aspect-ratio alone).
+   * Mobile WebKit often resolves % top/left on absolute children against a
+   * 0 content-height when the parent is sized only by aspect-ratio and every
+   * child is position:absolute — foundation dots then collapse toward the
+   * core. The padding trick gives a real used height for the containing block.
+   */
+  .orbit-stage__field {
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 100%;
+    overflow: visible;
   }
 
-  .milestone-card:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.8),
-      0 25px 45px rgba(0, 0, 0, 0.35);
-  }
-
-  .milestone-card::after {
+  /* Soft ambient wash — no circular guide (keeps foundation looking scattered) */
+  .orbit-stage__field::before {
     content: "";
     position: absolute;
     inset: 0;
-    border-radius: 1.25rem;
-    padding: 1px;
-    background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.08),
-      rgba(255, 255, 255, 0)
+    border-radius: 50%;
+    background: radial-gradient(
+      circle at 50% 50%,
+      transparent 28%,
+      rgba(99, 102, 241, 0.04) 42%,
+      transparent 58%
     );
-    -webkit-mask:
-      linear-gradient(#fff 0 0) content-box,
-      linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
+    pointer-events: none;
+    z-index: 1;
   }
 
-  .milestone-card[data-tone="complete"] {
-    --accent: #818cf8;
+  .orbit-map {
+    /* Label offset under SVG core (r≈7 in 100×100 viewBox ≈ 7% of map) */
+    --sun-label-gap: 9.5%;
+    position: absolute;
+    inset: 16%;
+    width: auto;
+    height: auto;
+    margin: 0;
+    line-height: 0;
+    z-index: 2;
   }
 
-  .milestone-card[data-tone="current"] {
+  .orbit-map__svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    overflow: visible;
+  }
+
+  .orbit-map__path {
+    fill: none;
+    stroke: rgba(148, 163, 184, 0.3);
+    stroke-width: 0.35;
+    transition: stroke 0.25s ease, stroke-width 0.25s ease, opacity 0.25s ease;
+    opacity: 0.85;
+  }
+
+  .orbit-map__path.is-active {
+    stroke: var(--accent, #38bdf8);
+    stroke-width: 0.65;
+    opacity: 1;
+  }
+
+  /*
+   * Core sun lives in SVG (true circle in viewBox space).
+   * Highlight language matches planet dots: white stroke, scale, glow.
+   */
+  .orbit-map__sun-hit {
+    cursor: pointer;
+    outline: none;
+  }
+
+  .orbit-map__sun-disc {
+    stroke: rgba(255, 255, 255, 0.4);
+    stroke-width: 0.35;
+    transform-box: fill-box;
+    transform-origin: center;
+    transition:
+      stroke 0.2s ease,
+      stroke-width 0.2s ease,
+      transform 0.2s ease,
+      filter 0.2s ease;
+  }
+
+  /* Same hover / active treatment as .orbit-map__dot (scale softer — disc is larger) */
+  .orbit-map__sun.is-active .orbit-map__sun-disc,
+  .orbit-map__sun:hover .orbit-map__sun-disc,
+  .orbit-map__sun:focus-within .orbit-map__sun-disc {
+    stroke: #fff;
+    stroke-width: 0.7;
+    transform: scale(1.22);
+    filter: url(#orbit-dot-glow);
+  }
+
+  .orbit-map__sun-label {
+    position: absolute;
+    left: 50%;
+    top: calc(50% + var(--sun-label-gap));
+    z-index: 7;
+    transform: translateX(-50%);
+    font-family: "Montserrat", var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(212, 184, 106, 0.85);
+    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.9);
+    pointer-events: none;
+    line-height: 1.2;
+    transition: color 0.2s ease, text-shadow 0.2s ease;
+  }
+
+  .orbit-map:has(.orbit-map__sun.is-active) .orbit-map__sun-label {
+    color: #fff;
+    text-shadow: 0 0 12px rgba(255, 255, 255, 0.35), 0 1px 10px rgba(0, 0, 0, 0.9);
+  }
+
+  .orbit-map__spinner {
+    transform-box: view-box;
+    transform-origin: 50px 50px;
+    animation: orbit-spin var(--duration, 20s) linear infinite;
+    animation-delay: var(--delay, 0s);
+  }
+
+  .orbit-map__dot-hit {
+    cursor: pointer;
+  }
+
+  .orbit-map__dot-hit:focus {
+    outline: none;
+  }
+
+  .orbit-map__dot {
+    stroke: rgba(255, 255, 255, 0.4);
+    stroke-width: 0.35;
+    transform-box: fill-box;
+    transform-origin: center;
+    transition:
+      stroke 0.2s ease,
+      stroke-width 0.2s ease,
+      transform 0.2s ease,
+      filter 0.2s ease;
+  }
+
+  /* Hover / active highlight — uniform scale keeps circles circular */
+  .orbit-map__planet.is-active .orbit-map__dot,
+  .orbit-map__spinner:hover .orbit-map__dot {
+    stroke: #fff;
+    stroke-width: 0.7;
+    transform: scale(1.55);
+    filter: url(#orbit-dot-glow);
+  }
+
+  @keyframes orbit-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .orbit-map__spinner {
+      animation: none;
+    }
+  }
+
+  @media (max-width: 759px) {
+    .orbit-stage {
+      /* Slightly wider so outer foundation dots have room */
+      width: min(380px, 100%);
+      padding-inline: 0.15rem;
+    }
+
+    .orbit-map {
+      /* Pull solar system in so foundation ring reads as a clear outer band */
+      inset: 20%;
+      --sun-label-gap: 9%;
+    }
+
+    .orbit-map__sun-label {
+      font-size: 0.55rem;
+    }
+  }
+
+  @media (max-width: 400px) {
+    .orbit-stage {
+      width: min(320px, 100%);
+    }
+
+    .orbit-map {
+      inset: 21%;
+      --sun-label-gap: 8.5%;
+    }
+  }
+
+  /* Priority cards */
+  .orbit-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .orbit-card {
+    --accent: #facc15;
+    border-radius: 1.1rem;
+    padding: 1.15rem 1.25rem;
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.04),
+        rgba(15, 23, 42, 0.55)
+      ),
+      rgba(8, 12, 24, 0.88);
+    border: 1px solid rgba(226, 232, 240, 0.08);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.3);
+    color: inherit;
+    text-decoration: none;
+    transition: border-color 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+    scroll-margin-top: 5rem;
+  }
+
+  .orbit-card:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+
+  .orbit-card:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--accent), 0 16px 36px rgba(0, 0, 0, 0.3);
+  }
+
+  .orbit-card[data-orbit="core"] {
     --accent: #facc15;
   }
 
-  .milestone-card[data-tone="next"] {
+  .orbit-card[data-orbit="near"] {
     --accent: #38bdf8;
   }
 
-  .milestone-card[data-tone="planning"] {
+  .orbit-card[data-orbit="mid"] {
     --accent: #34d399;
   }
 
-  .milestone-card[data-tone="future"] {
+  .orbit-card[data-orbit="horizon"] {
     --accent: #c084fc;
   }
 
-  .milestone-card[data-tone="research"] {
-    --accent: #f472b6;
+  .orbit-card.is-dimmed {
+    opacity: 0.55;
   }
 
-  .milestone-card__meta {
+  .orbit-card.is-spotlight {
+    opacity: 1;
+    border-color: color-mix(in srgb, var(--accent) 65%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent),
+      0 18px 40px rgba(0, 0, 0, 0.35);
+  }
+
+  .orbit-card__meta {
     display: flex;
-    justify-content: space-between;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 0.75rem;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: rgba(226, 232, 240, 0.75);
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
   }
 
-  .milestone-card__phase {
-    font-weight: 700;
+  .orbit-card__ring {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
+    font-family: "Montserrat", var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(226, 232, 240, 0.8);
   }
 
-  .milestone-card__phase::before {
+  .orbit-card__ring::before {
     content: "";
-    width: 0.6rem;
-    height: 0.6rem;
+    width: 0.55rem;
+    height: 0.55rem;
     border-radius: 999px;
     background: var(--accent);
-    box-shadow: 0 0 15px var(--accent);
+    box-shadow: 0 0 12px var(--accent);
   }
 
-  .milestone-card__status {
+  .orbit-card__badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .orbit-card__status {
+    font-family: "Montserrat", var(--font-sans);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     padding: 0.2rem 0.55rem;
     border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: rgba(248, 250, 252, 0.85);
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    color: color-mix(in srgb, var(--accent) 90%, #fff);
   }
 
-  .milestone-card h3 {
-    margin: 0.5rem 0 0;
-    font-size: 1.4rem;
+  .orbit-card__quarter {
+    font-family: "Montserrat", var(--font-sans);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid rgba(226, 232, 240, 0.18);
+    color: rgba(226, 232, 240, 0.78);
+    background: rgba(15, 23, 42, 0.45);
   }
 
-  .milestone-card ul {
-    margin: 0.75rem 0 0;
+  .orbit-card__quarter em {
+    font-style: normal;
+    font-weight: 500;
+    opacity: 0.7;
+    text-transform: lowercase;
+    letter-spacing: 0.02em;
+  }
+
+  .orbit-card h3 {
+    margin: 0;
+    font-family: "Montserrat", var(--font-sans);
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #f8fafc;
+  }
+
+  .orbit-card__blurb {
+    margin: 0.35rem 0 0.65rem;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    color: rgba(226, 232, 240, 0.7);
+  }
+
+  .orbit-card ul {
+    margin: 0;
     padding: 0;
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
-    font-size: 0.95rem;
-    color: rgba(226, 232, 240, 0.9);
+    gap: 0.45rem;
   }
 
-  .milestone-card li {
+  .orbit-card li {
     display: flex;
-    gap: 0.85rem;
+    gap: 0.65rem;
+    font-size: 0.9rem;
     line-height: 1.4;
-    position: relative;
+    color: rgba(226, 232, 240, 0.72);
   }
 
-  .milestone-card li::before {
+  .orbit-card li::before {
     content: "";
-    width: 1.2rem;
-    height: 1.2rem;
-    margin-top: 0.1rem;
-    border-radius: 0.45rem;
+    width: 0.95rem;
+    height: 0.95rem;
+    margin-top: 0.15rem;
+    border-radius: 0.3rem;
     flex-shrink: 0;
-    border: 1px solid rgba(226, 232, 240, 0.35);
+    border: 1px solid rgba(226, 232, 240, 0.3);
     background: rgba(15, 23, 42, 0.5);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
   }
 
-  .milestone-card li[data-done="true"] {
+  .orbit-card li[data-done="true"] {
     color: rgba(248, 250, 252, 0.95);
   }
 
-  .milestone-card li[data-done="true"]::before {
+  .orbit-card li[data-done="true"]::before {
     content: "✔";
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     font-weight: 700;
     color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border-color: transparent;
     background: linear-gradient(135deg, var(--accent), #a855f7);
-    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.35),
-      0 0 14px rgba(129, 140, 248, 0.75);
-    text-shadow: 0 0 8px rgba(15, 23, 42, 0.65);
   }
 
-  .milestone-card li[data-done="false"] {
-    color: rgba(226, 232, 240, 0.65);
+  /* —— Foundation milestones around the orbit map —— */
+  .foundation-ring {
+    position: absolute;
+    inset: 0;
+    z-index: 8;
+    pointer-events: none;
+  }
+
+  .foundation-node {
+    --size: 1;
+    --dot: 0.55rem;
+    position: absolute;
+    /*
+     * left/top: inline % for first paint, then pixel-layout script on real
+     * devices (see layoutFoundationNodes) so WebKit can't collapse the ring.
+     */
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.28rem;
+    width: max-content;
+    max-width: 5.5rem;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    pointer-events: auto;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: opacity 0.25s ease;
+    z-index: 1;
+    /* Expand hit area without moving the visual center */
+    touch-action: manipulation;
+  }
+
+  /* Invisible touch/click pad — especially important on mobile */
+  .foundation-node::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 0.15rem;
+    width: max(2.5rem, 100%);
+    height: max(2.5rem, 100%);
+    transform: translate(-50%, -20%);
+    border-radius: 999px;
+    z-index: -1;
+  }
+
+  .foundation-node.is-active,
+  .foundation-node:hover,
+  .foundation-node:focus-visible {
+    z-index: 2;
+  }
+
+  .foundation-node:focus {
+    outline: none;
+  }
+
+  .foundation-node__dot {
+    position: relative;
+    width: calc(var(--dot) * var(--size));
+    height: calc(var(--dot) * var(--size));
+    border-radius: 50%;
+    background: #e0e7ff;
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.35),
+      0 0 10px rgba(167, 139, 250, 0.55),
+      0 0 18px rgba(99, 102, 241, 0.28);
+    transition:
+      transform 0.22s ease,
+      background 0.22s ease,
+      box-shadow 0.22s ease;
+    flex-shrink: 0;
+  }
+
+  .foundation-node__dot::before {
+    content: "";
+    position: absolute;
+    inset: -160%;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      rgba(167, 139, 250, 0.4) 0%,
+      rgba(167, 139, 250, 0.12) 40%,
+      transparent 70%
+    );
+    animation: foundation-pulse var(--twinkle, 3.4s) ease-in-out infinite;
+    animation-delay: var(--twinkle-delay, 0s);
+    pointer-events: none;
+  }
+
+  .foundation-node__label {
+    font-family: "Montserrat", var(--font-sans);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: rgba(199, 210, 254, 0.78);
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.85);
+    line-height: 1.15;
+    text-align: center;
+    transition: color 0.2s ease;
+  }
+
+  .foundation-node:hover .foundation-node__dot,
+  .foundation-node:focus-visible .foundation-node__dot,
+  .foundation-node.is-active .foundation-node__dot {
+    background: #fde68a;
+    transform: scale(1.45);
+    box-shadow:
+      0 0 0 2px rgba(255, 255, 255, 0.55),
+      0 0 14px rgba(250, 204, 21, 0.85),
+      0 0 28px rgba(250, 204, 21, 0.4);
+  }
+
+  .foundation-node:hover .foundation-node__dot::before,
+  .foundation-node:focus-visible .foundation-node__dot::before,
+  .foundation-node.is-active .foundation-node__dot::before {
+    animation: none;
+    background: radial-gradient(
+      circle,
+      rgba(250, 204, 21, 0.55) 0%,
+      rgba(250, 204, 21, 0.15) 45%,
+      transparent 70%
+    );
+  }
+
+  .foundation-node:hover .foundation-node__label,
+  .foundation-node:focus-visible .foundation-node__label,
+  .foundation-node.is-active .foundation-node__label {
+    color: #fef3c7;
+  }
+
+  .foundation-node:focus-visible .foundation-node__dot {
+    outline: 2px solid rgba(253, 224, 71, 0.7);
+    outline-offset: 3px;
+  }
+
+  .orbit-stage__field.is-focusing .foundation-node:not(.is-active):not(:hover) {
+    opacity: 0.38;
+  }
+
+  .foundation-detail {
+    width: 100%;
+    border-radius: 0.9rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid rgba(129, 140, 248, 0.2);
+    background:
+      linear-gradient(145deg, rgba(99, 102, 241, 0.1), rgba(15, 23, 42, 0.55)),
+      rgba(8, 12, 24, 0.8);
+    transition:
+      border-color 0.25s ease,
+      box-shadow 0.25s ease,
+      background 0.25s ease;
+  }
+
+  .foundation-detail.is-lit {
+    border-color: rgba(250, 204, 21, 0.35);
+    box-shadow:
+      0 0 0 1px rgba(250, 204, 21, 0.1),
+      0 12px 28px rgba(0, 0, 0, 0.28);
+    background:
+      linear-gradient(145deg, rgba(250, 204, 21, 0.08), rgba(15, 23, 42, 0.6)),
+      rgba(8, 12, 24, 0.85);
+  }
+
+  .foundation-detail__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.35rem 0.75rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .foundation-detail__kicker {
+    margin: 0;
+    font-family: "Montserrat", var(--font-sans);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(165, 180, 252, 0.8);
+  }
+
+  .foundation-detail.is-lit .foundation-detail__kicker {
+    color: rgba(253, 224, 71, 0.92);
+  }
+
+  .foundation-detail__link {
+    font-family: "Montserrat", var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-brand);
+    text-decoration: none;
+  }
+
+  .foundation-detail__link:hover,
+  .foundation-detail__link:focus-visible {
+    color: #fde047;
+  }
+
+  .foundation-detail__title {
+    margin: 0;
+    font-family: "Montserrat", var(--font-sans);
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: #f8fafc;
+    line-height: 1.3;
+  }
+
+  .foundation-detail__text {
+    margin: 0.35rem 0 0;
+    font-size: 0.86rem;
+    line-height: 1.45;
+    color: rgba(226, 232, 240, 0.78);
+  }
+
+  .foundation-sr-list {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @keyframes foundation-pulse {
+    0%,
+    100% {
+      opacity: 0.45;
+      transform: scale(0.92);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.12);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .foundation-node,
+    .foundation-node__dot,
+    .foundation-detail {
+      transition: none;
+    }
+
+    .foundation-node__dot::before {
+      animation: none;
+    }
+  }
+
+  @media (max-width: 759px) {
+    /*
+     * Mobile: larger dots + label plates so the shipped cluster stays readable.
+     * Do NOT scale the ring with transform — that fought percentage layout on
+     * WebKit and pulled nodes toward the core.
+     */
+    .foundation-node {
+      --dot: 0.78rem;
+      max-width: 4.4rem;
+      gap: 0.22rem;
+    }
+
+    .foundation-node::after {
+      width: max(2.75rem, 100%);
+      height: max(2.75rem, 100%);
+    }
+
+    .foundation-node__dot {
+      box-shadow:
+        0 0 0 1.5px rgba(255, 255, 255, 0.55),
+        0 0 12px rgba(167, 139, 250, 0.75),
+        0 0 22px rgba(99, 102, 241, 0.4);
+    }
+
+    .foundation-node__dot::before {
+      inset: -130%;
+    }
+
+    .foundation-node__label {
+      font-size: 0.58rem;
+      letter-spacing: 0.03em;
+      color: rgba(224, 231, 255, 0.92);
+      text-shadow:
+        0 0 6px rgba(0, 0, 0, 0.95),
+        0 1px 10px rgba(0, 0, 0, 0.9);
+      /* Soft plate so labels stay legible on the dark wash */
+      padding: 0.08rem 0.28rem;
+      border-radius: 0.3rem;
+      background: rgba(5, 8, 16, 0.55);
+      max-width: 4.4rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  @media (max-width: 400px) {
+    .foundation-node {
+      --dot: 0.86rem;
+      max-width: 3.8rem;
+      gap: 0.18rem;
+    }
+
+    .foundation-node::after {
+      width: max(2.9rem, 100%);
+      height: max(2.9rem, 100%);
+    }
+
+    .foundation-node__label {
+      /* Keep labels — tiny dots alone don't read as a "shipped" cluster */
+      font-size: 0.5rem;
+      letter-spacing: 0.02em;
+      padding: 0.06rem 0.22rem;
+      max-width: 3.6rem;
+    }
   }
 </style>
 
-<div class="roadmap-blanket [text-shadow:_5px_1px_5px_rgb(0_0_0_)]">
+<div class="roadmap-blanket" id="roadmap">
   <ContentDiv>
     <div class="roadmap__shell">
-      <div class="roadmap__heading">
-        <p class="roadmap__eyebrow">Product Direction</p>
+      <div class="roadmap__heading section__header">
+        <p class="section__eyebrow">Product Direction</p>
         <div class="roadmap__title-row">
-          <h2>Roadmap</h2>
+          <h2 class="section__title">Priority orbit</h2>
           <a
             class="roadmap__cta"
-            href="https://docs.warthog.network/roadmap/"
+            href={ROADMAP_MD}
             target="_blank"
             rel="noreferrer"
           >
-            See completed milestones »
+            Full roadmap on GitHub »
           </a>
         </div>
-        <p class="roadmap__intro">
-          Follow where Warthog is headed next—from the protocol work we are running
-          right now through longer-range research that pushes the limits of
-          Sandwich-Proof DeFi and browser-native nodes.
+        <p class="section__lede">
+          Orbits map to the draft project roadmap. Closer rings are nearer
+          target windows; outer rings are later estimates. Quarters are
+          approximate — not hard ship dates.
+        </p>
+        <p class="roadmap__note">
+          Aligned with the draft roadmap on GitHub. Windows can slip as research
+          lands or priorities change; open a card for that quarter’s checklist.
         </p>
       </div>
 
-      <section class="roadmap-grid" aria-label="Warthog roadmap 2024 through 2026">
-        {
-          milestones.map((milestone, index) => (
-            <a
-              class="milestone-card"
-              data-tone={milestone.tone}
-              href={milestone.href}
-              target="_blank"
-              rel="noreferrer noopener"
-              aria-label={`${milestone.title} milestone (${milestone.status})`}
-            >
-              <div class="milestone-card__meta">
-                <span class="milestone-card__phase">Phase {index + 1}</span>
-                <span class="milestone-card__status">{milestone.status}</span>
-              </div>
-              <h3>{milestone.title}</h3>
-              <ul>
-                {milestone.items.map((item) => (
-                  <li data-done={item.done}>{item.text}</li>
-                ))}
-              </ul>
-            </a>
-          ))
-        }
-      </section>
+      <div class="orbit-layout">
+        <div class="orbit-stage" data-foundation>
+          <div
+            class="orbit-stage__field"
+            data-foundation-field
+            role="group"
+            aria-label="Priority map with shipped foundation milestones"
+          >
+            <div class="orbit-map" role="group" aria-label="Priority solar system">
+              <svg
+                class="orbit-map__svg"
+                viewBox="0 0 100 100"
+                preserveAspectRatio="xMidYMid meet"
+              >
+                <defs>
+                  <filter
+                    id="orbit-dot-glow"
+                    x="-150%"
+                    y="-150%"
+                    width="400%"
+                    height="400%"
+                    color-interpolation-filters="sRGB"
+                  >
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="1.4" result="b"></feGaussianBlur>
+                    <feMerge>
+                      <feMergeNode in="b"></feMergeNode>
+                      <feMergeNode in="SourceGraphic"></feMergeNode>
+                    </feMerge>
+                  </filter>
+                  {/* Muted amber core — single disc, no outer halo */}
+                  <radialGradient
+                    id="orbit-core-grad"
+                    cx="35%"
+                    cy="32%"
+                    r="68%"
+                    fx="32%"
+                    fy="28%"
+                  >
+                    <stop offset="0%" stop-color="#f5edd4"></stop>
+                    <stop offset="22%" stop-color="#d4b86a"></stop>
+                    <stop offset="52%" stop-color="#b8860b"></stop>
+                    <stop offset="80%" stop-color="#8a5a0a"></stop>
+                    <stop offset="100%" stop-color="#5c3a0a"></stop>
+                  </radialGradient>
+                </defs>
+
+                {
+                  planets.map((planet) => (
+                    <circle
+                      class="orbit-map__path"
+                      data-orbit-path={planet.id}
+                      cx="50"
+                      cy="50"
+                      r={planet.orbit.r}
+                      style={`--accent: ${planet.accent}`}
+                    ></circle>
+                  ))
+                }
+
+                {/* SVG core: mathematically circular at every viewport size */}
+                <g class="orbit-map__sun is-active">
+                  <circle
+                    class="orbit-map__sun-hit"
+                    data-orbit-target="core"
+                    cx="50"
+                    cy="50"
+                    r="9"
+                    fill="transparent"
+                    role="button"
+                    tabindex="0"
+                    aria-label="Show core priorities"
+                  ></circle>
+                  <circle
+                    class="orbit-map__sun-disc"
+                    cx="50"
+                    cy="50"
+                    r="7"
+                    fill="url(#orbit-core-grad)"
+                    pointer-events="none"
+                  ></circle>
+                </g>
+
+                {
+                  planets.map((planet) => {
+                    const delay = (
+                      -(planet.orbit.start / 360) *
+                      planet.orbit.duration
+                    ).toFixed(3);
+                    const cy = 50 - planet.orbit.r;
+                    return (
+                      <g
+                        class="orbit-map__planet"
+                        data-orbit-planet={planet.id}
+                      >
+                        <g
+                          class="orbit-map__spinner"
+                          style={`--duration: ${planet.orbit.duration}s; --delay: ${delay}s`}
+                        >
+                          {/* Invisible larger hit target for easier hover/click */}
+                          <circle
+                            class="orbit-map__dot-hit"
+                            data-orbit-target={planet.id}
+                            cx="50"
+                            cy={cy}
+                            r="5"
+                            fill="transparent"
+                            role="button"
+                            tabindex="0"
+                            aria-label={`Show ${planet.label} priorities`}
+                          ></circle>
+                          <circle
+                            class="orbit-map__dot"
+                            cx="50"
+                            cy={cy}
+                            r="2.5"
+                            fill={planet.accent}
+                            pointer-events="none"
+                          ></circle>
+                        </g>
+                      </g>
+                    );
+                  })
+                }
+              </svg>
+
+              <span class="orbit-map__sun-label" aria-hidden="true">Core</span>
+            </div>
+
+            <div class="foundation-ring" aria-hidden="false">
+              {
+                foundation.items.map((item, i) => {
+                  const twinkle = (2.8 + (i % 4) * 0.55).toFixed(2);
+                  const twinkleDelay = (-0.45 * i).toFixed(2);
+                  return (
+                    <button
+                      type="button"
+                      class="foundation-node"
+                      data-foundation-item={item.id}
+                      data-angle={item.angle}
+                      data-radius={item.radius}
+                      style={`left: ${item.left.toFixed(2)}%; top: ${item.top.toFixed(2)}%; --size: ${item.size}; --twinkle: ${twinkle}s; --twinkle-delay: ${twinkleDelay}s`}
+                      aria-label={`${item.title}. ${item.detail}`}
+                      aria-pressed="false"
+                      data-title={item.title}
+                      data-detail={item.detail}
+                      data-short={item.short}
+                    >
+                      <span class="foundation-node__dot" aria-hidden="true"></span>
+                      <span class="foundation-node__label">{item.short}</span>
+                    </button>
+                  );
+                })
+              }
+            </div>
+          </div>
+
+          <div
+            class="foundation-detail"
+            data-foundation-detail
+            aria-live="polite"
+          >
+            <div class="foundation-detail__head">
+              <p class="foundation-detail__kicker" data-foundation-kicker>
+                {foundation.idle.kicker}
+              </p>
+              <a
+                class="foundation-detail__link"
+                href={foundation.href}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Full history »
+              </a>
+            </div>
+            <p class="foundation-detail__title" data-foundation-title>
+              {foundation.idle.title}
+            </p>
+            <p class="foundation-detail__text" data-foundation-text>
+              {foundation.idle.text}
+            </p>
+          </div>
+
+          <ul class="foundation-sr-list">
+            {
+              foundation.items.map((item) => (
+                <li>
+                  <strong>{item.title}</strong> — {item.detail}
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+
+        <section class="orbit-cards" aria-label="Warthog priority orbit">
+          {
+            orbits.map((orbit) => (
+              <a
+                class={`orbit-card${orbit.id === "core" ? " is-spotlight" : ""}`}
+                data-orbit={orbit.id}
+                id={`orbit-${orbit.id}`}
+                href={orbit.href}
+                target="_blank"
+                rel="noreferrer noopener"
+                aria-label={`${orbit.label}: ${orbit.title} — ${orbit.quarter} approx. (${orbit.status})`}
+              >
+                <div class="orbit-card__meta">
+                  <span class="orbit-card__ring">{orbit.label}</span>
+                  <div class="orbit-card__badges">
+                    <span class="orbit-card__quarter">
+                      ~{orbit.quarter} <em>approx.</em>
+                    </span>
+                    <span class="orbit-card__status">{orbit.status}</span>
+                  </div>
+                </div>
+                <h3>{orbit.title}</h3>
+                <p class="orbit-card__blurb">{orbit.blurb}</p>
+                <ul>
+                  {orbit.items.map((item) => (
+                    <li data-done={item.done}>{item.text}</li>
+                  ))}
+                </ul>
+              </a>
+            ))
+          }
+        </section>
+      </div>
     </div>
   </ContentDiv>
 </div>
+
+<script>
+  function initOrbitMap() {
+    const root = document.getElementById("roadmap");
+    if (!root) return;
+
+    // Allow re-bind after Astro client navigations
+    if (root.dataset.orbitBound === "1") return;
+    root.dataset.orbitBound = "1";
+
+    const cards = Array.from(root.querySelectorAll(".orbit-card"));
+    const targets = Array.from(root.querySelectorAll("[data-orbit-target]"));
+    const paths = Array.from(root.querySelectorAll("[data-orbit-path]"));
+    const planets = Array.from(root.querySelectorAll(".orbit-map__planet"));
+    const sun = root.querySelector(".orbit-map__sun");
+
+    const setActive = (id) => {
+      if (!id) return;
+
+      cards.forEach((card) => {
+        const match = card.getAttribute("data-orbit") === id;
+        card.classList.toggle("is-spotlight", match);
+        card.classList.toggle("is-dimmed", !match);
+      });
+
+      planets.forEach((el) => {
+        el.classList.toggle(
+          "is-active",
+          el.getAttribute("data-orbit-planet") === id,
+        );
+      });
+
+      paths.forEach((path) => {
+        path.classList.toggle(
+          "is-active",
+          path.getAttribute("data-orbit-path") === id,
+        );
+      });
+
+      sun?.classList.toggle("is-active", id === "core");
+    };
+
+    const activate = (id) => {
+      if (!id) return;
+      setActive(id);
+      root.querySelector(`#orbit-${id}`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    };
+
+    // Map controls: hover highlights, click scrolls card
+    targets.forEach((el) => {
+      el.addEventListener("mouseenter", () => {
+        setActive(el.getAttribute("data-orbit-target"));
+      });
+      el.addEventListener("focus", () => {
+        setActive(el.getAttribute("data-orbit-target"));
+      });
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        activate(el.getAttribute("data-orbit-target"));
+      });
+      el.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          activate(el.getAttribute("data-orbit-target"));
+        }
+      });
+    });
+
+    // Cards: hover highlights matching sun/dot
+    cards.forEach((card) => {
+      const on = () => setActive(card.getAttribute("data-orbit"));
+      card.addEventListener("mouseenter", on);
+      card.addEventListener("focus", on);
+    });
+
+    initFoundationRing(root);
+  }
+
+  /**
+   * Place foundation nodes in pixel space from angle/radius.
+   * Avoids mobile WebKit % containing-block bugs that collapse the ring
+   * onto the core (desktop DevTools often still looks fine).
+   */
+  function layoutFoundationNodes(field, nodes) {
+    if (!field || !nodes?.length) return;
+    // Measure the ring (offset parent) — padding-box size, not content height 0
+    const ring = field.querySelector(".foundation-ring") || field;
+    const rect = ring.getBoundingClientRect();
+    const w = rect.width;
+    const h = rect.height;
+    if (w < 8 || h < 8) return;
+
+    nodes.forEach((el) => {
+      const angle = parseFloat(el.getAttribute("data-angle") || "0");
+      const radius = parseFloat(el.getAttribute("data-radius") || "40");
+      if (!Number.isFinite(angle) || !Number.isFinite(radius)) return;
+
+      const rad = (angle * Math.PI) / 180;
+      // Same polar math as foundationPoint(), applied to real box size
+      const x = ((50 + radius * Math.sin(rad)) / 100) * w;
+      const y = ((50 - radius * Math.cos(rad)) / 100) * h;
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
+    });
+  }
+
+  function initFoundationRing(root) {
+    const stage = root.querySelector("[data-foundation]");
+    if (!stage || stage.dataset.foundationBound === "1") return;
+    stage.dataset.foundationBound = "1";
+
+    const field = stage.querySelector("[data-foundation-field]");
+    const nodes = Array.from(stage.querySelectorAll("[data-foundation-item]"));
+    const detail = stage.querySelector("[data-foundation-detail]");
+    const kicker = stage.querySelector("[data-foundation-kicker]");
+    const titleEl = stage.querySelector("[data-foundation-title]");
+    const textEl = stage.querySelector("[data-foundation-text]");
+
+    const idleCopy = {
+      kicker: kicker?.textContent?.trim() || "Foundation · shipped",
+      title: titleEl?.textContent?.trim() || "Delivered milestones",
+      text:
+        textEl?.textContent?.trim() ||
+        "Select a point around the map to review what is already live in production.",
+    };
+
+    const itemData = {};
+    nodes.forEach((el) => {
+      const id = el.getAttribute("data-foundation-item");
+      itemData[id] = {
+        title: el.getAttribute("data-title") || "",
+        detail: el.getAttribute("data-detail") || "",
+        short: el.getAttribute("data-short") || id,
+      };
+    });
+
+    const relayout = () => layoutFoundationNodes(field, nodes);
+    relayout();
+    // Second pass after fonts/layout settle (iOS often reports 0 height first)
+    requestAnimationFrame(relayout);
+    window.addEventListener("resize", relayout, { passive: true });
+    if (typeof ResizeObserver !== "undefined" && field) {
+      const ro = new ResizeObserver(relayout);
+      ro.observe(field);
+    }
+
+    let pinnedId = null;
+    let hoverId = null;
+
+    const litId = () => hoverId || pinnedId;
+
+    const paint = () => {
+      const id = litId();
+      field?.classList.toggle("is-focusing", Boolean(id));
+      detail?.classList.toggle("is-lit", Boolean(id));
+
+      nodes.forEach((el) => {
+        const match = el.getAttribute("data-foundation-item") === id;
+        el.classList.toggle("is-active", match);
+        el.setAttribute(
+          "aria-pressed",
+          match && pinnedId === id ? "true" : "false",
+        );
+      });
+
+      if (id && itemData[id]) {
+        if (kicker) kicker.textContent = "Foundation · shipped";
+        if (titleEl) titleEl.textContent = itemData[id].title;
+        if (textEl) textEl.textContent = itemData[id].detail;
+      } else {
+        if (kicker) kicker.textContent = idleCopy.kicker;
+        if (titleEl) titleEl.textContent = idleCopy.title;
+        if (textEl) textEl.textContent = idleCopy.text;
+      }
+    };
+
+    nodes.forEach((el) => {
+      const id = el.getAttribute("data-foundation-item");
+
+      el.addEventListener("mouseenter", () => {
+        hoverId = id;
+        paint();
+      });
+      el.addEventListener("mouseleave", () => {
+        if (hoverId === id) hoverId = null;
+        paint();
+      });
+      el.addEventListener("focus", () => {
+        hoverId = id;
+        paint();
+      });
+      el.addEventListener("blur", () => {
+        if (hoverId === id) hoverId = null;
+        paint();
+      });
+      el.addEventListener("click", () => {
+        pinnedId = pinnedId === id ? null : id;
+        paint();
+      });
+    });
+
+    paint();
+  }
+
+  initOrbitMap();
+  document.addEventListener("astro:page-load", () => {
+    const root = document.getElementById("roadmap");
+    if (root) {
+      root.dataset.orbitBound = "";
+      const stage = root.querySelector("[data-foundation]");
+      if (stage) stage.dataset.foundationBound = "";
+    }
+    initOrbitMap();
+  });
+</script>

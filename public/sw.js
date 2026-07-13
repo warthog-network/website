@@ -1,39 +1,17 @@
-const CACHE_NAME = 'warthog-wallet-v1';
-const urlsToCache = [
-  '/',
-  '/webwallet',
-  '/favicon.png',
-  // Add other assets as needed
-];
+// Legacy root-scoped service worker — self-destructs and clears caches.
+// Wallet PWA uses /webwallet/sw.js instead.
+self.addEventListener('install', (event) => {
+  event.waitUntil(self.skipWaiting());
+});
 
-self.addEventListener('install', event => {
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
+    caches.keys()
+      .then((names) => Promise.all(names.map((name) => caches.delete(name))))
+      .then(() => self.registration.unregister())
   );
 });
 
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Return cached version or fetch from network
-        return response || fetch(event.request);
-      }
-    )
-  );
-});
-
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
-  );
+self.addEventListener('fetch', () => {
+  // Pass through; this worker should unregister immediately after activate.
 });

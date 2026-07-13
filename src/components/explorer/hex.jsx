@@ -1,22 +1,30 @@
 import { useEffect, useRef, useState } from 'react';
-import APIClient from './assets/api_ws.js';
+import { useParams } from 'react-router-dom';
+import BunkerShell from '../BunkerShell.jsx';
+import { resolveExplorerHostFromStorage } from '../../lib/explorerNodes.js';
+import { unwrapApiData } from '../../lib/warthogClient.js';
+import { createWarthogApi } from './explorerClient.js';
+import ExplorerLink from './ExplorerLink.jsx';
 
-export default function BlockHexView({ height }) {
+export default function BlockHexView({ height: heightProp } = {}) {
+  const params = useParams();
+  const height = heightProp ?? params.height;
   const containerRef = useRef(null);
   const breadcrumbsRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const client = new APIClient();
     async function loadBinary() {
       try {
         setLoading(true);
         setError(null);
 
-        const response = await client.get(`/chain/block/${height}/binary`);
+        const api = await createWarthogApi(resolveExplorerHostFromStorage());
+        const apiData = unwrapApiData(
+          await api.getNodePath(`/chain/block/${height}/binary`),
+        );
 
-        const apiData = response?.data;
         if (!apiData?.bytes || !Array.isArray(apiData.structure)) {
           throw new Error('Invalid response: missing bytes or structure in data');
         }
@@ -55,7 +63,7 @@ export default function BlockHexView({ height }) {
           }
         });
 
-        span.addEventListener('click', (e) => {
+        span.addEventListener('click', () => {
           const textToCopy = span.textContent + ' ' + breadcrumbsRef.current.textContent;
           navigator.clipboard.writeText(textToCopy).then(() => {
             alert('Copied to clipboard!');
@@ -111,46 +119,33 @@ export default function BlockHexView({ height }) {
   }, [height]);
 
   return (
-    <div className="container mx-auto px-5 py-8 relative"> {/* Add relative for positioning */}
-      <h1 className="text-3xl font-bold mb-4 py-2">
-        Block {height} – Raw Binary View
-      </h1>
+    <BunkerShell title={`Block ${height} – Raw Binary View`} wide>
+      <div ref={breadcrumbsRef} className="bunker-hex-breadcrumbs" />
 
-      <div
-        ref={breadcrumbsRef}
-        className="right-4 top-16 text-sm font-mono text-gray-600 dark:text-gray-400 min-h-[1.5em] bg-white dark:bg-gray-800 p-3 rounded shadow-lg z-10"
-      />
-
-      {loading && <p className="text-gray-600">Loading binary data...</p>}
+      {loading && <p className="bunker-muted">Loading binary data...</p>}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded mb-4 ">
+        <div className="bunker-alert bunker-alert--error">
           <strong>Error:</strong> {error}
         </div>
       )}
-      <div className="overflow-y-auto h-96 mb-8 mt-8" > {/* Wrapper for scroll */}
-        <code
-          ref={containerRef}
-          className="block w-full font-mono text-xs bg-gray-50 dark:bg-gray-800 p-4 rounded border border-gray-200 dark:border-gray-700"
-          style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}
-        />
+
+      <div className="bunker-hex-scroll">
+        <code ref={containerRef} className="bunker-hex-code" />
       </div>
 
-      <a
-        href={`/chain/block/${height}`}
-        className="mt-6 inline-flex items-center px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-gray-200 transition-colors duration-200 dark:bg-gray-800 dark:text-zinc-300 dark:border-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-700"
-      >
+      <ExplorerLink to={`/chain/block/${height}`} className="bunker-btn">
         Back to Block Details
-      </a>
+      </ExplorerLink>
 
       <style>{`
-        .leaf:hover {
-          background: gray !important;
-          outline: 1px solid black;
-        }
-        .leaf {
+        .bunker-hex-code .leaf {
           cursor: pointer;
         }
+        .bunker-hex-code .leaf:hover {
+          background: rgba(253, 185, 19, 0.25) !important;
+          outline: 1px solid var(--color-brand);
+        }
       `}</style>
-    </div>
+    </BunkerShell>
   );
 }

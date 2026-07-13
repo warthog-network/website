@@ -36,30 +36,7 @@ const viewerUrl = (pdf, title) =>
   .research-container {
     max-width: 1200px;
     margin: 0 auto;
-    padding-inline: clamp(1rem, 4vw, 3rem);
-  }
-
-  .research-header {
-    text-align: center;
-    margin-bottom: 3rem;
-  }
-
-  .research-header h1 {
-    font-family: var(--font-sans);
-    font-size: clamp(2rem, 4vw, 2.75rem);
-    font-weight: 700;
-    color: var(--color-text);
-    margin-bottom: 1rem;
-  }
-
-  .subtitle {
-    font-family: var(--font-sans);
-    font-size: 1.1rem;
-    font-weight: 400;
-    color: var(--color-text-muted);
-    line-height: 1.6;
-    max-width: 800px;
-    margin: 0 auto;
+    padding-inline: var(--page-gutter);
   }
 
   .research-grid {
@@ -154,9 +131,10 @@ const viewerUrl = (pdf, title) =>
 
 <section class="research-section" id="research">
   <div class="research-container">
-    <div class="research-header">
-      <h1>Whitepaper &amp; Research</h1>
-      <p class="subtitle">
+    <div class="research-header section__header">
+      <p class="section__eyebrow">Papers</p>
+      <h2 class="section__title">Whitepaper &amp; Research</h2>
+      <p class="section__lede">
         Warthog's whitepaper and research papers represent genuine scientific breakthroughs
         in cryptocurrency, grounded in rigorous mathematical foundations. The core development
         team holds advanced degrees in mathematics, statistics, and computer science from

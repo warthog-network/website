@@ -1,8 +1,8 @@
 ---
-import AddressTransactions from "../../components/explorer/AddressTransactions.jsx";
+import ExplorerApp from "../../components/explorer/ExplorerApp.jsx";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 const { address } = Astro.params;
 ---
-<BaseLayout title={`Address Transactions: ${address}`}>
-  <AddressTransactions address={address} client:load />
+<BaseLayout title={`Address Transactions: ${address}`} bodyClass="site-body--wartbunker">
+  <ExplorerApp client:only="react" />
 </BaseLayout>

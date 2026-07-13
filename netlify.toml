@@ -9,6 +9,9 @@
   publish = "dist"
   environment = { NODE_VERSION = "24.3.0" }
 
+# Build mark (src/components/BuildMark.astro) is auto-stripped when CONTEXT=production.
+# It stays on for local dev and Netlify deploy-preview / branch-deploy builds.
+
 
 
 # Keep existing redirects for custom functions

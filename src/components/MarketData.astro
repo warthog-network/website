@@ -227,21 +227,72 @@ import { createChart } from 'lightweight-charts';
     
 </script>
 <script>
+  import { gsap } from "gsap";
+  import ScrollTrigger from "gsap/ScrollTrigger";
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  const MOBILE_MQ = "(max-width: 899px)";
+
   class MarketDataComponent extends HTMLElement {
     constructor() {
       super();
       this.refreshInterval = 60000;
       this.timer = null;
       this.estimatedHalvingPointsByMinedAmount = [];
+      this.entranceTrigger = null;
+      this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+      this.mobileLayout = window.matchMedia(MOBILE_MQ);
     }
 
     connectedCallback() {
       this.fetchMarketData();
       this.startTimer();
+      this.setupEntrance();
+      this.reducedMotion.addEventListener("change", this.onReducedMotionChange);
+      this.mobileLayout.addEventListener("change", this.onReducedMotionChange);
     }
 
     disconnectedCallback() {
       clearInterval(this.timer);
+      this.teardownEntrance();
+      this.reducedMotion.removeEventListener("change", this.onReducedMotionChange);
+      this.mobileLayout.removeEventListener("change", this.onReducedMotionChange);
+    }
+
+    onReducedMotionChange = () => this.setupEntrance();
+
+    teardownEntrance() {
+      this.entranceTrigger?.kill();
+      this.entranceTrigger = null;
+    }
+
+    setupEntrance() {
+      this.teardownEntrance();
+
+      const section = this.querySelector(".market-section");
+      if (!section) return;
+
+      if (this.reducedMotion.matches || this.mobileLayout.matches) {
+        gsap.set(section, { clearProps: "opacity,transform" });
+        return;
+      }
+
+      gsap.set(section, { opacity: 0, y: 24 });
+
+      this.entranceTrigger = ScrollTrigger.create({
+        trigger: section,
+        start: "top 92%",
+        end: "top 82%",
+        scrub: true,
+        invalidateOnRefresh: true,
+        onUpdate: (self) => {
+          gsap.set(section, {
+            opacity: self.progress,
+            y: 24 * (1 - self.progress),
+          });
+        },
+      });
     }
 
     async fetchMarketData() {
@@ -357,7 +408,55 @@ import { createChart } from 'lightweight-charts';
 
 <style>
   .market-section {
-    background: rgba(5, 9, 20, 0.5);
+    position: relative;
+    isolation: isolate;
+    background: var(--color-bg);
+    scroll-margin-top: 4.5rem;
+  }
+
+  .market-section.section {
+    padding-top: clamp(4.5rem, 11vw, 6rem);
+    padding-bottom: clamp(3rem, 6vw, 5.5rem);
+  }
+
+  @media (max-width: 899px) {
+    .market-section.section {
+      padding-top: clamp(2.5rem, 5vw, 3rem);
+      padding-bottom: clamp(2.5rem, 5vw, 3.5rem);
+    }
+
+    .chart-card,
+    .market-stack,
+    .progress-card {
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: none;
+    }
+  }
+
+  .market-section::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: radial-gradient(ellipse 80% 40% at 50% 30%, rgba(88, 28, 135, 0.12), transparent 70%);
+    pointer-events: none;
+  }
+
+  .market-section::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: clamp(3rem, 8vw, 6rem);
+    background: linear-gradient(to top, var(--color-bg), transparent);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .market-section > * {
+    position: relative;
+    z-index: 1;
   }
 
   .market-grid {

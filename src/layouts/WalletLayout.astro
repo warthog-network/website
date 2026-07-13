@@ -15,7 +15,8 @@ const {title} = Astro.props;
     <!-- PWA-specific links -->
     <link rel="manifest" href="/webwallet/manifest.json" />
     <!-- Add theme color or other meta for PWA -->
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#070707" />
+    <meta name="color-scheme" content="dark" />
     <!-- Script to register the service worker -->
 
 <link rel="icon" type="image/svg+xml" href="/favicon.png" />
@@ -23,18 +24,14 @@ const {title} = Astro.props;
       .navbarclass button:focus {
         outline: none;
       }
-      :root {
-        --color-text: #333; /* dark grey */
-        --color-text-muted: #666; /* lighter dark grey */
-      }
     </style>
   </head>
-		
-	<body>
+
+	<body class="site-body site-body--wartbunker">
     {/* above, make it possible to place footer at botton even if 
     content is not big enough, it is useful for embedding PDF such that the embed height is just as much that the page height is exactly fitting in view port*/}
 		 <BaseHead id="app-header" class="navbarclass" />
-        <main>
+        <main id="main-content" class="site-main">
             <slot />
         </main>
         
@@ -44,9 +41,15 @@ const {title} = Astro.props;
                      <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/webwallet/sw.js', { scope: '/webwallet/' })
-        .then(reg => console.log('Service Worker registered!', reg))
-        .catch(err => console.error('Service Worker registration failed:', err));
+      // Drop legacy root SW that intercepted all site assets in dev
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((reg) => {
+          const script = reg.active?.scriptURL || '';
+          if (script.endsWith('/sw.js') && !script.includes('/webwallet/')) {
+            reg.unregister();
+          }
+        });
+      });
     });
   }
     import "../scripts/menu.js";

@@ -1,186 +1,1985 @@
 ---
-import TinyWart from "../BalkyImages/Isolation_Mode.svg";
-import Coin from "../BalkyImages/001-coin.svg";
 import Goal from "../BalkyImages/goal 1.svg";
 import Sprout from "../BalkyImages/002-sprout.svg";
 import Profile from "../BalkyImages/004-profile.svg";
 import Programming from "../BalkyImages/006-programming.svg";
 import Trolly from "../BalkyImages/005-trolley.svg";
 import Group from "../BalkyImages/Group 5.svg";
-import ContentDiv from "./ContentDiv.jsx";
+import AntiSandwich from "../BalkyImages/upcomingFeatureimgs/Anti-Sandwich-Matching-Upcoming.svg";
+import {
+  featurePointIcons,
+  type FeaturePointIconName,
+} from "../icons/featurePointIcons";
+import { getBuildHash, shouldShowBuildMark } from "../lib/buildMark";
 
-const highlights = [
+const buildHash = shouldShowBuildMark() ? getBuildHash() : undefined;
+
+const categories = [
   {
-    title: "No pre-mine",
-    copy: "Fair launch on Bitcointalk with verifiable PoBW distribution.",
-    icon: Goal.src,
+    id: "tokenomics",
+    title: "Fair Tokenomics",
+    status: "live",
+    lede: "Fair launch, fair supply, fair distribution, scarcer than Bitcoin. Every WART in existence is originating from public mining without insider shortcuts.",
+    points: [
+      {
+        title: "Fair Launch",
+        copy: "Warthog's launch was publicly announced on Bitcointalk without any preallocation, premine, premint, unlocks or other vesting cliffs.",
+        iconSrc: Goal.src,
+      },
+      {
+        title: "0% Team Allocation",
+        copy: "There are no reserved dev funds, dev fees, hidden allocations or advisor carve-outs. Development is based on enthusiasts, community and donations.",
+        iconSrc: Profile.src,
+      },
+      {
+        title: "100% Minable",
+        copy: "Every WART is publicly mineable by the community. The hard cap of no more than 19 million coins to ever be mined makes Warthog scarcer than Bitcoin.",
+        iconSrc: Trolly.src,
+      },
+    ],
   },
   {
-    title: "Written from scratch",
-    copy: "No forks. Purpose-built stack designed for browser-native miners.",
-    icon: Sprout.src,
+    id: "original-code",
+    title: "Original Code",
+    status: "live",
+    lede: "No Bitcoin fork. No copy-paste stack. Warthog was written from scratch with a modern toolchain, and the choices that fall out of that decision are visible in every corner of the codebase.",
+    points: [
+      {
+        title: "Written from Scratch",
+        copy: "Warthog is no fork of any other project. The code was carefully from ground up by humans with real commitment, love and dedication. This is no burner project.",
+        iconSrc: Sprout.src,
+      },
+      {
+        title: "Modern Codebase",
+        copy: "We picked a modern stack consisting combining C++23, clangd, Meson, and Ninja keep the stack auditable and fast. Compilation does not require additional system libraries.",
+        iconSrc: Programming.src,
+      },
+      {
+        title: "Open Source",
+        copy: "All code is open source and permissively licensed under MIT license. We welcome and appreciate contributors across C++, Rust, TypeScript, and design. Please join!",
+        iconSrc: Group.src,
+      },
+    ],
   },
   {
-    title: "No reserved team fund",
-    copy: "Zero hidden allocations or advisor carve-outs. Everyone mines.",
-    icon: Profile.src,
+    id: "chain-descriptor-sync",
+    title: "BlitzSync",
+    status: "live",
+    lede: "A novel superior sync model understanding all peers' chain forks and identifying branches by nothing more than simple integers.",
+    points: [
+      {
+        title: "Efficient",
+        copy: "Our synchronization model is by far more light-weight in terms of RAM usage, computational effort and required network bandwidth as no hashes need to be looked up, indexed or transmitted over the network.",
+        icon: "efficient",
+      },
+      {
+        title: "Fast",
+        copy: "The protocol supports addressing block ranges by height ranges which allows batch downloads of blocks without any list of hashes to be transmitted or processed. This greatly optimizes and speeds up synchronization.",
+        icon: "fast",
+      },
+      {
+        title: "Intelligent",
+        copy: "Nodes understand where their own chain diverges from peers' chains and make logical conclusions to cut unnecessary network requests and detect rogue peers for an improved banning strategy.",
+        icon: "intelligent",
+      },
+    ],
   },
   {
-    title: "Modern codebase",
-    copy: "C++20, clangd, Meson, and Ninja keep the stack auditable & fast.",
-    icon: Programming.src,
+    id: "pobw",
+    title: "Janushash",
+    status: "live",
+    lede: "Our mathematical Proof of Balanced Work (PoBW) theory cleanly combines Verushash v2.2 and Sha256t into Warthog's unique Janushash algorithm desgined to bring back the golden days of mining.",
+    points: [
+      {
+        title: "Repelling Farms",
+        copy: "The required balanced combination of Verushash v2.2 and SHA256t bottlenecks pure GPU farms, pure CPU farms and botnets. Efficient mining requires decent CPU and GPU hashrates, which farms rarely support.",
+        icon: "repelFarms",
+        iconSlashed: true,
+      },
+      {
+        title: "Favoring Gamers",
+        copy: "Mining requirements were carefully picked to place consumer gaming PCs in the efficiency sweetspot. Paired with the fact that farms can't grab major profits, these go to the little guy. ",
+        icon: "gamers",
+      },
+      {
+        title: "Democratized Mining",
+        copy: "Our mining algorithm brings us close to Satoshi's original vision of \"one-cpu-one-vote\": Mining rewards consumer hardware, not whoever can throw the most ASICs at the network.",
+        iconSrc: Group.src,
+      },
+    ],
   },
   {
-    title: "100% mineable",
-    copy: "Every token is accessible to the community—no premint, no unlocks.",
-    icon: Trolly.src,
+    id: "defi",
+    title: "Native DeFi",
+    status: "testnet",
+    lede: "Instead of implementing DeFi on top of smart contracts, Warthog embeds the DeFi code directly into the consensus layer to open the door to unprecedented features.",
+    points: [
+      {
+        title: "User Protection",
+        copy: "Dirty tricks such as post-creation supply inflation, MEV extraction or other rug-pull backdoors are impossible by design. Tokenomics will be reported by Warthog itself and not by sketchy meme coin websites.",
+        icon: "userProtection",
+      },
+      {
+        title: "Unique Features",
+        copy: "Implementing DeFi natively unlocks features the world has not seen before such as our Fair Batch Matching algorithm or token forks where new tokens are created with balance cloned from existing tokens (planned).",
+        icon: "uniqueFeature",
+      },
+      {
+        title: "Hardened Safety",
+        copy: "Smart Contract based DeFi is inherently unsecure and attacked almost weekly. Without an intermediate smart contract layer implmentation is much safer to write, easier to reason about and has less corner cases.",
+        icon: "hardenedSafety",
+      },
+    ],
   },
   {
-    title: "Open source",
-    copy: "Welcoming contributors across C++, Rust, TypeScript, and design.",
-    icon: Group.src,
+    id: "fbm",
+    title: "Fair Batch Matching",
+    status: "testnet",
+    lede: "A ground-breaking algorithm to match buy orders, sell orders and pool liquidity batch-wise in a fair way without intrinsic transaction ordering.",
+    points: [
+      {
+        title: "Research-Backed",
+        copy: "Our algorithm is based on a mathematical research on which we have written a paper. We prove fairness, existence and uniqueness of a solution which guarantees correctness and convergence for our implementation.",
+        icon: "researchBacked",
+      },
+      {
+        title: "Hybrid Liquidity",
+        copy: "In traditional exchanges orders are matched agains discrete liquidity from an oder book. In liquidity pools orders are matched against continous liquidity. We match against both, order book and liquidity pool.",
+        icon: "hybridLiquidity",
+      },
+      {
+        title: "No MEV",
+        copy: "Orders are matched batch-wise without any ordering that can be exploited by block creators. This fully protects users from MEV extraction. Sandwich attacks? We don't do that here.",
+        iconSrc: AntiSandwich.src,
+        iconSlashed: true,
+      },
+    ],
+  },
+  {
+    id: "browser-nodes",
+    title: "Browser Nodes",
+    status: "planned",
+    lede: "Run a full Warthog node from any modern browser. No install, no firewall, no chain wipe when you close the tab.",
+    points: [
+      {
+        title: "In-Browser",
+        copy: "Careful code design allows swapping the transport layer between TCP, Websocket and WebRTC such that Emscripten easily compiles the full node to Webassembly to run within the browser as simple as opening a website.",
+        icon: "inBrowser",
+      },
+      {
+        title: "Persistence",
+        copy: "Modern Browsers support the Origin Private File System (OPFS) to save gigabytes of data. We make use of SQLite's recently added OPFS support to directly operate and save the block chain in the browser.",
+        icon: "persistence",
+      },
+      {
+        title: "P2P Support",
+        copy: "Direct browser-to-browser communication is be done over WebRTC. After the handshake, no intermediate server is required. Bridge nodes interconnect WebRTC browser nodes to the TCP based rest of the network.",
+        icon: "p2pSupport",
+      },
+    ],
   },
 ];
 ---
 
+<script>
+  class UniqueFeaturesPanel extends HTMLElement {
+    connectedCallback() {
+      this.navButtons = Array.from(this.querySelectorAll("[data-nav]"));
+      this.railButtons = Array.from(this.querySelectorAll("[data-rail]"));
+      this.cards = Array.from(this.querySelectorAll("[data-card]"));
+      this.featuresView = this.querySelector(".features-view");
+      this.cardArrowPrev = this.querySelector("[data-card-arrow='prev']");
+      this.cardArrowNext = this.querySelector("[data-card-arrow='next']");
+      this.railFill = this.querySelector(".features-rail__fill");
+      this.featureIndexById = new Map(
+        this.cards.map((card, index) => [card.id, index]),
+      );
+      this.activeIndex = 0;
+      this.syncingHash = false;
+      this.isTransitioning = false;
+      this.transitionTimer = 0;
+      this.transitionMs = 620;
+      this.prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      this.isHovering = false;
+      this.wheelLocked = false;
+      this.wheelUnlockTimer = 0;
+      this.touchStartY = 0;
+      this.touchStartX = 0;
+      this.touchIntent = null;
+      this.touchLocked = false;
+      this.touchUnlockTimer = 0;
+      this.mobileQuery = window.matchMedia("(max-width: 899px)");
+      this.deckHint = this.querySelector(".features-deck-hint");
+
+      this.onWheel = (event) => {
+        if (!this.isHovering || this.wheelLocked || this.isTransitioning) return;
+
+        if (event.deltaY > 8 && this.activeIndex < this.cards.length - 1) {
+          event.preventDefault();
+          this.stepCard(1);
+        } else if (event.deltaY < -8 && this.activeIndex > 0) {
+          event.preventDefault();
+          this.stepCard(-1);
+        }
+      };
+
+      this.onKeydown = (event) => {
+        if (this.isMobileLayout()) {
+          if (event.key === "ArrowRight") {
+            event.preventDefault();
+            this.stepCard(1);
+          } else if (event.key === "ArrowLeft") {
+            event.preventDefault();
+            this.stepCard(-1);
+          }
+          return;
+        }
+
+        if (event.key === "ArrowDown") {
+          event.preventDefault();
+          this.stepCard(1);
+        } else if (event.key === "ArrowUp") {
+          event.preventDefault();
+          this.stepCard(-1);
+        }
+      };
+
+      this.onTouchStart = (event) => {
+        if (event.touches.length !== 1 || this.touchLocked || this.isTransitioning) return;
+        this.touchStartY = event.touches[0].clientY;
+        this.touchStartX = event.touches[0].clientX;
+        this.touchIntent = null;
+      };
+
+      this.onTouchMove = (event) => {
+        if (this.touchIntent || event.touches.length !== 1 || this.touchLocked || this.isTransitioning) {
+          return;
+        }
+
+        const deltaY = Math.abs(event.touches[0].clientY - this.touchStartY);
+        const deltaX = Math.abs(event.touches[0].clientX - this.touchStartX);
+        const intentThreshold = 12;
+
+        if (deltaY < intentThreshold && deltaX < intentThreshold) return;
+
+        if (this.isMobileLayout()) {
+          this.touchIntent = deltaX > deltaY * 1.15 ? "horizontal" : "vertical";
+          return;
+        }
+
+        this.touchIntent = deltaY > deltaX * 1.15 ? "vertical" : "horizontal";
+      };
+
+      this.onTouchEnd = (event) => {
+        if (this.touchLocked || this.isTransitioning) return;
+
+        const touch = event.changedTouches[0];
+        if (!touch) return;
+
+        const deltaY = this.touchStartY - touch.clientY;
+        const deltaX = this.touchStartX - touch.clientX;
+        const swipeThreshold = 48;
+
+        if (this.isMobileLayout()) {
+          if (this.touchIntent === "vertical") return;
+          if (Math.abs(deltaX) < swipeThreshold || Math.abs(deltaY) > Math.abs(deltaX) * 0.85) return;
+
+          if (deltaX > 0 && this.activeIndex < this.cards.length - 1) {
+            this.stepCard(1);
+          } else if (deltaX < 0 && this.activeIndex > 0) {
+            this.stepCard(-1);
+          }
+          this.touchIntent = null;
+          return;
+        }
+
+        if (this.touchIntent === "horizontal") return;
+        if (Math.abs(deltaY) < swipeThreshold || Math.abs(deltaX) > Math.abs(deltaY) * 0.85) return;
+
+        if (deltaY > 0 && this.activeIndex < this.cards.length - 1) {
+          this.stepCard(1);
+        } else if (deltaY < 0 && this.activeIndex > 0) {
+          this.stepCard(-1);
+        }
+        this.touchIntent = null;
+      };
+
+      this.navDropdown = this.querySelector(".features-nav-dropdown");
+      this.navDropdownTrigger = this.querySelector(".features-nav-dropdown__trigger");
+      this.navDropdownLabel = this.querySelector(".features-nav-dropdown__label");
+      this.navDropdownOptions = Array.from(this.querySelectorAll("[data-nav-mobile]"));
+
+      this.onDocumentClick = (event) => {
+        if (!this.navDropdown?.contains(event.target)) {
+          this.closeNavDropdown();
+        }
+      };
+
+      this.navDropdownTrigger?.addEventListener("click", () => {
+        const isOpen = this.navDropdown?.classList.toggle("is-open");
+        this.navDropdownTrigger?.setAttribute("aria-expanded", isOpen ? "true" : "false");
+      });
+
+      this.navDropdownOptions.forEach((button) => {
+        button.addEventListener("click", (event) => {
+          event.preventDefault();
+          this.activate(Number(button.dataset.navMobile));
+          this.closeNavDropdown();
+        });
+      });
+
+      document.addEventListener("click", this.onDocumentClick);
+
+      this.onHashChange = () => {
+        if (this.syncingHash) return;
+        this.activateFromHash({ scroll: true, animate: false });
+      };
+
+      this.navButtons.forEach((button) => {
+        button.addEventListener("click", (event) => {
+          event.preventDefault();
+          this.activate(Number(button.dataset.nav));
+        });
+      });
+
+      this.railButtons.forEach((button) => {
+        button.addEventListener("click", () => this.activate(Number(button.dataset.rail)));
+      });
+
+      this.cardArrowPrev?.addEventListener("click", () => this.stepCard(-1));
+      this.cardArrowNext?.addEventListener("click", () => this.stepCard(1));
+
+      this.featuresView?.addEventListener("mouseenter", () => {
+        this.isHovering = true;
+      });
+      this.featuresView?.addEventListener("mouseleave", () => {
+        this.isHovering = false;
+      });
+      this.featuresView?.addEventListener("wheel", this.onWheel, { passive: false });
+      this.featuresView?.addEventListener("keydown", this.onKeydown);
+      this.featuresView?.addEventListener("touchstart", this.onTouchStart, { passive: true });
+      this.featuresView?.addEventListener("touchmove", this.onTouchMove, { passive: true });
+      this.featuresView?.addEventListener("touchend", this.onTouchEnd, { passive: true });
+
+      this.setupPointExpansion();
+      this.activateFromHash({ scroll: Boolean(window.location.hash), animate: false });
+      window.addEventListener("hashchange", this.onHashChange);
+    }
+
+    disconnectedCallback() {
+      this.featuresView?.removeEventListener("wheel", this.onWheel);
+      this.featuresView?.removeEventListener("keydown", this.onKeydown);
+      this.featuresView?.removeEventListener("touchstart", this.onTouchStart);
+      this.featuresView?.removeEventListener("touchmove", this.onTouchMove);
+      this.featuresView?.removeEventListener("touchend", this.onTouchEnd);
+      document.removeEventListener("click", this.onDocumentClick);
+      window.removeEventListener("hashchange", this.onHashChange);
+      clearTimeout(this.wheelUnlockTimer);
+      clearTimeout(this.touchUnlockTimer);
+      clearTimeout(this.transitionTimer);
+    }
+
+    isMobileLayout() {
+      return this.mobileQuery?.matches ?? false;
+    }
+
+    getIndexFromHash(hash = window.location.hash) {
+      const slug = hash.replace(/^#/, "");
+      if (!slug || slug === "unique") return -1;
+      const featureId = slug.startsWith("unique-") ? slug : `unique-${slug}`;
+      return this.featureIndexById.get(featureId) ?? -1;
+    }
+
+    updateHash(index) {
+      const card = this.cards[index];
+      if (!card?.id) return;
+
+      const nextHash = `#${card.id}`;
+      if (window.location.hash === nextHash) return;
+
+      this.syncingHash = true;
+      history.replaceState(null, "", `${window.location.pathname}${window.location.search}${nextHash}`);
+      this.syncingHash = false;
+    }
+
+    scrollToFeature(index) {
+      const target = this.cards[index] ?? this;
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    activateFromHash({ scroll = false, animate = true } = {}) {
+      const index = this.getIndexFromHash();
+      if (index < 0) {
+        if (window.location.hash === "#unique") {
+          this.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else {
+          this.update();
+        }
+        return;
+      }
+
+      if (index === this.activeIndex && !scroll) {
+        this.update();
+        return;
+      }
+
+      if (!animate || this.prefersReducedMotion) {
+        this.activeIndex = index;
+        this.update();
+        this.updateHash(index);
+        if (scroll) this.scrollToFeature(index);
+        return;
+      }
+
+      this.activate(index);
+      if (scroll) {
+        window.requestAnimationFrame(() => this.scrollToFeature(index));
+      }
+    }
+
+    closeNavDropdown() {
+      this.navDropdown?.classList.remove("is-open");
+      this.navDropdownTrigger?.setAttribute("aria-expanded", "false");
+    }
+
+    activate(index, explicitDirection) {
+      const nextIndex = Math.max(0, Math.min(index, this.cards.length - 1));
+      if (nextIndex === this.activeIndex || this.isTransitioning) return;
+
+      if (this.prefersReducedMotion) {
+        this.activeIndex = nextIndex;
+        this.update();
+        this.updateHash(nextIndex);
+        return;
+      }
+
+      const direction =
+        explicitDirection ?? (nextIndex > this.activeIndex ? 1 : nextIndex < this.activeIndex ? -1 : 0);
+      this.transitionTo(nextIndex, direction);
+    }
+
+    stepCard(delta) {
+      if (this.isTransitioning) return;
+      this.activate(this.activeIndex + delta, delta);
+
+      this.wheelLocked = true;
+      this.touchLocked = true;
+      clearTimeout(this.wheelUnlockTimer);
+      clearTimeout(this.touchUnlockTimer);
+      const unlockDelay = 720;
+      this.wheelUnlockTimer = window.setTimeout(() => {
+        this.wheelLocked = false;
+      }, unlockDelay);
+      this.touchUnlockTimer = window.setTimeout(() => {
+        this.touchLocked = false;
+      }, unlockDelay);
+    }
+
+    clearCardMotionClasses(card) {
+      card.classList.remove(
+        "is-leaving",
+        "is-leaving-to-top",
+        "is-leaving-to-bottom",
+        "is-leaving-to-left",
+        "is-leaving-to-right",
+        "is-entering",
+        "is-entering-from-top",
+        "is-entering-from-bottom",
+        "is-entering-from-left",
+        "is-entering-from-right",
+      );
+    }
+
+    transitionTo(nextIndex, direction) {
+      if (this.isTransitioning) return;
+
+      const prevIndex = this.activeIndex;
+      const outgoing = this.cards[prevIndex];
+      const incoming = this.cards[nextIndex];
+      if (!outgoing || !incoming) return;
+
+      this.isTransitioning = true;
+      this.activeIndex = nextIndex;
+
+      const horizontal = this.isMobileLayout();
+      const leaveClass = horizontal
+        ? direction > 0
+          ? "is-leaving-to-left"
+          : "is-leaving-to-right"
+        : direction > 0
+          ? "is-leaving-to-top"
+          : "is-leaving-to-bottom";
+      const enterClass = horizontal
+        ? direction > 0
+          ? "is-entering-from-right"
+          : "is-entering-from-left"
+        : direction > 0
+          ? "is-entering-from-bottom"
+          : "is-entering-from-top";
+
+      this.clearCardMotionClasses(outgoing);
+      this.clearCardMotionClasses(incoming);
+
+      this.collapsePoints(outgoing);
+
+      outgoing.classList.remove("is-active");
+      outgoing.classList.add("is-leaving", leaveClass);
+      outgoing.removeAttribute("hidden");
+      outgoing.setAttribute("aria-hidden", "true");
+
+      incoming.classList.add("is-active", "is-entering", enterClass);
+      incoming.removeAttribute("hidden");
+      incoming.setAttribute("aria-hidden", "false");
+
+      this.syncChrome();
+
+      clearTimeout(this.transitionTimer);
+      this.transitionTimer = window.setTimeout(() => {
+        this.clearCardMotionClasses(outgoing);
+        outgoing.toggleAttribute("hidden", true);
+
+        this.clearCardMotionClasses(incoming);
+        incoming.classList.add("is-active");
+
+        this.isTransitioning = false;
+        this.updateHash(nextIndex);
+      }, this.transitionMs);
+    }
+
+    collapsePoints(card) {
+      card.classList.remove("has-expanded-point");
+      card.querySelectorAll(".point.is-expanded").forEach((point) => {
+        point.classList.remove("is-expanded");
+      });
+    }
+
+    setupPointExpansion() {
+      this.cards.forEach((card) => {
+        card.querySelectorAll(".point").forEach((point) => {
+          const toggle = () => {
+            const wasExpanded = point.classList.contains("is-expanded");
+            this.collapsePoints(card);
+
+            if (!wasExpanded) {
+              point.classList.add("is-expanded");
+              card.classList.add("has-expanded-point");
+            }
+          };
+
+          point.addEventListener("click", toggle);
+          point.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              toggle();
+            }
+          });
+        });
+      });
+    }
+
+    syncChrome() {
+      const lastIndex = Math.max(this.cards.length - 1, 1);
+      const progress = (this.activeIndex / lastIndex) * 100;
+
+      this.navButtons.forEach((button, index) => {
+        const isActive = index === this.activeIndex;
+        button.classList.toggle("is-active", isActive);
+        if (isActive) {
+          button.setAttribute("aria-current", "true");
+        } else {
+          button.removeAttribute("aria-current");
+        }
+      });
+
+      this.railButtons.forEach((button, index) => {
+        const isActive = index === this.activeIndex;
+        const isLit = index <= this.activeIndex;
+        button.classList.toggle("is-active", isActive);
+        button.classList.toggle("is-lit", isLit);
+        if (isActive) {
+          button.setAttribute("aria-current", "true");
+        } else {
+          button.removeAttribute("aria-current");
+        }
+      });
+
+      if (this.railFill) {
+        this.railFill.style.height = `${progress}%`;
+      }
+
+      if (this.navDropdownLabel) {
+        this.navDropdownLabel.textContent =
+          this.navDropdownOptions[this.activeIndex]?.dataset.label ?? "";
+      }
+
+      this.navDropdownOptions.forEach((button, index) => {
+        const isActive = index === this.activeIndex;
+        button.classList.toggle("is-active", isActive);
+        button.setAttribute("aria-selected", isActive ? "true" : "false");
+      });
+
+      if (this.cardArrowPrev) {
+        const atStart = this.activeIndex === 0;
+        this.cardArrowPrev.disabled = atStart;
+        this.cardArrowPrev.setAttribute("aria-disabled", atStart ? "true" : "false");
+      }
+
+      if (this.cardArrowNext) {
+        const atEnd = this.activeIndex >= this.cards.length - 1;
+        this.cardArrowNext.disabled = atEnd;
+        this.cardArrowNext.setAttribute("aria-disabled", atEnd ? "true" : "false");
+      }
+
+      if (this.deckHint) {
+        const remaining = this.cards.length - 1 - this.activeIndex;
+        this.deckHint.classList.toggle("is-exhausted", remaining <= 0);
+        this.deckHint.dataset.remaining = String(Math.min(remaining, 2));
+      }
+    }
+
+    update() {
+      this.cards.forEach((card, index) => {
+        const isActive = index === this.activeIndex;
+        this.clearCardMotionClasses(card);
+        card.classList.toggle("is-active", isActive);
+        card.toggleAttribute("hidden", !isActive);
+        card.setAttribute("aria-hidden", isActive ? "false" : "true");
+        if (!isActive) {
+          this.collapsePoints(card);
+        }
+      });
+
+      this.syncChrome();
+    }
+  }
+
+  customElements.define("unique-features-panel", UniqueFeaturesPanel);
+</script>
+
 <style>
   .unique-section {
-    background: linear-gradient(145deg, rgba(15, 17, 34, 0.95), rgba(3, 6, 17, 0.95));
-    overflow: hidden;
-    padding: clamp(2rem, 5vw, 4rem) 0; /* Added: Vertical padding for section separation */
+    position: relative;
+    isolation: isolate;
+    overflow-x: hidden;
+    overflow-y: visible;
+    margin-top: clamp(-2.5rem, -5vw, -4rem);
+    margin-bottom: 0;
+    padding-block: clamp(3rem, 6vw, 5rem);
+    background: var(--color-bg);
+    scroll-margin-top: 5.5rem;
   }
 
-  .unique-grid {
-    display: grid;
-    gap: clamp(1.5rem, 4vw, 3rem);
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    align-items: start;
+  .unique-section.section {
+    padding-block: clamp(3rem, 6vw, 5rem);
+  }
+
+  .unique-section__backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background-color: transparent;
+    background-image:
+      radial-gradient(ellipse 130% 36% at 50% 44%, rgba(88, 28, 135, 0.17), transparent 72%),
+      radial-gradient(ellipse 85% 24% at 68% 46%, rgba(236, 72, 153, 0.1), transparent 66%),
+      radial-gradient(ellipse 75% 20% at 26% 42%, rgba(56, 189, 248, 0.07), transparent 62%),
+      radial-gradient(ellipse 110% 28% at 50% 52%, rgba(192, 132, 252, 0.08), transparent 70%);
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    pointer-events: none;
+  }
+
+  .unique-section__overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(to bottom, var(--color-bg) 0%, transparent 9%);
+    pointer-events: none;
+  }
+
+  .unique-section__content {
+    position: relative;
+    z-index: 2;
     width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
+    max-width: 1180px;
+    margin-inline: auto;
+    padding-inline: var(--page-gutter);
   }
 
-  @media (min-width: 768px) and (max-width: 1024px) {
-    /* Removed: grid-template-columns: 1fr; — let auto-fit handle it */
-    .unique-features {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1.25rem;
-    }
+  html.build-mark-on .unique-section[data-build]::after {
+    content: "unique-features · " attr(data-build);
+    position: absolute;
+    left: 50%;
+    bottom: 0.35rem;
+    translate: -50% 0;
+    z-index: 4;
+    pointer-events: none;
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    opacity: 0.65;
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--radius-full);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    background: rgba(1, 3, 10, 0.6);
   }
 
-  /* Add mobile-specific adjustments */
-  @media (max-width: 767px) {
-    .unique-grid {
-      gap: clamp(2rem, 5vw, 3rem); /* Larger gap on mobile */
-    }
-    .unique-features {
-      gap: 1.5rem;
-    }
-  }
+  /* Header uses global .section__header (Montserrat, left-aligned) */
 
-  .unique-card {
-    border-radius: var(--radius-lg);
-    background: rgba(5, 8, 18, 0.8);
-    padding: clamp(1.5rem, 3vw, 2.25rem);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    box-shadow: 0 35px 60px rgba(2, 6, 23, 0.5);
-  }
-
-  .unique-card__list {
-    margin-top: 1.5rem;
+  .features-layout {
     display: grid;
-    gap: 0.75rem;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: clamp(0.75rem, 2vw, 1.25rem);
   }
 
-  .unique-card__list li {
+  .features-rail {
+    position: relative;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 0.55rem;
+    width: 2rem;
+    min-height: 420px;
+    align-self: stretch;
+    padding-block: clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  .features-rail__track {
+    position: absolute;
+    top: 0.5rem;
+    bottom: 0.5rem;
+    left: 50%;
+    width: 2px;
+    translate: -50% 0;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .features-rail__fill {
+    width: 100%;
+    height: 0%;
+    background: linear-gradient(to bottom, var(--color-brand), var(--color-accent));
+    border-radius: inherit;
+  }
+
+  .features-rail__nodes {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    width: 100%;
+  }
+
+  .features-rail__node {
+    width: 0.65rem;
+    height: 0.65rem;
+    margin-inline: auto;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+    cursor: pointer;
+  }
+
+  .features-rail__node.is-lit {
+    background: var(--color-brand);
+    box-shadow: 0 0 0 2px rgba(253, 185, 19, 0.5);
+  }
+
+  .features-rail__node.is-active {
+    scale: 1.35;
+    box-shadow:
+      0 0 0 2px rgba(253, 185, 19, 0.5),
+      0 0 12px rgba(253, 185, 19, 0.65);
+  }
+
+  .features-rail__node:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+  }
+
+  .label-features {
+    margin: 0 0 0.5rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
     color: var(--color-text-muted);
   }
 
-  .unique-card__list li::before {
+  .features-nav-wrap {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    align-self: center;
+    justify-content: center;
+  }
+
+  .features-card-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(0.65rem, 1.5vw, 1rem);
+    min-width: 0;
+    width: 100%;
+    max-width: 1000px;
+    justify-self: center;
+    padding-block: clamp(0.5rem, 1.5vw, 1rem);
+  }
+
+  .features-card-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: var(--color-text-muted);
+    opacity: 0.45;
+    cursor: pointer;
+    transition:
+      color 0.2s ease,
+      opacity 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .features-card-arrow::before {
     content: "";
-    width: 0.85rem;
-    height: 0.85rem;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #facc15, #f97316);
+    width: 0.42rem;
+    height: 0.42rem;
+    border-top: 1.5px solid currentColor;
+    border-left: 1.5px solid currentColor;
   }
 
-  .unique-features {
+  .features-card-arrow--prev::before {
+    transform: rotate(45deg);
+    margin-top: 0.12rem;
+  }
+
+  .features-card-arrow--next::before {
+    transform: rotate(225deg);
+    margin-bottom: 0.12rem;
+  }
+
+  @media (hover: hover) {
+    .features-card-arrow:hover:not(:disabled) {
+      opacity: 0.85;
+      color: var(--color-text);
+      transform: translateY(var(--card-arrow-shift, 0));
+    }
+
+    .features-card-arrow--prev:hover:not(:disabled) {
+      --card-arrow-shift: -1px;
+    }
+
+    .features-card-arrow--next:hover:not(:disabled) {
+      --card-arrow-shift: 1px;
+    }
+  }
+
+  .features-card-arrow:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+    opacity: 1;
+  }
+
+  .features-card-arrow:disabled {
+    opacity: 0.15;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  @keyframes featureCardEnterFromBottom {
+    0% {
+      opacity: 0;
+      transform: translateY(5rem) scale(0.94);
+      filter: blur(6px);
+    }
+    55% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+  }
+
+  @keyframes featureCardEnterFromTop {
+    0% {
+      opacity: 0;
+      transform: translateY(-5rem) scale(0.94);
+      filter: blur(6px);
+    }
+    55% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+  }
+
+  @keyframes featureCardLeaveToTop {
+    0% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+    45% {
+      opacity: 0.92;
+      transform: translateY(-4.5rem) scale(0.97);
+      filter: blur(0);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-8.5rem) scale(0.9);
+      filter: blur(7px);
+    }
+  }
+
+  @keyframes featureCardLeaveToBottom {
+    0% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+    45% {
+      opacity: 0.92;
+      transform: translateY(4.5rem) scale(0.97);
+      filter: blur(0);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(8.5rem) scale(0.9);
+      filter: blur(7px);
+    }
+  }
+
+  @keyframes featureCardEnterFromRight {
+    0% {
+      opacity: 0;
+      transform: translateX(4.5rem) scale(0.94);
+      filter: blur(6px);
+    }
+    55% {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      filter: blur(0);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      filter: blur(0);
+    }
+  }
+
+  @keyframes featureCardEnterFromLeft {
+    0% {
+      opacity: 0;
+      transform: translateX(-4.5rem) scale(0.94);
+      filter: blur(6px);
+    }
+    55% {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      filter: blur(0);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      filter: blur(0);
+    }
+  }
+
+  @keyframes featureCardLeaveToLeft {
+    0% {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      filter: blur(0);
+    }
+    45% {
+      opacity: 0.92;
+      transform: translateX(-4rem) scale(0.97);
+      filter: blur(0);
+    }
+    100% {
+      opacity: 0;
+      transform: translateX(-7.5rem) scale(0.9);
+      filter: blur(7px);
+    }
+  }
+
+  @keyframes featureCardLeaveToRight {
+    0% {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      filter: blur(0);
+    }
+    45% {
+      opacity: 0.92;
+      transform: translateX(4rem) scale(0.97);
+      filter: blur(0);
+    }
+    100% {
+      opacity: 0;
+      transform: translateX(7.5rem) scale(0.9);
+      filter: blur(7px);
+    }
+  }
+
+  .features-view-wrap {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .features-deck-hint {
+    display: none;
+  }
+
+  .features-view {
     display: grid;
-    gap: 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    min-width: 0;
+    width: 100%;
+    outline: none;
+    overflow: visible;
+    padding-block: clamp(4.5rem, 9vw, 7rem);
+    align-content: center;
   }
 
-  .unique-item {
-    padding: 1.2rem;
-    border-radius: 1.25rem;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(10, 15, 28, 0.85);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+  @media (hover: hover) {
+    .features-view:hover {
+      cursor: ns-resize;
+    }
   }
 
-  .unique-item__title {
-    margin: 0;
-    font-size: 1rem;
+  .feature-card {
+    grid-area: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.5rem, 1vw, 0.75rem);
+    padding: clamp(0.85rem, 1.6vw, 1.15rem);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-left: 3px solid var(--color-brand);
+    background: #0c1222;
+    box-shadow:
+      0 28px 56px rgba(2, 6, 23, 0.55),
+      0 0 0 1px rgba(253, 185, 19, 0.15);
+    will-change: transform, opacity;
+    scroll-margin-top: 5.5rem;
+  }
+
+  .feature-card[hidden]:not(.is-leaving) {
+    display: none;
+  }
+
+  .feature-card.is-leaving {
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .feature-card.is-entering {
+    z-index: 2;
+  }
+
+  .feature-card.is-entering-from-bottom {
+    animation: featureCardEnterFromBottom 0.62s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .feature-card.is-entering-from-top {
+    animation: featureCardEnterFromTop 0.62s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .feature-card.is-leaving-to-top {
+    animation: featureCardLeaveToTop 0.62s cubic-bezier(0.4, 0, 0.85, 0.2) forwards;
+  }
+
+  .feature-card.is-leaving-to-bottom {
+    animation: featureCardLeaveToBottom 0.62s cubic-bezier(0.4, 0, 0.85, 0.2) forwards;
+  }
+
+  .feature-card.is-entering-from-right {
+    animation: featureCardEnterFromRight 0.62s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .feature-card.is-entering-from-left {
+    animation: featureCardEnterFromLeft 0.62s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .feature-card.is-leaving-to-left {
+    animation: featureCardLeaveToLeft 0.62s cubic-bezier(0.4, 0, 0.85, 0.2) forwards;
+  }
+
+  .feature-card.is-leaving-to-right {
+    animation: featureCardLeaveToRight 0.62s cubic-bezier(0.4, 0, 0.85, 0.2) forwards;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .feature-card.is-entering-from-bottom,
+    .feature-card.is-entering-from-top,
+    .feature-card.is-entering-from-left,
+    .feature-card.is-entering-from-right,
+    .feature-card.is-leaving-to-top,
+    .feature-card.is-leaving-to-bottom,
+    .feature-card.is-leaving-to-left,
+    .feature-card.is-leaving-to-right {
+      animation: none;
+    }
+  }
+
+  .feature-card__meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .feature-card__meta-start {
     display: flex;
     align-items: center;
     gap: 0.65rem;
+    flex-wrap: wrap;
+    min-width: 0;
   }
 
-  .unique-item__copy {
-    margin: 0.5rem 0 0;
+  .feature-card__height {
+    font-weight: 700;
+    color: var(--color-brand);
+    font-family: var(--font-mono);
+  }
+
+  .feature-card__hash {
     color: var(--color-text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    text-transform: none;
   }
 
-  .unique-item img {
-    width: 1.85rem;
+  .category-card__header {
+    padding-bottom: clamp(0.55rem, 1.2vw, 0.75rem);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .category-card__title {
+    margin: 0 0 0.5rem;
+    font-size: clamp(1.2rem, 2.2vw, 1.45rem);
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  .category-card__badge {
+    flex-shrink: 0;
+    padding: 0.2rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border: 1px solid transparent;
+  }
+
+  .category-card__badge--live {
+    background: rgba(253, 185, 19, 0.18);
+    color: var(--color-brand);
+    border-color: rgba(253, 185, 19, 0.45);
+    box-shadow: 0 0 12px rgba(253, 185, 19, 0.12);
+  }
+
+  .category-card__badge--testnet {
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+    border-color: rgba(56, 189, 248, 0.35);
+  }
+
+  .category-card__badge--planned {
+    background: rgba(160, 160, 170, 0.15);
+    color: #a0a0aa;
+    border-color: rgba(160, 160, 170, 0.35);
+  }
+
+  .category-card__lede {
+    margin: 0;
+    color: var(--color-text-muted);
+    line-height: 1.5;
+    font-size: clamp(0.82rem, 1.6vw, 0.92rem);
+  }
+
+  .category-points {
+    display: grid;
+    gap: clamp(0.5rem, 0.9vw, 0.65rem);
+    grid-template-columns: 1fr;
+    align-content: start;
+  }
+
+  @media (min-width: 900px) {
+    .category-points {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .feature-card.has-expanded-point .category-points {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+  }
+
+  .point {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    height: auto;
+    padding: clamp(0.65rem, 1vw, 0.85rem);
+    border-radius: var(--radius-md);
+    background: rgba(10, 15, 28, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      transform 0.22s ease,
+      border-color 0.22s ease,
+      background 0.22s ease,
+      box-shadow 0.22s ease,
+      padding 0.22s ease,
+      opacity 0.22s ease,
+      max-height 0.22s ease;
+  }
+
+  .point__title,
+  .point__copy,
+  .point__icon {
+    transition:
+      color 0.22s ease,
+      font-size 0.22s ease,
+      line-height 0.22s ease,
+      width 0.22s ease,
+      height 0.22s ease,
+      transform 0.22s ease;
+  }
+
+  .point:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  .feature-card.has-expanded-point .point:not(.is-expanded) {
+    max-height: 2.35rem;
+    opacity: 0.5;
+    overflow: hidden;
+    gap: 0;
+    padding-block: 0.45rem;
+    padding-inline: 0.65rem;
+  }
+
+  .feature-card.has-expanded-point .point:not(.is-expanded) .point__copy {
+    display: none;
+  }
+
+  .point.is-expanded {
+    z-index: 2;
+    max-height: none;
+    padding: 0.85rem 0.8rem;
+    border-color: rgba(253, 185, 19, 0.45);
+    background: rgba(14, 22, 40, 0.98);
+    box-shadow: inset 0 0 0 1px rgba(253, 185, 19, 0.12);
+    opacity: 1;
+    transform: scale(1.02);
+  }
+
+  .point.is-expanded .point__title {
+    font-size: 1rem;
+    color: var(--color-brand);
+  }
+
+  .point.is-expanded .point__icon {
+    width: 1.45rem;
+    height: 1.45rem;
+  }
+
+  .point.is-expanded .point__copy {
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: var(--color-text);
+  }
+
+  @media (hover: hover) {
+    .point:hover {
+      transform: scale(1.03);
+      z-index: 2;
+      border-color: rgba(253, 185, 19, 0.5);
+      background: rgba(14, 22, 40, 0.98);
+      box-shadow: 0 14px 32px rgba(2, 6, 23, 0.45), 0 0 0 1px rgba(253, 185, 19, 0.15);
+    }
+
+    .point:hover .point__title {
+      color: var(--color-brand);
+    }
+
+    .point:hover .point__copy {
+      color: var(--color-text);
+    }
+
+    .point:hover .point__icon {
+      transform: scale(1.08);
+    }
+
+    .feature-card.has-expanded-point .point:not(.is-expanded):hover {
+      transform: none;
+      opacity: 0.65;
+      border-color: rgba(255, 255, 255, 0.08);
+      background: rgba(10, 15, 28, 0.9);
+      box-shadow: none;
+    }
+
+    .feature-card.has-expanded-point .point:not(.is-expanded):hover .point__title {
+      color: var(--color-text);
+    }
+
+    .point.is-expanded:hover {
+      transform: scale(1.04);
+      border-color: rgba(253, 185, 19, 0.55);
+    }
+
+    .point.is-expanded:hover .point__icon {
+      transform: scale(1);
+    }
+  }
+
+  @media (min-width: 900px) {
+    .feature-card.has-expanded-point .point:not(.is-expanded) {
+      max-height: 2.5rem;
+    }
+
+    .point.is-expanded {
+      padding: clamp(1rem, 1.4vw, 1.25rem);
+      box-shadow:
+        0 18px 36px rgba(2, 6, 23, 0.5),
+        inset 0 0 0 1px rgba(253, 185, 19, 0.12);
+    }
+
+    .point.is-expanded .point__title {
+      font-size: 1.15rem;
+    }
+
+    .point.is-expanded .point__icon {
+      width: 1.65rem;
+      height: 1.65rem;
+    }
+
+    .point.is-expanded .point__copy {
+      font-size: 1rem;
+    }
+  }
+
+  .point__title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .point__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.35rem;
+    height: 1.35rem;
+    flex-shrink: 0;
+  }
+
+  .point__icon :global(svg) {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .point__icon .point__icon--asset {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .point__icon--slashed {
+    position: relative;
+  }
+
+  .point__icon--slashed::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 145%;
+    height: 2px;
+    background: #fdb913;
+    border-radius: 1px;
+    transform: translate(-50%, -50%) rotate(45deg);
+    pointer-events: none;
+  }
+
+  .point__copy {
+    margin: 0;
+    color: var(--color-text-muted);
+    line-height: 1.45;
+    font-size: 0.82rem;
+  }
+
+  .features-nav-mobile {
+    display: none;
+  }
+
+  .features-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    width: 7rem;
+    flex-shrink: 0;
+  }
+
+  .features-nav__item {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    width: 100%;
+    padding: 0.3rem 0.45rem;
+    border-radius: var(--radius-full);
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--color-text-muted);
+    font: inherit;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  @media (hover: hover) {
+    .features-nav__item:hover:not(.is-active) {
+      color: var(--color-text);
+      border-color: rgba(255, 255, 255, 0.08);
+      background: rgba(8, 12, 24, 0.35);
+    }
+  }
+
+  .features-nav__item:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  .features-nav__dot {
+    flex-shrink: 0;
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .features-nav__item.is-active {
+    color: var(--color-text);
+    border-color: rgba(56, 189, 248, 0.25);
+    background: rgba(8, 12, 24, 0.55);
+  }
+
+  .features-nav__item.is-active .features-nav__dot {
+    background: var(--color-accent);
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+  }
+
+  @media (max-width: 899px) {
+    .unique-section {
+      margin-top: 0;
+      overflow: visible;
+    }
+
+    .unique-section__content {
+      padding-inline: clamp(0.65rem, 2.5vw, 1rem);
+    }
+
+    .features-layout {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .features-rail {
+      display: none;
+    }
+
+    .features-nav-mobile {
+      display: block;
+      order: -1;
+      width: 100%;
+      min-width: 0;
+      position: relative;
+      z-index: 5;
+    }
+
+    .features-nav-dropdown {
+      position: relative;
+      width: 100%;
+    }
+
+    .features-nav-chip {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      width: 100%;
+      padding: 0.5rem 0.9rem;
+      border-radius: var(--radius-full);
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      background: rgba(56, 189, 248, 0.14);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.12);
+      color: var(--color-text);
+      font: inherit;
+      font-size: 0.72rem;
+      font-weight: 600;
+      line-height: 1.3;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .features-nav-chip__dot {
+      flex-shrink: 0;
+      width: 0.4rem;
+      height: 0.4rem;
+      border-radius: 50%;
+      background: var(--color-accent);
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+    }
+
+    .features-nav-chip__label {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .features-nav-dropdown__trigger:focus-visible,
+    .features-nav-dropdown__option:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
+    }
+
+    .features-nav-dropdown__chevron {
+      flex-shrink: 0;
+      width: 0.7rem;
+      height: 0.7rem;
+      margin-left: 0.1rem;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23ffffff' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: contain;
+      transition: transform 0.2s ease;
+    }
+
+    .features-nav-dropdown.is-open .features-nav-dropdown__chevron {
+      transform: rotate(180deg);
+    }
+
+    .features-nav-dropdown__menu {
+      position: absolute;
+      top: calc(100% + 0.45rem);
+      left: 0;
+      right: 0;
+      z-index: 6;
+      display: none;
+      margin: 0;
+      padding: 0.4rem;
+      padding-inline-end: 0.55rem;
+      list-style: none;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      background: rgba(4, 8, 18, 0.98);
+      box-shadow: 0 18px 40px rgba(2, 6, 23, 0.55);
+      max-height: min(18rem, 55vh);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(56, 189, 248, 0.45) rgba(4, 8, 18, 0.85);
+    }
+
+    .features-nav-dropdown__menu::-webkit-scrollbar {
+      width: 0.42rem;
+    }
+
+    .features-nav-dropdown__menu::-webkit-scrollbar-track {
+      margin-block: 0.2rem;
+      border-radius: var(--radius-full);
+      background: rgba(4, 8, 18, 0.85);
+      border: 1px solid rgba(56, 189, 248, 0.15);
+    }
+
+    .features-nav-dropdown__menu::-webkit-scrollbar-thumb {
+      border-radius: var(--radius-full);
+      background: rgba(56, 189, 248, 0.14);
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.1);
+    }
+
+    @media (hover: hover) {
+      .features-nav-dropdown__menu::-webkit-scrollbar-thumb:hover {
+        background: rgba(56, 189, 248, 0.22);
+        border-color: rgba(56, 189, 248, 0.55);
+        box-shadow: 0 0 12px rgba(56, 189, 248, 0.18);
+      }
+    }
+
+    .features-nav-dropdown.is-open .features-nav-dropdown__menu {
+      display: grid;
+      gap: 0.4rem;
+    }
+
+    .features-nav-dropdown__option {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      width: 100%;
+      border-color: rgba(56, 189, 248, 0.45);
+      background: rgba(56, 189, 248, 0.14);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.08);
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .features-nav-dropdown__option .features-nav-chip__dot {
+      background: rgba(255, 255, 255, 0.25);
+      box-shadow: none;
+    }
+
+    .features-nav-dropdown__option.is-active,
+    .features-nav-dropdown__option:hover {
+      border-color: rgba(56, 189, 248, 0.45);
+      background: rgba(56, 189, 248, 0.14);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.12);
+    }
+
+    .features-nav-dropdown__option.is-active .features-nav-chip__dot,
+    .features-nav-dropdown__option:hover .features-nav-chip__dot {
+      background: var(--color-accent);
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+    }
+
+    .features-nav-wrap {
+      display: none;
+    }
+
+    .features-card-stack {
+      flex-direction: row;
+      align-items: stretch;
+      gap: 0.15rem;
+      padding-block: 0;
+      padding-top: 1.35rem;
+    }
+
+    .features-view-wrap {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .features-deck-hint {
+      display: block;
+      position: absolute;
+      top: -1.1rem;
+      left: 50%;
+      width: calc(100% - 1.25rem);
+      height: calc(100% + 1.1rem);
+      transform: translateX(-50%);
+      pointer-events: none;
+      z-index: 0;
+      transition: opacity 0.35s ease;
+    }
+
+    .features-deck-hint.is-exhausted {
+      opacity: 0;
+    }
+
+    .features-deck-hint__card {
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-left: 3px solid rgba(253, 185, 19, 0.35);
+      background: linear-gradient(180deg, #0a101c 0%, #070d18 100%);
+      box-shadow: 0 12px 28px rgba(2, 6, 23, 0.45);
+    }
+
+    .features-deck-hint__card--1 {
+      transform: translateY(-0.55rem) scale(0.985);
+      opacity: 0.55;
+    }
+
+    .features-deck-hint__card--2 {
+      transform: translateY(-1.05rem) scale(0.97);
+      opacity: 0.3;
+    }
+
+    .features-deck-hint[data-remaining="1"] .features-deck-hint__card--2 {
+      opacity: 0;
+    }
+
+    .features-deck-hint[data-remaining="0"] .features-deck-hint__card {
+      opacity: 0;
+    }
+
+    .features-view {
+      position: relative;
+      z-index: 1;
+      padding-block: 0;
+      touch-action: pan-y pinch-zoom;
+    }
+
+    .feature-card {
+      padding: clamp(0.75rem, 2vw, 0.95rem);
+    }
+
+    .feature-card .point:not(.is-expanded) {
+      max-height: 2.35rem;
+      overflow: hidden;
+      gap: 0;
+      padding-block: 0.45rem;
+      padding-inline: 0.65rem;
+    }
+
+    .feature-card .point:not(.is-expanded) .point__copy {
+      display: none;
+    }
+
+    .features-card-arrow {
+      align-self: center;
+      flex-shrink: 0;
+      width: 0.9rem;
+      height: 0.9rem;
+      opacity: 0.35;
+    }
+
+    .features-card-arrow--prev::before {
+      transform: rotate(-45deg);
+      margin-top: 0;
+      margin-inline-end: -0.08rem;
+    }
+
+    .features-card-arrow--next::before {
+      transform: rotate(135deg);
+      margin-bottom: 0;
+      margin-inline-start: -0.08rem;
+    }
+
+  }
+
+  @media (min-width: 900px) and (max-width: 1100px) {
+    .features-nav {
+      width: 6.5rem;
+    }
+
+    .features-nav__item {
+      font-size: 0.64rem;
+    }
   }
 </style>
 
-<section class="section unique-section">
-  <ContentDiv>
-    <div class="unique-grid">
-      <div class="unique-card">
-        <span class="unique-pill">Innovation</span>
-        <h2 class="section__title mt-3 mb-4 inline-flex items-center gap-3">
-          What makes us unique?
-          <img src={TinyWart.src} alt="" width="44" height="44" loading="lazy" />
-        </h2>
-        <p class="muted">
-          We engineered Warthog as a fair-launch blockchain with no shortcuts: no premine,
-          no hidden team wallets, and a modern PoBW engine that anyone with a browser can join.
-        </p>
-        <div class="stat-card mt-6">
-          <p class="stat-card__label">Tokenomics</p>
-          <p class="stat-card__value text-3xl flex items-center gap-3">
-            0%<img src={Coin.src} alt="" width="28" height="28" loading="lazy" />
-          </p>
-          <p class="muted mt-2">
-            Nothing minted or reserved for insiders—100% of WART is discoverable through public mining.
-          </p>
+<unique-features-panel
+  class="section unique-section"
+  id="unique"
+  {...(buildHash ? { "data-build": buildHash } : {})}
+>
+  <div class="unique-section__backdrop" aria-hidden="true"></div>
+  <div class="unique-section__overlay" aria-hidden="true"></div>
+
+  <div class="unique-section__content">
+    <div class="section__header">
+      <p class="section__eyebrow">What makes us unique</p>
+      <h2 class="section__title">Built with purpose</h2>
+    </div>
+
+    <div class="features-layout">
+      <div class="features-rail" aria-label="Feature progress">
+        <div class="features-rail__track" aria-hidden="true">
+          <div class="features-rail__fill"></div>
         </div>
-        <ul class="unique-card__list">
-          <li>Zero pre-mine and no hidden allocations</li>
-          <li>Proof of Balanced Work rewards real contribution</li>
-          <li>Contributor-friendly stack across C++, Rust, and TS</li>
-        </ul>
+        <div class="features-rail__nodes">
+          {categories.map((_, index) => (
+            <button
+              type="button"
+              class:list={["features-rail__node", { "is-lit": index === 0, "is-active": index === 0 }]}
+              data-rail={index}
+              aria-label={`Show ${categories[index].title}`}
+              aria-current={index === 0 ? "true" : undefined}
+            />
+          ))}
+        </div>
       </div>
 
-      <div class="unique-features">
-        {
-          highlights.map((feature) => (
-            <article class="unique-item">
-              <h3 class="unique-item__title">
-                <img src={feature.icon} alt="" loading="lazy" />
-                {feature.title}
-              </h3>
-              <p class="unique-item__copy">{feature.copy}</p>
+      <div class="features-nav-mobile">
+        <p class="label-features">Features</p>
+        <div class="features-nav-dropdown">
+          <button
+            type="button"
+            class="features-nav-chip features-nav-dropdown__trigger"
+            aria-expanded="false"
+            aria-haspopup="listbox"
+            aria-label="Choose a feature category"
+          >
+            <span class="features-nav-chip__dot" aria-hidden="true"></span>
+            <span class="features-nav-dropdown__label features-nav-chip__label">{categories[0].title}</span>
+            <span class="features-nav-dropdown__chevron" aria-hidden="true"></span>
+          </button>
+          <ul class="features-nav-dropdown__menu" role="listbox" aria-label="Feature categories">
+            {categories.map((category, index) => (
+              <li>
+                <a
+                  href={`#unique-${category.id}`}
+                  class:list={["features-nav-chip", "features-nav-dropdown__option", { "is-active": index === 0 }]}
+                  role="option"
+                  data-nav-mobile={index}
+                  data-label={category.title}
+                  aria-selected={index === 0 ? "true" : "false"}
+                >
+                  <span class="features-nav-chip__dot" aria-hidden="true"></span>
+                  <span class="features-nav-chip__label">{category.title}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div class="features-card-stack">
+        <button
+          type="button"
+          class="features-card-arrow features-card-arrow--prev"
+          data-card-arrow="prev"
+          aria-label="Previous feature card"
+          disabled
+        ></button>
+
+        <div class="features-view-wrap">
+          <div class="features-deck-hint" aria-hidden="true" data-remaining="2">
+            <span class="features-deck-hint__card features-deck-hint__card--2"></span>
+            <span class="features-deck-hint__card features-deck-hint__card--1"></span>
+          </div>
+
+          <div
+            class="features-view"
+            tabindex="0"
+            aria-label="Feature cards. On mobile, swipe left or right. On desktop, scroll or use arrow keys."
+          >
+          {categories.map((category, index) => (
+            <article
+              id={`unique-${category.id}`}
+              class:list={["feature-card", { "is-active": index === 0 }]}
+              data-card={index}
+              hidden={index !== 0}
+              aria-hidden={index !== 0 ? "true" : "false"}
+            >
+              <div class="feature-card__meta">
+                <div class="feature-card__meta-start">
+                  <span class="feature-card__height">#{String(index + 1).padStart(4, "0")}</span>
+                  <code class="feature-card__hash">0x{category.id.slice(0, 8)}…</code>
+                </div>
+                {category.status && (
+                  <span class={`category-card__badge category-card__badge--${category.status}`}>
+                    {category.status}
+                  </span>
+                )}
+              </div>
+              <header class="category-card__header">
+                <h3 class="category-card__title">{category.title}</h3>
+                <p class="category-card__lede">{category.lede}</p>
+              </header>
+              <div class="category-points">
+                {category.points.map((point) => (
+                  <div class="point" role="button" tabindex="0">
+                    <h4 class="point__title">
+                      {"iconSrc" in point && point.iconSrc ? (
+                        "iconSlashed" in point && point.iconSlashed ? (
+                          <span class="point__icon point__icon--slashed">
+                            <img
+                              src={point.iconSrc}
+                              alt=""
+                              class="point__icon--asset"
+                              width="22"
+                              height="22"
+                              loading="lazy"
+                            />
+                          </span>
+                        ) : (
+                          <span class="point__icon">
+                            <img
+                              src={point.iconSrc}
+                              alt=""
+                              class="point__icon--asset"
+                              width="22"
+                              height="22"
+                              loading="lazy"
+                            />
+                          </span>
+                        )
+                      ) : (
+                        <span
+                          class:list={[
+                            "point__icon",
+                            { "point__icon--slashed": "iconSlashed" in point && point.iconSlashed },
+                          ]}
+                          set:html={featurePointIcons[point.icon as FeaturePointIconName]}
+                        />
+                      )}
+                      {point.title}
+                    </h4>
+                    <p class="point__copy">{point.copy}</p>
+                  </div>
+                ))}
+              </div>
             </article>
-          ))
-        }
+          ))}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          class="features-card-arrow features-card-arrow--next"
+          data-card-arrow="next"
+          aria-label="Next feature card"
+        ></button>
+      </div>
+
+      <div class="features-nav-wrap">
+        <p class="label-features">Features</p>
+        <nav class="features-nav" aria-label="Feature categories">
+          {categories.map((category, index) => (
+            <a
+              href={`#unique-${category.id}`}
+              class:list={["features-nav__item", { "is-active": index === 0 }]}
+              data-nav={index}
+              aria-current={index === 0 ? "true" : undefined}
+            >
+              <span class="features-nav__dot" aria-hidden="true"></span>
+              <span class="features-nav__label">{category.title}</span>
+            </a>
+          ))}
+        </nav>
       </div>
     </div>
-  </ContentDiv>
-</section>
+  </div>
+</unique-features-panel>

@@ -1,10 +1,21 @@
 import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { format_height, abbreviate } from './assets/util.js';
-import APIClient from './assets/api_ws.js';
-import { Block } from './assets/api_ws.js';
+import { Block } from './assets/block.js';
+import BunkerShell from '../BunkerShell.jsx';
+import { resolveExplorerHostFromStorage } from '../../lib/explorerNodes.js';
+import ExplorerAddress from './ExplorerAddress.jsx';
+import ExplorerLink from './ExplorerLink.jsx';
+import ExplorerRefreshButton from './ExplorerRefreshButton.jsx';
+import { createWarthogApi, fetchExplorerBlock } from './explorerClient.js';
+import { fetchIndexerBlock, shouldUseExplorerIndexer } from './explorerIndexerClient.js';
+import { normalizeSelectedNode } from '../../lib/explorerNodes.js';
+import { formatExplorerError } from './explorerApi.js';
+import { copyWithToast } from '../../lib/explorerToast.js';
+import { pushRecentView } from '../../lib/explorerRecent.js';
 
 function TransactionItem({ tx, index }) {
-  const isRewardTx = !tx.fromAddress;
+  const isRewardTx = !tx.fromAddress || tx.type === 'Reward';
   const safeStr = (val) => {
     if (val === null || val === undefined) return '—';
     if (typeof val === 'string') return val;
@@ -18,39 +29,39 @@ function TransactionItem({ tx, index }) {
   };
 
   return (
-    <li key={tx.txHash || `tx-${index}`} className="bg-gray-50 p-3 rounded-lg dark:bg-gray-700">
+    <li key={tx.txHash || `tx-${index}`} className="bunker-list-item">
       <div className="flex justify-between items-center">
-        <span className="text-sm font-medium text-gray-800 dark:text-neutral-200 break-all">
+        <span className="bunker-tx-title">
           {isRewardTx
             ? `Miner Reward - ${abbreviate(safeStr(tx.txHash))}`
             : abbreviate(safeStr(tx.txHash))}
         </span>
         {tx.txHash && (
-          <a
-            href={`/transaction/lookup/${tx.txHash}`}
-            className="text-sm text-zinc-600 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+          <ExplorerLink
+            to={`/transaction/lookup/${tx.txHash}`}
+            className="bunker-link"
           >
             View Details
-          </a>
+          </ExplorerLink>
         )}
       </div>
       {tx.fromAddress && safeStr(tx.fromAddress) !== '—' && (
-        <div className="mt-1 text-xs text-gray-600 dark:text-neutral-400">
-          From: {abbreviate(safeStr(tx.fromAddress))}
+        <div className="bunker-meta">
+          From: <ExplorerAddress address={tx.fromAddress} />
         </div>
       )}
       {tx.toAddress && safeStr(tx.toAddress) !== '—' && (
-        <div className="mt-1 text-xs text-gray-600 dark:text-neutral-400">
-          To: {abbreviate(safeStr(tx.toAddress))}
+        <div className="bunker-meta">
+          To: <ExplorerAddress address={tx.toAddress} />
         </div>
       )}
-      {tx.amount && safeStr(tx.amount) !== '—' && (
-        <div className="mt-1 text-xs text-gray-600 dark:text-neutral-400">
-          Amount: {safeStr(tx.amount)}
+      {tx.amount != null && safeStr(tx.amount) !== '—' && (
+        <div className="bunker-meta">
+          Amount: {safeStr(tx.amount)} WART
         </div>
       )}
-      {tx.fee && safeStr(tx.fee) !== '—' && (
-        <div className="mt-1 text-xs text-gray-600 dark:text-neutral-400">
+      {tx.fee != null && Number(tx.fee) > 0 && (
+        <div className="bunker-meta">
           Fee: {safeStr(tx.fee)}
         </div>
       )}
@@ -58,148 +69,181 @@ function TransactionItem({ tx, index }) {
   );
 }
 
-function BlockDetails({ height }) {
+function BlockDetails({ height: heightProp } = {}) {
+  const params = useParams();
+  const height = heightProp ?? params.height;
   const [block, setBlock] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
-  const [copiedField, setCopiedField] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const handleCopy = async (text, field) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedField(field);
-      setTimeout(() => setCopiedField(null), 2000);
-    } catch (err) {
-      console.error('Failed to copy', err);
-    }
+  const handleCopy = async (text, label = 'Copied') => {
+    await copyWithToast(text, label);
   };
 
   useEffect(() => {
-    const getHost = (node) => {
-      if (node === 'losthymns') return 'https://warthognode.duckdns.org';
-      if (node === 'local') return 'http://localhost:3000';
-      if (node === 'polaire') return 'http://217.182.64.43:3001';
-      return 'http://localhost:3000';
-    };
-
-    const selectedNode = typeof window !== 'undefined' ? localStorage.getItem('selectedNode') || 'local' : 'local';
-    let selectedHost;
-    if (selectedNode === 'custom') {
-      const customIP = localStorage.getItem('customIP') || 'localhost';
-      const customPort = localStorage.getItem('customPort') || '3000';
-      let fullIP = customIP;
-      if (!fullIP.includes('://')) {
-        fullIP = `http://${fullIP}`;
-      }
-      selectedHost = `${fullIP}:${customPort}`;
-    } else {
-      selectedHost = getHost(selectedNode);
-    }
-    const client = new APIClient(selectedHost);
+    let cancelled = false;
     setLoading(true);
-    client.getBlock(height)
-      .then(fetchedBlock => {
-        setBlock(fetchedBlock instanceof Block ? fetchedBlock : new Block(fetchedBlock));
-        setLoading(false);
-      })
-      .catch(() => {
-        setError(true);
-        setLoading(false);
-      });
-  }, [height]);
+    setError(false);
+    setErrorMessage(null);
+
+    (async () => {
+      try {
+        const selectedNode = normalizeSelectedNode(
+          typeof window !== 'undefined' ? localStorage.getItem('selectedNode') : 'losthymns',
+        );
+        const fetchedBlock = shouldUseExplorerIndexer(selectedNode)
+          ? await fetchIndexerBlock(height)
+          : await fetchExplorerBlock(
+              await createWarthogApi(resolveExplorerHostFromStorage()),
+              height,
+            );
+        if (cancelled) return;
+        const next = fetchedBlock instanceof Block ? fetchedBlock : new Block(fetchedBlock);
+        setBlock(next);
+        pushRecentView({
+          type: 'block',
+          id: String(next.height),
+          label: `Block ${next.height}`,
+        });
+      } catch (err) {
+        if (!cancelled) {
+          setError(true);
+          setErrorMessage(formatExplorerError(err, 'The requested block could not be found.'));
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+          setRefreshing(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [height, refreshKey]);
+
+  const handleRefresh = () => {
+    if (refreshing || loading) return;
+    setRefreshing(true);
+    setRefreshKey((key) => key + 1);
+  };
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-6 text-gray-900 dark:text-white">Loading Block...</h1>
-      </div>
+      <BunkerShell
+        title="Block Details"
+        actions={<ExplorerRefreshButton onClick={handleRefresh} loading={refreshing} />}
+      >
+        <p className="bunker-muted">Loading block...</p>
+      </BunkerShell>
     );
   }
 
   if (!block || error) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-6 text-gray-900 dark:text-white">Block Not Found</h1>
-        <p className="text-gray-600">The requested block could not be found.</p>
-        <a
-          href="/explorer"
-          className="mt-6 inline-flex items-center px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-gray-200 transition-colors duration-200 dark:bg-gray-800 dark:text-zinc-300 dark:border-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-700"
-        >
+      <BunkerShell
+        title="Block Not Found"
+        actions={<ExplorerRefreshButton onClick={handleRefresh} loading={refreshing} />}
+      >
+        <p className="bunker-muted">
+          {errorMessage || 'The requested block could not be found.'}
+        </p>
+        <ExplorerLink to="/explorer" className="bunker-btn bunker-btn--ghost" style={{ marginTop: '1rem' }}>
           ← Back to Explorer
-        </a>
-      </div>
+        </ExplorerLink>
+      </BunkerShell>
     );
   }
 
+  const heightNum = Number(block.height);
+  const prevHeight = Number.isFinite(heightNum) && heightNum > 1 ? heightNum - 1 : null;
+  const nextHeight = Number.isFinite(heightNum) ? heightNum + 1 : null;
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Block Details</h1>
-      <h2 className="mb-4 text-2xl font-bold tracking-tight text-white-900 md:text-3xl lg:text-4xl">
-        Block {format_height(block.height)}
-      </h2>
-      <div className="bg-white border border-gray-200 rounded-xl shadow-lg dark:bg-gray-800 dark:border-gray-700">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <dt className="font-medium text-gray-500 uppercase">Hash</dt>
-              <dd className="mt-1 text-gray-800 dark:text-neutral-200 lowercase break-all cursor-pointer hover:text-blue-600" onClick={() => handleCopy(block.header?.hash, 'hash')}>
-                {block.header?.hash ?? 'N/A'}
-                {copiedField === 'hash' && <span className="ml-2 text-green-600">Copied!</span>}
-              </dd>
-            </div>
-            <div>
-              <dt className="font-medium text-gray-500 uppercase">Height</dt>
-              <dd className="mt-1 text-gray-800 dark:text-neutral-200">{format_height(block.height)}</dd>
-            </div>
-            <div>
-              <dt className="font-medium text-gray-500 uppercase">Miner</dt>
-              <dd className="mt-1 text-gray-800 dark:text-neutral-200 break-all cursor-pointer hover:text-blue-600" onClick={() => handleCopy(block.miner(), 'miner')}>
-                {block.miner()}
-                {copiedField === 'miner' && <span className="ml-2 text-green-600">Copied!</span>}
-              </dd>
-            </div>
-            <div>
-              <dt className="font-medium text-gray-500 uppercase">Reward</dt>
-              <dd className="mt-1 text-gray-800 dark:text-neutral-200">{block.reward()}</dd>
-            </div>
-            <div>
-              <dt className="font-medium text-gray-500 uppercase">Transaction Count</dt>
-              <dd className="mt-1 text-gray-800 dark:text-neutral-200">{block.transactionCount()}</dd>
-            </div>
-            {block.header?.timestamp && (
-              <div>
-                <dt className="font-medium text-gray-500 uppercase">Timestamp</dt>
-                <dd className="mt-1 text-gray-800 dark:text-neutral-200">{new Date(block.header.timestamp * 1000).toLocaleString()}</dd>
-              </div>
-            )}
-          </dl>
-        </div>
-        <div className="px-6 py-4">
-          <h3 className="mb-3 text-xl font-semibold text-gray-900 dark:text-white">Transactions</h3>
-          <div className="flex justify-end mb-2">
-            <a href={`/block/${block.height}/hex`} 
-              className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-              Show binary
-            </a>
-          </div>
-          {block.transactions?.length > 0 ? (
-            <ul className="space-y-3">
-              {block.transactions.map((tx, index) => (
-                <TransactionItem key={tx.txHash || `tx-${index}`} tx={tx} index={index} />
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-600 dark:text-neutral-400">No transactions in this block.</p>
-          )}
-        </div>
+    <BunkerShell
+      title="Block Details"
+      wide
+      actions={<ExplorerRefreshButton onClick={handleRefresh} loading={refreshing} />}
+    >
+      <div className="bunker-toolbar explorer-block-nav">
+        {prevHeight ? (
+          <ExplorerLink to={`/chain/block/${prevHeight}`} className="bunker-btn bunker-btn--ghost">
+            ← {format_height(prevHeight)}
+          </ExplorerLink>
+        ) : (
+          <span className="bunker-btn bunker-btn--ghost" style={{ opacity: 0.4, pointerEvents: 'none' }}>
+            ← Prev
+          </span>
+        )}
+        <h2 className="bunker-subheading" style={{ margin: 0 }}>
+          Block {format_height(block.height)}
+        </h2>
+        {nextHeight ? (
+          <ExplorerLink to={`/chain/block/${nextHeight}`} className="bunker-btn bunker-btn--ghost">
+            {format_height(nextHeight)} →
+          </ExplorerLink>
+        ) : null}
       </div>
-      <a
-        href="/explorer"
-        className="mt-6 inline-flex items-center px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:outline-none focus:ring-gray-200 transition-colors duration-200 dark:bg-gray-800 dark:text-zinc-300 dark:border-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-700"
-      >
+      <div className="bunker-panel">
+        <dl className="bunker-dl" style={{ marginBottom: '1rem' }}>
+          <div className="bunker-dl-row">
+            <dt>Hash</dt>
+            <dd
+              className="bunker-link"
+              style={{ cursor: 'pointer' }}
+              onClick={() => handleCopy(block.header?.hash, 'Block hash copied')}
+              title="Click to copy"
+            >
+              {block.header?.hash ?? 'N/A'}
+            </dd>
+          </div>
+          <div className="bunker-dl-row">
+            <dt>Height</dt>
+            <dd>{format_height(block.height)}</dd>
+          </div>
+          <div className="bunker-dl-row">
+            <dt>Miner</dt>
+            <dd>
+              <ExplorerAddress address={block.miner()} abbreviated={false} />
+            </dd>
+          </div>
+          <div className="bunker-dl-row">
+            <dt>Reward</dt>
+            <dd>{block.reward()}</dd>
+          </div>
+          <div className="bunker-dl-row">
+            <dt>Transactions</dt>
+            <dd>{block.transactionCount()}</dd>
+          </div>
+          {block.header?.timestamp && (
+            <div className="bunker-dl-row">
+              <dt>Timestamp</dt>
+              <dd>{new Date(block.header.timestamp * 1000).toLocaleString()}</dd>
+            </div>
+          )}
+        </dl>
+        <div className="bunker-toolbar">
+          <h3 className="bunker-heading" style={{ margin: 0 }}>Transactions</h3>
+          <ExplorerLink to={`/block/${block.height}/hex`} className="bunker-link">Show binary</ExplorerLink>
+        </div>
+        {block.transactions?.length > 0 ? (
+          <ul className="bunker-list">
+            {block.transactions.map((tx, index) => (
+              <TransactionItem key={tx.txHash || `tx-${index}`} tx={tx} index={index} />
+            ))}
+          </ul>
+        ) : (
+          <p className="bunker-muted">No transactions in this block.</p>
+        )}
+      </div>
+      <ExplorerLink to="/explorer" className="bunker-btn bunker-btn--ghost" style={{ marginTop: '1rem' }}>
         ← Back to Explorer
-      </a>
-    </div>
+      </ExplorerLink>
+    </BunkerShell>
   );
 }
 

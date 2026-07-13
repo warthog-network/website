@@ -1,9 +1,13 @@
 // astro.config.mjs
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import tailwind from '@astrojs/tailwind';
 import mdx from '@astrojs/mdx';
 import netlify from '@astrojs/netlify';
+
+const root = path.dirname(fileURLToPath(import.meta.url));
 
 
 export default defineConfig({
@@ -16,8 +20,8 @@ export default defineConfig({
 experimental: {
   csp: {
     directives: [
-      "default-src 'self' https://api.coingecko.com",
-      "connect-src 'self' ws: wss: https://api.coingecko.com http://localhost:3000",
+      "default-src 'self'",
+      "connect-src 'self' ws: wss: https://api.coingecko.com https://api.coinpaprika.com http://localhost:3000 https://warthognode.duckdns.org",
       "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com",
       "img-src 'self' data:",
       "object-src 'self'",
@@ -29,18 +33,32 @@ experimental: {
   }
 },
   vite: {
+    define: {
+      global: 'globalThis',
+    },
     resolve: {
+      dedupe: ['react', 'react-dom'],
       alias: {
-        crypto: 'crypto-browserify',
-        stream: 'stream-browserify',
-         '@': '/src' // Points @/ to your src/ folder
+        crypto: path.resolve(root, 'node_modules/crypto-browserify'),
+        stream: path.resolve(root, 'node_modules/stream-browserify'),
+        buffer: path.resolve(root, 'node_modules/buffer'),
+        process: path.resolve(root, 'src/shims/process.js'),
+        '@': path.resolve(root, 'src'),
       },
-  
     },
     ssr: {
-      noExternal: ['crypto-browserify', 'stream-browserify'],
+      external: ['warthog-js', 'crypto-browserify', 'stream-browserify', 'buffer', 'elliptic', 'ethers'],
     },
     optimizeDeps: {
+      include: [
+        'react',
+        'react-dom',
+        'react/jsx-runtime',
+        'react/jsx-dev-runtime',
+        'buffer',
+        'crypto-browserify',
+        'stream-browserify',
+      ],
       esbuildOptions: {
         define: {
           global: 'globalThis',

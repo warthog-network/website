@@ -1,9 +1,7 @@
-const CACHE_NAME = 'wallet-cache-v1';
+const CACHE_NAME = 'wallet-cache-v2';
 const urlsToCache = [
-  '/webwallet',  // The page itself
-  '/wallet.jsx',  // If needed; adjust for built asset paths
-  // Add more URLs: CSS, JS bundles, images, etc. Inspect your built site to list them (e.g., from Astro's dist folder)
-  // Example: '/_astro/webWallet.[hash].js' (Astro bundles React components with hashes)
+  '/webwallet',
+  '/favicon.png',
 ];
 
 self.addEventListener('install', (event) => {

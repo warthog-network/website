@@ -7,7 +7,7 @@ import Pickaxe from "../BalkyImages/getstartedimgs/pickaxe.svg";
 import Book from "../BalkyImages/getstartedimgs/book.svg";
 
 const webWalletUrl = "/webwallet";
-const mobileWalletApk = "/app-releaseV1_7.apk";
+const mobileWalletApk = "/defi-mobile.apk";
 
 const wallets = [
   {
@@ -29,7 +29,7 @@ const wallets = [
     description:
       "Command-line wallet for power users. Manually type your node IP (local or public).",
     download: "https://github.com/warthog-network/Warthog/releases",
-    guide: "https://docs.warthog.network/guides/wallet/wart-wallet-cli/",
+    guide: "https://docs.warthog.network/guides/wallet/cli/",
   },
   {
     title: "Browser Extension Wallet",
@@ -267,7 +267,7 @@ const wallets = [
               device.
             </p>
             <div class="gs-card-actions">
-              <a href={mobileWalletApk} download="app-releaseV1_7.apk">
+              <a href={mobileWalletApk} download="defi-mobile.apk">
                 Download APK
               </a>
             </div>
@@ -290,6 +290,25 @@ const wallets = [
             <div class="gs-card-actions">
               <a href="https://github.com/warthog-network/Warthog/releases">Download</a>
               <a href="https://docs.warthog.network/guides/node/">Guide</a>
+            </div>
+          </div>
+          <div class="gs-card">
+            <div class="gs-card-icon">
+              <img src={Nodes.src} alt="" />
+            </div>
+            <h3>In-Browser Node</h3>
+            <p>
+              Run a full Warthog node directly in your browser — no install
+              required. Open the page and connect to the network instantly.
+            </p>
+            <div class="gs-card-actions">
+              <a
+                href="https://browser-node-bodega.netlify.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open Browser Node
+              </a>
             </div>
           </div>
         </div>

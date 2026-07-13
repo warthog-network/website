@@ -1,88 +1,150 @@
 import { useState, useEffect } from 'react';
 import { format_height, abbreviate } from './assets/util.js';
-import APIClient from './assets/api_ws.js';
-import { Block } from './assets/api_ws.js';
+import { Block } from './assets/block.js';
+import BunkerShell from '../BunkerShell.jsx';
+import ExplorerAddress from './ExplorerAddress.jsx';
+import ExplorerLink from './ExplorerLink.jsx';
+import ExplorerRefreshButton from './ExplorerRefreshButton.jsx';
+import {
+    createWarthogApi,
+    fetchChainHeadHeight,
+    fetchExplorerBlock,
+    fetchRecentBlocks,
+} from './explorerClient.js';
+import {
+    fetchIndexerBlock,
+    fetchIndexerLatestBlocks,
+    shouldUseExplorerIndexer,
+} from './explorerIndexerClient.js';
+import {
+    ADD_CUSTOM_KEY,
+    OFFICIAL1_KEY,
+    OFFICIAL1_URL,
+    getExplorerHost,
+    getNodeSelectOptions,
+    loadSavedCustomNodes,
+    normalizeSelectedNode,
+    saveCustomNode,
+} from '../../lib/explorerNodes.js';
+import { formatExplorerError } from './explorerApi.js';
+import ExplorerStatsBar from './ExplorerStatsBar.jsx';
+import ExplorerUnifiedSearch from './ExplorerUnifiedSearch.jsx';
+import ExplorerRecentViews from './ExplorerRecentViews.jsx';
+import {
+    readExplorerChainCache,
+    writeExplorerChainCache,
+} from '../../lib/explorerSessionCache.js';
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const RETRY_DELAYS_MS = [500, 1000, 2000, 3000, 4000];
+
+async function fetchWithRetry(fn) {
+    let lastError;
+    for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+        try {
+            return await fn();
+        } catch (err) {
+            lastError = err;
+            if (attempt < RETRY_DELAYS_MS.length) {
+                await sleep(RETRY_DELAYS_MS[attempt]);
+            }
+        }
+    }
+    throw lastError;
+}
 
 function Explorer() {
-    const [selectedNode, setSelectedNode] = useState('polaire');
-    const [host, setHost] = useState('http://217.182.64.43:3001');
+    // Navigation lives in ExplorerUnifiedSearch (no useNavigate here).
+    const [selectedNode, setSelectedNode] = useState(OFFICIAL1_KEY);
+    const [host, setHost] = useState(OFFICIAL1_URL);
     const [customIP, setCustomIP] = useState('localhost');
     const [customPort, setCustomPort] = useState('3000');
-    const [customConnected, setCustomConnected] = useState(false);
-    const [isInitialized, setIsInitialized] = useState(false); // New: Flag to delay loading until localStorage is populated
+    const [savedNodes, setSavedNodes] = useState([]);
+    const [isInitialized, setIsInitialized] = useState(false);
 
-    const nodeOptions = [
-        { value: 'polaire', label: 'Polaire' },
-        { value: 'losthymns', label: 'Losthymns' },
-        { value: 'local', label: 'Local Node' },
-        { value: 'custom', label: 'Custom Node' },
-    ];
-
-    const getHost = (node) => {
-        if (node === 'losthymns') return 'https://warthognode.duckdns.org';
-        if (node === 'polaire') return 'http://217.182.64.43:3001';
-        if (node === 'local') return 'http://localhost:3000';
-        return 'http://localhost:3000';
-    };
+    const nodeOptions = getNodeSelectOptions(savedNodes);
+    const showCustomForm = selectedNode === ADD_CUSTOM_KEY;
 
     useEffect(() => {
-        // Load saved settings from localStorage
-        const savedNode = localStorage.getItem('selectedNode');
-        const savedHost = localStorage.getItem('selectedHost'); // New: Load saved host directly
-        const savedIP = localStorage.getItem('customIP');
-        const savedPort = localStorage.getItem('customPort');
+        const rawSelected = localStorage.getItem('selectedNode');
+        const saved = loadSavedCustomNodes();
+        setSavedNodes(saved);
 
-        if (savedNode && savedHost) {
-            setSelectedNode(savedNode);
-            setHost(savedHost);
-            if (savedNode === 'custom' && savedIP && savedPort) {
+        let next = normalizeSelectedNode(rawSelected);
+        // If selection was mid-form "custom" with no save, fall back to official 1
+        // unless we can recover a previously used custom host.
+        if (next === ADD_CUSTOM_KEY) {
+            const savedIP = localStorage.getItem('customIP');
+            const savedPort = localStorage.getItem('customPort');
+            if (savedIP && savedPort) {
                 setCustomIP(savedIP);
                 setCustomPort(savedPort);
             }
-        } else {
-            // If no saved values, use defaults but save them
-            localStorage.setItem('selectedNode', selectedNode);
-            localStorage.setItem('selectedHost', host);
+            // Keep form open only if user left it on Custom…
+        } else if (/^https?:\/\//i.test(next)) {
+            // Ensure URL is in saved list so the select can display it
+            if (!saved.some((n) => n.url === next)) {
+                const updated = [{ url: next, label: next.replace(/^https?:\/\//, '') }, ...saved];
+                setSavedNodes(updated);
+                try {
+                    localStorage.setItem('savedCustomNodes', JSON.stringify(updated));
+                } catch {
+                    // ignore
+                }
+            }
+            try {
+                const u = new URL(next);
+                setCustomIP(u.hostname);
+                setCustomPort(u.port || (u.protocol === 'https:' ? '443' : '3000'));
+            } catch {
+                // ignore
+            }
         }
 
-        setIsInitialized(true); // Mark as initialized after loading
+        setSelectedNode(next);
+        setHost(getExplorerHost(next) || OFFICIAL1_URL);
+        setIsInitialized(true);
     }, []);
 
     useEffect(() => {
-        if (!isInitialized) return; // Don't save until initialized
-
-        // Save selectedNode and host to localStorage, replacing existing
+        if (!isInitialized) return;
+        // Don't persist the open form key as the active node for other pages
+        // until Save — still store it so refresh keeps the form open.
         localStorage.setItem('selectedNode', selectedNode);
-        localStorage.setItem('selectedHost', host);
+        if (selectedNode !== ADD_CUSTOM_KEY) {
+            localStorage.setItem('selectedHost', host);
+        }
     }, [selectedNode, host, isInitialized]);
 
     useEffect(() => {
-        if (!isInitialized) return; // Don't save until initialized
-
-        // Save customIP and customPort
+        if (!isInitialized) return;
         localStorage.setItem('customIP', customIP);
         localStorage.setItem('customPort', customPort);
     }, [customIP, customPort, isInitialized]);
 
     useEffect(() => {
-        if (!isInitialized) return; // Don't update host until initialized
-
-        if (selectedNode === 'custom') {
-            if (customConnected) {
-                let fullIP = customIP;
-                if (!fullIP.includes('://')) {
-                    fullIP = `http://${fullIP}`;
-                }
-                const newHost = `${fullIP}:${customPort}`;
-                setHost(newHost);
-            }
-            // else stay on previous host
-        } else {
-            const newHost = getHost(selectedNode);
-            setHost(newHost);
-            setCustomConnected(false);
+        if (!isInitialized) return;
+        if (selectedNode === ADD_CUSTOM_KEY) {
+            // Wait for Save before changing host / fetching
+            return;
         }
-    }, [selectedNode, customIP, customPort, customConnected, isInitialized]);
+        const newHost = getExplorerHost(selectedNode);
+        if (newHost) setHost(newHost);
+    }, [selectedNode, isInitialized]);
+
+    const handleSaveCustomNode = () => {
+        try {
+            const url = saveCustomNode(customIP, customPort);
+            setSavedNodes(loadSavedCustomNodes());
+            setSelectedNode(url);
+            setHost(url);
+            localStorage.setItem('selectedNode', url);
+            localStorage.setItem('selectedHost', url);
+        } catch (err) {
+            setConnectionError(err?.message || 'Could not save custom node');
+        }
+    };
 
     const [client, setClient] = useState(null);
     const [subscribed, setSubscribed] = useState(false);
@@ -91,75 +153,163 @@ function Explorer() {
     const [page, setPage] = useState(1);
     const [currentBlocks, setCurrentBlocks] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [searchInput, setSearchInput] = useState('');
-    const [txSearchInput, setTxSearchInput] = useState('');
-    const [addressSearchInput, setAddressSearchInput] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [connectionError, setConnectionError] = useState(null);
+    const [refreshing, setRefreshing] = useState(false);
+    const [refreshToken, setRefreshToken] = useState(0);
     const perPage = 10;
+    const useIndexer = shouldUseExplorerIndexer(selectedNode);
 
     useEffect(() => {
-        if (!isInitialized) return; // Don't fetch until localStorage is populated
+        if (!isInitialized) return;
+        // Don't reconnect while the user is filling in a new custom node.
+        if (selectedNode === ADD_CUSTOM_KEY) {
+            setLoading(false);
+            return;
+        }
 
-        setSubscribed(false);
-        setChain({ blocks: [] });
-        setCurrentBlocks([]);
-        setPage(1);
-        setIsSearching(false);
-        setSearchInput('');
-        setLoading(true);
-        setConnectionError(null);
+        // SPA back-navigation: restore last blocks for this host immediately
+        // so we don't flash "Connecting…" / empty grid on every in-app return.
+        const cached = host ? readExplorerChainCache(host, useIndexer) : null;
+        const hasCache = Boolean(cached?.blocks?.length);
+        if (hasCache) {
+            const blocks = cached.blocks.map((b) => (b instanceof Block ? b : new Block(b)));
+            setChain({ blocks });
+            setCurrentBlocks(blocks);
+            setSubscribed(true);
+            setLoading(false);
+            setConnectionError(null);
+        } else {
+            setSubscribed(false);
+            setChain({ blocks: [] });
+            setCurrentBlocks([]);
+            setLoading(true);
+            setConnectionError(null);
+        }
 
-        const cl = new APIClient(host, false);
-        cl.setters = {
-            setConnections: () => {},
-            setLog: () => {},
-            setChain,
-            setSubscribed
-        };
-        setClient(cl);
+        // Only reset search/pagination on hard node change or manual refresh,
+        // not when hydrating from session cache.
+        if (!hasCache || refreshToken > 0) {
+            setPage(1);
+            setIsSearching(false);
+        }
 
-        const fetchLatest = async () => {
+        let hasConnected = hasCache;
+        let cancelled = false;
+        let interval;
+
+        const fetchLatestFromIndexer = async (isInitial = false) => {
+            if (cancelled) return;
+
+            // Soft refresh — keep existing blocks visible when cache hit
+            if (isInitial) {
+                setRefreshing(true);
+            }
+
             try {
-                const headResponse = await cl.get('/chain/head');
-                const headHeight = headResponse.data.height;
-                const blocks = [];
-                for (let h = headHeight; h > Math.max(1, headHeight - 10); h--) {
-                    try {
-                        const block = await cl.getBlock(h);
-                        blocks.push(block);
-                    } catch (e) {
-                        console.error(`Failed to fetch block ${h}`, e);
-                    }
-                }
+                const blocks = await fetchWithRetry(() => fetchIndexerLatestBlocks(10));
+                if (cancelled) return;
+
                 setChain({ blocks });
                 setSubscribed(true);
+                setConnectionError(null);
+                hasConnected = true;
+                writeExplorerChainCache(host, true, blocks);
             } catch (e) {
-                console.error('Failed to fetch head', e);
-                setConnectionError('Failed to fetch data from node.');
+                if (cancelled) return;
+                console.error('Failed to fetch indexed blocks', e);
+                if (!hasConnected) {
+                    setConnectionError(
+                        formatExplorerError(e, 'Indexed explorer unavailable. Sync may still be catching up.'),
+                    );
+                }
             } finally {
-                setLoading(false);
+                if (isInitial && !cancelled) {
+                    setLoading(false);
+                    setRefreshing(false);
+                }
             }
         };
 
-        fetchLatest();
+        const fetchLatestFromNode = async (api, isInitial = false) => {
+            if (cancelled) return;
 
-        // Poll for updates every 10 seconds
-        const interval = setInterval(fetchLatest, 10000);
+            if (isInitial) {
+                setRefreshing(true);
+            }
+
+            try {
+                const headHeight = await fetchWithRetry(() => fetchChainHeadHeight(api));
+                if (cancelled) return;
+
+                const blocks = await fetchRecentBlocks(api, headHeight);
+                if (cancelled) return;
+
+                setChain({ blocks });
+                setSubscribed(true);
+                setConnectionError(null);
+                hasConnected = true;
+                writeExplorerChainCache(host, false, blocks);
+            } catch (e) {
+                if (cancelled) return;
+                console.error('Failed to fetch head', e);
+                if (!hasConnected) {
+                    setConnectionError(
+                        formatExplorerError(e, 'Failed to fetch data from node.'),
+                    );
+                }
+            } finally {
+                if (isInitial && !cancelled) {
+                    setLoading(false);
+                    setRefreshing(false);
+                }
+            }
+        };
+
+        (async () => {
+            if (useIndexer) {
+                setClient(null);
+                await fetchLatestFromIndexer(true);
+                interval = setInterval(() => fetchLatestFromIndexer(false), 10000);
+                return;
+            }
+
+            if (!host) {
+                setLoading(false);
+                setConnectionError('No node host configured. Select a node or connect a custom one.');
+                return;
+            }
+
+            try {
+                const api = await createWarthogApi(host);
+                if (cancelled) return;
+
+                setClient(api);
+                await fetchLatestFromNode(api, true);
+                interval = setInterval(() => fetchLatestFromNode(api, false), 10000);
+            } catch (e) {
+                if (cancelled) return;
+                console.error('Failed to create node client', e);
+                setLoading(false);
+                if (!hasConnected) {
+                    setConnectionError(formatExplorerError(e, 'Failed to connect to node.'));
+                }
+            }
+        })();
 
         return () => {
-            cl.closeConnection();
-            clearInterval(interval);
+            cancelled = true;
+            if (interval) clearInterval(interval);
         };
-    }, [host, isInitialized]);
+    }, [host, isInitialized, refreshToken, useIndexer, selectedNode]);
 
     useEffect(() => {
-        if (!client || !isInitialized) return;
+        if (!isInitialized) return;
+        if (!useIndexer && !client) return;
 
         if (mode === 'latest') {
             setCurrentBlocks(chain.blocks || []);
             setIsSearching(false);
-            setLoading(false);
             return;
         }
 
@@ -167,7 +317,7 @@ function Explorer() {
 
         setLoading(true);
         async function loadBlocks() {
-            const tipHeight = chain.blocks[chain.blocks.length - 1]?.height || 0;
+            const tipHeight = chain.blocks[0]?.height || chain.blocks[chain.blocks.length - 1]?.height || 0;
             const startHeight = tipHeight - (page - 1) * perPage;
             if (startHeight < 1) {
                 setPage(1);
@@ -180,8 +330,10 @@ function Explorer() {
                 const existing = chain.blocks.find(b => b.height === h);
                 if (existing) {
                     promises.push(Promise.resolve(existing));
+                } else if (useIndexer) {
+                    promises.push(fetchIndexerBlock(h));
                 } else {
-                    promises.push(client.getBlock(h));
+                    promises.push(fetchExplorerBlock(client, h));
                 }
             }
             try {
@@ -199,89 +351,59 @@ function Explorer() {
             }
         }
         loadBlocks();
-    }, [mode, page, chain, client, isSearching, isInitialized]);
+    }, [mode, page, chain, client, isSearching, isInitialized, useIndexer]);
 
     const toggleMode = () => {
         setMode(mode === 'latest' ? 'all' : 'latest');
         setPage(1);
         setIsSearching(false);
-        setSearchInput('');
     };
 
-    const handleSearch = async (e) => {
-        e.preventDefault();
-        if (!searchInput.trim()) return;
+    /** Multi-height search from unified search box (e.g. 100-110). */
+    const handleBlockHeights = async (heights) => {
+        if (!heights?.length) return;
+        setMode('all');
         setLoading(true);
         setIsSearching(true);
-        const items = parseSearchInput(searchInput);
-        const promises = items.map(async (item) => {
-            if (item.type === 'height') {
-                const existing = chain.blocks.find(b => b.height === item.value);
-                return existing || await client.getBlock(item.value);
-            }
-        });
+        setPage(1);
         try {
+            const promises = heights.map(async (height) => {
+                const existing = chain.blocks.find((b) => b.height === height);
+                if (existing) return existing;
+                if (useIndexer) return fetchIndexerBlock(height);
+                if (client) return fetchExplorerBlock(client, height);
+                throw new Error('No client');
+            });
             const results = await Promise.allSettled(promises);
             const blocks = results
-                .filter(result => result.status === 'fulfilled')
-                .map(result => result.value);
-            setCurrentBlocks(blocks.map(b => b instanceof Block ? b : new Block(b)).sort((a, b) => b.height - a.height));
+                .filter((result) => result.status === 'fulfilled')
+                .map((result) => result.value)
+                .map((b) => (b instanceof Block ? b : new Block(b)))
+                .sort((a, b) => b.height - a.height);
+            setCurrentBlocks(blocks);
+            if (!blocks.length) {
+                setConnectionError('No blocks found for that range.');
+            } else {
+                setConnectionError(null);
+            }
         } catch (error) {
-            console.error('Error searching:', error);
+            console.error('Error searching blocks:', error);
             setCurrentBlocks([]);
-            setConnectionError('Error searching. Connection may be unstable.');
+            setConnectionError('Error searching blocks.');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleTxSearch = (e) => {
-        e.preventDefault();
-        if (!txSearchInput.trim()) return;
-        window.location.href = `/transaction/lookup/${encodeURIComponent(txSearchInput)}`;
-        setTxSearchInput('');
-    };
-
-    const handleAddressSearch = (e) => {
-        e.preventDefault();
-        if (!addressSearchInput.trim()) return;
-        window.location.href = `/address/${encodeURIComponent(addressSearchInput)}`;
-        setAddressSearchInput('');
-    };
-
-    const parseSearchInput = (input) => {
-        const items = [];
-        const parts = input.split(/\s+/).map(p => p.trim()).filter(p => p);
-        parts.forEach(part => {
-            if (part.includes('-')) {
-                const [startStr, endStr] = part.split('-');
-                const start = Number(startStr.replace(/,/g, ''));
-                const end = Number(endStr.replace(/,/g, ''));
-                if (!isNaN(start) && !isNaN(end) && start <= end) {
-                    for (let h = start; h <= end; h++) {
-                        items.push({ type: 'height', value: h });
-                    }
-                }
-            } else {
-                const h = Number(part.replace(/,/g, ''));
-                if (!isNaN(h)) {
-                    items.push({ type: 'height', value: h });
-                }
-            }
-        });
-        return items;
-    };
-
     const resetSearch = () => {
-        setSearchInput('');
         setIsSearching(false);
+        setMode('latest');
+        setCurrentBlocks(chain.blocks || []);
     };
 
-    const tipHeight = chain.blocks[chain.blocks.length - 1]?.height || 0;
-    const maxPage = Math.ceil(tipHeight / perPage);
+    const tipHeight = chain.blocks[0]?.height || chain.blocks[chain.blocks.length - 1]?.height || 0;
+    const maxPage = Math.ceil(tipHeight / perPage) || 1;
     const hasNext = page < maxPage;
-
-    const isLocal = host.includes('localhost');
 
     const formatTimeAgo = (timestamp) => {
         if (!timestamp) return 'N/A';
@@ -294,233 +416,175 @@ function Explorer() {
     };
 
     if (!isInitialized) {
-        return <div className="container mx-auto px-4 py-8">Loading settings...</div>; // Delay rendering until initialized
+        return (
+            <BunkerShell title="Explorer" showBrand={false}>
+                <p className="bunker-muted">Loading settings...</p>
+            </BunkerShell>
+        );
     }
 
-    return (
-        <div className="container mx-auto px-4 py-8">
-            <h1 className="text-4xl font-bold mb-6 text-gray-900 dark:text-white">Explorer</h1>
+    const handleRefresh = () => {
+        if (refreshing) return;
+        setRefreshToken((token) => token + 1);
+    };
 
-            {/* Node Switcher Dropdown */}
-            <div className="mb-4">
-                <label htmlFor="node-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Select Node:</label>
-                <select
-                    id="node-select"
-                    value={selectedNode}
-                    onChange={(e) => setSelectedNode(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                >
-                    {nodeOptions.map(option => (
-                        <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                </select>
-                {selectedNode === 'custom' && (
-                    <>
-                        <div className="mt-2 flex space-x-2">
-                            <div className="flex-1">
-                                <label htmlFor="custom-ip" className="block text-sm font-medium text-gray-700 dark:text-gray-300">IP Address:</label>
-                                <input
-                                    id="custom-ip"
-                                    type="text"
-                                    value={customIP}
-                                    onChange={(e) => setCustomIP(e.target.value)}
-                                    placeholder="e.g., localhost, 192.168.1.1, or http://example.com"
-                                    className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <label htmlFor="custom-port" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Port:</label>
-                                <input
-                                    id="custom-port"
-                                    type="text"
-                                    value={customPort}
-                                    onChange={(e) => setCustomPort(e.target.value)}
-                                    placeholder="e.g., 3000"
-                                    className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                />
-                            </div>
+    return (
+        <BunkerShell
+            title="Explorer"
+            wide
+            showBrand={false}
+            actions={<ExplorerRefreshButton onClick={handleRefresh} loading={refreshing} />}
+        >
+            <div className="bunker-panel explorer-search-card">
+                <div className="explorer-search-card__header">
+                    <div className="explorer-node-select-wrap">
+                        <label htmlFor="node-select" className="explorer-node-select-label">
+                            Node
+                        </label>
+                        <select
+                            id="node-select"
+                            value={nodeOptions.some((o) => o.value === selectedNode) ? selectedNode : OFFICIAL1_KEY}
+                            onChange={(e) => setSelectedNode(e.target.value)}
+                            className="explorer-node-select"
+                            title="Select node"
+                        >
+                            {nodeOptions.map((option) => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                <ExplorerUnifiedSearch onBlockHeights={handleBlockHeights} />
+
+                {showCustomForm && (
+                    <div className="bunker-form-row explorer-search-card__custom" style={{ marginTop: '0.75rem', alignItems: 'flex-end' }}>
+                        <div style={{ flex: '1 1 12rem' }}>
+                            <label htmlFor="custom-ip" className="bunker-label">Host</label>
+                            <input
+                                id="custom-ip"
+                                type="text"
+                                value={customIP}
+                                onChange={(e) => setCustomIP(e.target.value)}
+                                placeholder="localhost or 192.168.1.1"
+                                className="bunker-input"
+                            />
                         </div>
-                        <div className="mt-2">
-                            <button
-                                onClick={() => setCustomConnected(true)}
-                                disabled={!customIP.trim() || !customPort.trim()}
-                                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                Connect to Custom Node
-                            </button>
+                        <div style={{ flex: '0 1 7rem' }}>
+                            <label htmlFor="custom-port" className="bunker-label">Port</label>
+                            <input
+                                id="custom-port"
+                                type="text"
+                                value={customPort}
+                                onChange={(e) => setCustomPort(e.target.value)}
+                                placeholder="3000"
+                                className="bunker-input"
+                            />
                         </div>
-                    </>
+                        <button
+                            type="button"
+                            onClick={handleSaveCustomNode}
+                            disabled={!customIP.trim() || !customPort.trim()}
+                            className="bunker-btn"
+                        >
+                            Save node
+                        </button>
+                    </div>
+                )}
+
+                {isSearching && (
+                    <div className="bunker-toolbar" style={{ marginTop: '0.5rem' }}>
+                        <span className="bunker-muted">Showing search results</span>
+                        <button type="button" onClick={resetSearch} className="bunker-btn bunker-btn--ghost">
+                            Clear search
+                        </button>
+                    </div>
                 )}
             </div>
 
+            <ExplorerRecentViews />
+
+            <div className="bunker-toolbar">
+                <button onClick={toggleMode} className="bunker-btn">
+                    {mode === 'latest' ? 'Browse all blocks' : 'Back to latest blocks'}
+                </button>
+            </div>
+
+            <ExplorerStatsBar host={host} refreshToken={refreshToken} />
+
             {connectionError ? (
-                <div className="text-red-600">{connectionError}</div>
+                <div className="bunker-error">{connectionError}</div>
             ) : !subscribed || !chain ? (
-                <div className="text-gray-600">Connecting to node...</div>
+                <p className="bunker-muted">Connecting to node...</p>
             ) : (
                 <>
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-2xl font-bold tracking-tight text-gray-900 md:text-3xl lg:text-4xl">
+                    <div className="bunker-toolbar">
+                        <h2 className="bunker-subheading" style={{ margin: 0 }}>
                             {mode === 'latest' ? 'Latest Blocks' : `Blocks (Page ${page})`}
                         </h2>
-                        <button
-                            onClick={toggleMode}
-                            className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
-                        >
-                            {mode === 'latest' ? 'Switch to Deep Search (All Blocks)' : 'Switch to Latest Blocks'}
-                        </button>
                     </div>
-                    {mode === 'all' && (
-                        <>
-                            <form onSubmit={handleSearch} className="mb-6">
-                                <div className="flex items-center">
-                                    <input
-                                        type="text"
-                                        value={searchInput}
-                                        onChange={(e) => setSearchInput(e.target.value)}
-                                        placeholder="Search blocks: 123 100-200"
-                                        className="flex-grow px-4 py-2 text-sm text-gray-900 border border-gray-300 rounded-l-lg focus:ring-zinc-500 focus:border-zinc-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:border-zinc-500"
-                                    />
-                                    <button
-                                        type="submit"
-                                        className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-r-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
-                                    >
-                                        Search Blocks
-                                    </button>
-                                    {isSearching && (
-                                        <button
-                                            type="button"
-                                            onClick={resetSearch}
-                                            className="ml-2 px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-                                        >
-                                            Clear Search
-                                        </button>
-                                    )}
-                                </div>
-                            </form>
-                            <form onSubmit={handleTxSearch} className="mb-6">
-                                <div className="flex items-center">
-                                    <input
-                                        type="text"
-                                        value={txSearchInput}
-                                        onChange={(e) => setTxSearchInput(e.target.value)}
-                                        placeholder="Enter TX Hash: e.g., 0x123..."
-                                        className="flex-grow px-4 py-2 text-sm text-gray-900 border border-gray-300 rounded-l-lg focus:ring-zinc-500 focus:border-zinc-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:border-zinc-500"
-                                    />
-                                    <button
-                                        type="submit"
-                                        className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-r-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
-                                    >
-                                        Lookup TX
-                                    </button>
-                                </div>
-                            </form>
-                            <form onSubmit={handleAddressSearch} className="mb-6">
-                                <div className="flex items-center">
-                                    <input
-                                        type="text"
-                                        value={addressSearchInput}
-                                        onChange={(e) => setAddressSearchInput(e.target.value)}
-                                        placeholder="Enter Address: e.g., bc1q..."
-                                        className="flex-grow px-4 py-2 text-sm text-gray-900 border border-gray-300 rounded-l-lg focus:ring-zinc-500 focus:border-zinc-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:border-zinc-500"
-                                    />
-                                    <button
-                                        type="submit"
-                                        className="px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-r-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
-                                    >
-                                        Lookup Address
-                                    </button>
-                                </div>
-                            </form>
-                        </>
-                    )}
                     {loading ? (
-                        <p className="text-gray-600">Loading blocks...</p>
+                        <p className="bunker-muted">Loading blocks...</p>
                     ) : (
                         <>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                            <div className="bunker-grid">
                                 {currentBlocks.map((block) => (
-                                    <div
-                                        key={block.header.hash}
-                                        className="bg-white border border-gray-200 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 dark:bg-gray-800 dark:border-gray-700"
-                                    >
-                                        <div className="flex justify-between items-center px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                                            <span className="px-3 py-1 text-sm font-medium rounded-full" style={{ background: 'var(--color-brand)', color: '#1f2937' }}>Block {format_height(block.height)}</span>
-                                            <span className="text-sm text-gray-500">{formatTimeAgo(block.header.timestamp)}</span>
+                                    <article key={block.header.hash} className="bunker-card">
+                                        <div className="bunker-card__header">
+                                            <span className="bunker-badge">Block {format_height(block.height)}</span>
+                                            <span className="bunker-muted">{formatTimeAgo(block.header.timestamp)}</span>
                                         </div>
-                                        <div className="px-4 py-3">
-                                            <dl className="space-y-2">
-                                                <div className="flex justify-between text-sm">
-                                                    <dt className="font-medium text-gray-500 uppercase">Hash</dt>
-                                                    <dd className="text-gray-800 dark:text-neutral-200 lowercase">{abbreviate(block.header.hash)}</dd>
+                                        <div className="bunker-card__body">
+                                            <dl className="bunker-dl">
+                                                <div className="bunker-dl-row">
+                                                    <dt>Hash</dt>
+                                                    <dd>{abbreviate(block.header.hash)}</dd>
                                                 </div>
-                                                <div className="flex justify-between text-sm">
-                                                    <dt className="font-medium text-gray-500 uppercase">Miner</dt>
-                                                    <dd className="text-gray-800 dark:text-neutral-200">{abbreviate(block.miner())}</dd>
+                                                <div className="bunker-dl-row">
+                                                    <dt>Miner</dt>
+                                                    <dd>
+                                                        <ExplorerAddress address={block.miner()} />
+                                                    </dd>
                                                 </div>
-                                                <div className="flex justify-between text-sm">
-                                                    <dt className="font-medium text-gray-500 uppercase">Reward</dt>
-                                                    <dd className="text-gray-800 dark:text-neutral-200">{block.reward()}</dd>
+                                                <div className="bunker-dl-row">
+                                                    <dt>Reward</dt>
+                                                    <dd>{block.reward()}</dd>
                                                 </div>
-                                                <div className="flex justify-between text-sm">
-                                                    <dt className="font-medium text-gray-500 uppercase">#TXS</dt>
-                                                    <dd className="text-gray-800 dark:text-neutral-200">{block.transactionCount()}</dd>
+                                                <div className="bunker-dl-row">
+                                                    <dt>#TXS</dt>
+                                                    <dd>{block.transactionCount()}</dd>
                                                 </div>
                                             </dl>
                                         </div>
-                                        <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
-                                            <a
-                                                href={`/chain/block/${block.height}`}
-                                                className="inline-flex items-center w-full justify-center px-4 py-2 text-sm font-medium text-white bg-zinc-700 rounded-lg hover:bg-zinc-800 focus:ring-4 focus:outline-none focus:ring-zinc-300 transition-colors duration-200 dark:bg-zinc-600 dark:hover:bg-zinc-700 dark:focus:ring-zinc-800"
-                                            >
-                                                Details
-                                                <svg
-                                                    className="rtl:rotate-180 w-3.5 h-3.5 ml-2"
-                                                    aria-hidden="true"
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    fill="none"
-                                                    viewBox="0 0 14 10"
-                                                >
-                                                    <path
-                                                        stroke="currentColor"
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        strokeWidth="2"
-                                                        d="M1 5h12m0 0L9 1m4 4L9 9"
-                                                    />
-                                                </svg>
-                                            </a>
+                                        <div className="bunker-card__footer">
+                                            <ExplorerLink to={`/chain/block/${block.height}`} className="bunker-btn bunker-btn--primary" style={{ width: '100%' }}>
+                                                Details →
+                                            </ExplorerLink>
                                         </div>
-                                    </div>
+                                    </article>
                                 ))}
                             </div>
                             {!loading && currentBlocks.length === 0 && (
-                                <p className="text-gray-600 col-span-full text-center py-4">No blocks found for this page. The chain may be short or historical data unavailable.</p>
+                                <p className="bunker-muted" style={{ textAlign: 'center', padding: '1rem 0' }}>
+                                    No blocks found for this page. The chain may be short or historical data unavailable.
+                                </p>
                             )}
                         </>
                     )}
                     {mode === 'all' && !loading && !isSearching && (
-                        <div className="flex justify-between items-center mt-6">
-                            <button
-                                disabled={page === 1}
-                                onClick={() => setPage(page - 1)}
-                                className="px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                            >
+                        <div className="bunker-toolbar" style={{ marginTop: '1.5rem' }}>
+                            <button disabled={page === 1} onClick={() => setPage(page - 1)} className="bunker-btn bunker-btn--ghost">
                                 Previous
                             </button>
-                            <span className="text-sm text-gray-600">Page {page} of {maxPage}</span>
-                            <button
-                                disabled={!hasNext}
-                                onClick={() => setPage(page + 1)}
-                                className="px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                            >
+                            <span className="bunker-muted">Page {page} of {maxPage}</span>
+                            <button disabled={!hasNext} onClick={() => setPage(page + 1)} className="bunker-btn bunker-btn--ghost">
                                 Next
                             </button>
                         </div>
                     )}
                 </>
             )}
-        </div>
+        </BunkerShell>
     );
 }
 
