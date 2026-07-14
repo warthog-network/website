@@ -1,10 +1,12 @@
 ---
-const apkUrl = '/defi-mobile.apk';
+/** Android APK ships via GitHub Releases (same pattern as warthog_extension). */
+const apkUrl = "https://github.com/warthog-network/mobile-wallet/releases";
 ---
 
 <a
   href={apkUrl}
-  download="defi-mobile.apk"
+  target="_blank"
+  rel="noopener noreferrer"
   class="mobile-wallet-btn"
 >
   <strong>Mobile Wallet</strong>
