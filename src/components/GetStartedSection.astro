@@ -7,7 +7,9 @@ import Pickaxe from "../BalkyImages/getstartedimgs/pickaxe.svg";
 import Book from "../BalkyImages/getstartedimgs/book.svg";
 
 const webWalletUrl = "/webwallet";
-const mobileWalletApk = "/defi-mobile.apk";
+/** Android APK ships via GitHub Releases (same pattern as warthog_extension). */
+const mobileWalletApk =
+  "https://github.com/warthog-network/mobile-wallet/releases";
 
 /** In-browser full node (Netlify). Extension zip is packaged there on deploy. */
 const browserNodeUrl = "https://browser-node-bodega.netlify.app/";
@@ -269,13 +271,11 @@ const wallets = [
             </div>
             <h3>Mobile Wallet</h3>
             <p>
-              Android wallet app. Download the APK to install on your Android
-              device.
+              Android wallet app. Download the APK from GitHub Releases and
+              install on your Android device.
             </p>
             <div class="gs-card-actions">
-              <a href={mobileWalletApk} download="defi-mobile.apk">
-                Download APK
-              </a>
+              <a href={mobileWalletApk}>Download APK</a>
             </div>
           </div>
         </div>
