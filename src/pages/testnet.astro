@@ -1,0 +1,268 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import "../styles.css";
+import Wallet from "../BalkyImages/getstartedimgs/wallet.svg";
+import Nodes from "../BalkyImages/getstartedimgs/blockchain_nodes.svg";
+import Pool from "../BalkyImages/getstartedimgs/pool.svg";
+import Book from "../BalkyImages/getstartedimgs/book.svg";
+
+const title = "Testnet Hub";
+
+const testnetCards = [
+  {
+    icon: Nodes,
+    title: "Testnet node",
+    desc: "The testnet is running nodes from the `defi` branch of the core repo. These nodes have version numbers starting with `0.10.x`.",
+    primary: { label: "Source", href: "https://github.com/warthog-network/core/tree/defi" },
+  },
+  {
+    icon: Wallet,
+    title: "Website Faucet",
+    desc: "Get free testnet WART for testing purposes. You can also refill the faucet with testnet coins.",
+    primary: { label: "Open", href: "https://testnet-faucet.warthog.network/" },
+    secondary: { label: "Source", href: "https://github.com/warthog-network/testnet-faucet" },
+  },
+  {
+    icon: Book,
+    title: "Telegram Faucet",
+    desc: "Get free testnet WART from this Telegram bot.",
+    primary: { label: "Open", href: "https://t.me/kernelpanic007bot" },
+  },
+
+  {
+    icon: Book,
+    title: "Client explorer",
+    desc: "Blockchain explorer at testnet.warthog.network. Runs client side directly, based on API requests made from the page's JavaScript. No backend indexer, no database.",
+    primary: { label: "Open", href: "https://testnet.warthog.network/" },
+  },
+];
+
+const fbmCards = [
+  {
+    icon: Pool,
+    title: "DeFi Demo",
+    desc: "See Fair Batch Matching in action. Warthog's algorithm eliminates sandwich attacks by batch-processing all swaps jointly. FBM math runs as WebAssembly in the browser, no node round trip.",
+    primary: { label: "Open", href: "/defi-demo" },
+  },
+  {
+    icon: Pool,
+    title: "DeFi Dry Run",
+    desc: "We are working on an automated try run to match the current state of the mempool with our Fair Batch Matching algorithm to simulate matching as if the pending orders were mined in the next block.",
+    primary: null,
+    status: "Soon",
+  },
+]
+
+const walletCards = [
+  {
+    icon: Wallet,
+    title: "Browser extension (work in progress)",
+    desc: "Wired up to work in connection with the testnet explorer at testnet.warthog.network. Once shipped the extension lets you sign and broadcast testnet transactions straight from the browser.",
+    primary: { label: "Source", href: "https://github.com/warthog-network/browser-wallet" },
+  },
+  {
+    icon: Wallet,
+    title: "bunker.warthog.network",
+    desc: "Wallet and frontend for interacting with the DeFi features of the testnet. Browser based, no install required.",
+    primary: { label: "Open", href: "https://bunker.warthog.network/" },
+  },
+  {
+    icon: Wallet,
+    title: "Mobile wallet",
+    desc: "Wallet and frontend for interacting with the DeFi features of the testnet. React Native / Expo app for Android (APK) and iOS.",
+    primary: { label: "Source", href: "https://github.com/warthog-network/mobile-wallet" },
+  },
+];
+---
+
+<BaseLayout title={title}>
+  <section class="section testnet-section" id="testnet">
+    <div class="site-shell">
+      <div class="section__header">
+        <p class="section__eyebrow">First Steps</p>
+        <h1 class="section__title">Warthog Testnet</h1>
+        <p class="section__lede">
+          The testnet is the live environment for Native DeFi, Fair Batch
+          Matching, and new wallet and node work. Get free testnet coins,
+          pick a wallet, watch the chain on the explorer, try the matching
+          engine in your browser.
+        </p>
+      </div>
+
+      <div class="cards-grid">
+        {testnetCards.map((c) => (
+          <div class="gs-card">
+            <div class="gs-card-icon"><img src={c.icon.src} alt="" /></div>
+            <h3>{c.title}</h3>
+            <p>{c.desc}</p>
+            <div class="gs-card-actions">
+              <a href={c.primary.href} target="_blank" rel="noreferrer noopener">{c.primary.label}</a>
+              {c.secondary && (
+                <a href={c.secondary.href} target="_blank" rel="noreferrer noopener">{c.secondary.label}</a>
+              )}
+            </div>
+          </div>
+        ))}
+          <div class="gs-card">
+            <div class="gs-card-icon"><img src={Book.src} alt="" /></div>
+            <h3>SDKs</h3>
+            <p> For developers we have three SDKs covering Python, Elixir and JavaScript (works natively and within browser).</p>
+            <div class="gs-card-actions">
+              <a href="https://github.com/warthog-network/warthog-ts" target="_blank" rel="noreferrer noopener">JavaScript</a>
+              <a href="https://github.com/warthog-network/warthog_py" target="_blank" rel="noreferrer noopener">Python</a>
+              <a href="https://github.com/warthog-network/warthog_ex" target="_blank" rel="noreferrer noopener">Elixir</a>
+            </div>
+          </div>
+      </div>
+
+      <h2 class="testnet-section-title">Wallets</h2>
+      <div class="cards-grid">
+        {walletCards.map((w) => (
+          <div class="gs-card">
+            <div class="gs-card-icon"><img src={w.icon.src} alt="" /></div>
+            <h3>{w.title}</h3>
+            <p>{w.desc}</p>
+            <div class="gs-card-actions">
+              <a href={w.primary.href} target="_blank" rel="noreferrer noopener">{w.primary.label}</a>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <h2 class="testnet-section-title">Fair Batch Matching</h2>
+      <div class="cards-grid">
+        {fbmCards.map((w) => (
+          <div class="gs-card">
+            <div class="gs-card-icon"><img src={w.icon.src} alt="" /></div>
+            <h3>{w.title}</h3>
+            <p>{w.desc}</p>
+            <div class="gs-card-actions">
+              {w.primary ? (
+                <a href={w.primary.href} target="_blank" rel="noreferrer noopener">{w.primary.label}</a>
+              ) : (
+                <span class="gs-card-soon" title={w.status || "Soon"}>{w.status || "Soon"}</span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .testnet-section {
+    padding-block: clamp(3rem, 6vw, 5.5rem);
+    scroll-margin-top: 5rem;
+  }
+
+  .testnet-section-title {
+    margin: clamp(2rem, 4vw, 3rem) 0 0.6rem;
+    font-size: clamp(1.2rem, 2.2vw, 1.45rem);
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: clamp(1rem, 2vw, 1.5rem);
+    margin-top: 2rem;
+  }
+
+  .gs-card {
+    background: rgba(8, 12, 24, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .gs-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: var(--shadow-card);
+  }
+
+  .gs-card-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(56, 189, 248, 0.1);
+    border-radius: 0.75rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .gs-card-icon img {
+    width: 28px;
+    height: 28px;
+    filter: brightness(1.4);
+  }
+
+  .gs-card h3 {
+    font-size: 1.125rem;
+    margin: 0;
+    color: var(--color-text);
+    font-weight: 600;
+  }
+
+  .gs-card p {
+    color: var(--color-text-muted);
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .gs-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: auto;
+    padding-top: 0.5rem;
+  }
+
+  .gs-card-actions a {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.45rem 0.95rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: var(--color-text);
+    text-decoration: none;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .gs-card-actions a:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+
+  .gs-card-soon {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px dashed rgba(255, 255, 255, 0.25);
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: default;
+  }
+
+  .muted {
+    color: var(--color-text-muted);
+    margin: 0.5rem 0 0;
+    line-height: 1.55;
+  }
+</style>
