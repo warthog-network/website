@@ -1,267 +1,268 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import "../styles.css";
+import Wallet from "../BalkyImages/getstartedimgs/wallet.svg";
+import Nodes from "../BalkyImages/getstartedimgs/blockchain_nodes.svg";
+import Pool from "../BalkyImages/getstartedimgs/pool.svg";
+import Book from "../BalkyImages/getstartedimgs/book.svg";
 
 const title = "Testnet Hub";
 
-// Public testnet node list. Source of truth is `data.warthog.network/defi-nodes.json`
-// once that pipeline is wired (see `docs/_roadmap/roadmap.md`).
-const TESTNET_NODES = [
-  // Placeholder curated list — replace with live fetch once the public-data
-  // pipeline serves defi-nodes.json reliably. See HUB.md "Public Data API".
+const testnetCards = [
+  {
+    icon: Nodes,
+    title: "Testnet node",
+    desc: "The testnet is running nodes from the `defi` branch of the core repo. These nodes have version numbers starting with `0.10.x`.",
+    primary: { label: "Source", href: "https://github.com/warthog-network/core/tree/defi" },
+  },
+  {
+    icon: Wallet,
+    title: "Website Faucet",
+    desc: "Get free testnet WART for testing purposes. You can also refill the faucet with testnet coins.",
+    primary: { label: "Open", href: "https://testnet-faucet.warthog.network/" },
+    secondary: { label: "Source", href: "https://github.com/warthog-network/testnet-faucet" },
+  },
+  {
+    icon: Book,
+    title: "Telegram Faucet",
+    desc: "Get free testnet WART from this Telegram bot.",
+    primary: { label: "Open", href: "https://t.me/kernelpanic007bot" },
+  },
+
+  {
+    icon: Book,
+    title: "Client explorer",
+    desc: "Blockchain explorer at testnet.warthog.network. Runs client side directly, based on API requests made from the page's JavaScript. No backend indexer, no database.",
+    primary: { label: "Open", href: "https://testnet.warthog.network/" },
+  },
 ];
 
-// Testnet-compatible wallets. Status legend matches HUB.md "Wallet Network
-// Compatibility": "Testnet only (defi branch API)".
-const TESTNET_WALLETS = [
+const fbmCards = [
   {
-    name: "wart-dapp",
-    label: "Wart DAPP (GUI)",
-    repo: "warthog-network/wart-dapp",
-    desc: "Cross-platform GUI wallet for Windows and Linux. Connects to a public node with one click.",
+    icon: Pool,
+    title: "DeFi Demo",
+    desc: "See Fair Batch Matching in action. Warthog's algorithm eliminates sandwich attacks by batch-processing all swaps jointly. FBM math runs as WebAssembly in the browser, no node round trip.",
+    primary: { label: "Open", href: "/defi-demo" },
   },
   {
-    name: "browser-wallet",
-    label: "Browser Extension Wallet",
-    repo: "warthog-network/browser-wallet",
-    desc: "Chrome and Firefox extension. Uses public nodes or your own node URL.",
+    icon: Pool,
+    title: "DeFi Dry Run",
+    desc: "We are working on an automated try run to match the current state of the mempool with our Fair Batch Matching algorithm to simulate matching as if the pending orders were mined in the next block.",
+    primary: null,
+    status: "Soon",
+  },
+]
+
+const walletCards = [
+  {
+    icon: Wallet,
+    title: "Browser extension (work in progress)",
+    desc: "Wired up to work in connection with the testnet explorer at testnet.warthog.network. Once shipped the extension lets you sign and broadcast testnet transactions straight from the browser.",
+    primary: { label: "Source", href: "https://github.com/warthog-network/browser-wallet" },
   },
   {
-    name: "mobile-wallet",
-    label: "Mobile Wallet",
-    repo: "warthog-network/mobile-wallet",
-    desc: "React Native / Expo app for Android (APK) and iOS.",
+    icon: Wallet,
+    title: "bunker.warthog.network",
+    desc: "Wallet and frontend for interacting with the DeFi features of the testnet. Browser based, no install required.",
+    primary: { label: "Open", href: "https://bunker.warthog.network/" },
   },
   {
-    name: "warthog-ts",
-    label: "TypeScript SDK",
-    repo: "warthog-network/warthog-ts",
-    desc: "For developers — full DeFi support (all 7 transaction types). Used by browser-wallet and mobile-wallet.",
+    icon: Wallet,
+    title: "Mobile wallet",
+    desc: "Wallet and frontend for interacting with the DeFi features of the testnet. React Native / Expo app for Android (APK) and iOS.",
+    primary: { label: "Source", href: "https://github.com/warthog-network/mobile-wallet" },
   },
 ];
 ---
 
 <BaseLayout title={title}>
-  <section class="section" id="testnet">
+  <section class="section testnet-section" id="testnet">
     <div class="site-shell">
       <div class="section__header">
-        <p class="section__eyebrow">Testnet</p>
-        <h1 class="section__title">Warthog Testnet Hub</h1>
+        <p class="section__eyebrow">First Steps</p>
+        <h1 class="section__title">Warthog Testnet</h1>
         <p class="section__lede">
-          The Warthog testnet is the live environment for Native DeFi, Fair
-          Batch Matching, and new wallet and node work. This page is the
-          starting point: pick a wallet, connect to a public testnet node,
-          and try the matching engine in your browser.
+          The testnet is the live environment for Native DeFi, Fair Batch
+          Matching, and new wallet and node work. Get free testnet coins,
+          pick a wallet, watch the chain on the explorer, try the matching
+          engine in your browser.
         </p>
       </div>
 
-      <!-- ===== Wallets ===== -->
-      <section class="testnet-block">
-        <h2>1. Pick a wallet</h2>
-        <p class="muted">
-          Wallets marked <strong>Testnet only</strong> connect to the
-          <code>core/defi</code> branch nodes and support the full DeFi
-          surface (transfer, token, asset creation, limit swap, liquidity,
-          cancel).
-        </p>
-        <ul class="wallet-grid">
-          {
-            TESTNET_WALLETS.map((w) => (
-              <li class="wallet-card">
-                <h3>{w.label}</h3>
-                <p class="muted">{w.desc}</p>
-                <a
-                  class="wallet-link"
-                  href={`https://github.com/${w.repo}`}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                >
-                  {w.repo} →
-                </a>
-              </li>
-            ))
-          }
-        </ul>
-      </section>
+      <div class="cards-grid">
+        {testnetCards.map((c) => (
+          <div class="gs-card">
+            <div class="gs-card-icon"><img src={c.icon.src} alt="" /></div>
+            <h3>{c.title}</h3>
+            <p>{c.desc}</p>
+            <div class="gs-card-actions">
+              <a href={c.primary.href} target="_blank" rel="noreferrer noopener">{c.primary.label}</a>
+              {c.secondary && (
+                <a href={c.secondary.href} target="_blank" rel="noreferrer noopener">{c.secondary.label}</a>
+              )}
+            </div>
+          </div>
+        ))}
+          <div class="gs-card">
+            <div class="gs-card-icon"><img src={Book.src} alt="" /></div>
+            <h3>SDKs</h3>
+            <p> For developers we have three SDKs covering Python, Elixir and JavaScript (works natively and within browser).</p>
+            <div class="gs-card-actions">
+              <a href="https://github.com/warthog-network/warthog-ts" target="_blank" rel="noreferrer noopener">JavaScript</a>
+              <a href="https://github.com/warthog-network/warthog_py" target="_blank" rel="noreferrer noopener">Python</a>
+              <a href="https://github.com/warthog-network/warthog_ex" target="_blank" rel="noreferrer noopener">Elixir</a>
+            </div>
+          </div>
+      </div>
 
-      <!-- ===== Public nodes ===== -->
-      <section class="testnet-block">
-        <h2>2. Connect to a public testnet node</h2>
-        <p class="muted">
-          The canonical list of public testnet nodes will be served from
-          <code>data.warthog.network/defi-nodes.json</code> once the public-data
-          pipeline is wired. Until then, please ask on Discord for an invite URL.
-        </p>
-        {TESTNET_NODES.length > 0 ? (
-          <ul class="node-list">
-            {TESTNET_NODES.map((n) => (
-              <li>
-                <code>{n.url}</code>{" "}
-                <span class="muted">— {n.name ?? ""}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p class="muted">
-            <em>No curated nodes published yet — see the docs roadmap.</em>
-          </p>
-        )}
-        <p class="muted">
-          All testnet nodes expose <code>/api/proxy</code> via the website for
-          browser apps. The raw REST and WebSocket endpoints are reachable
-          directly when running a non-HTTPS browser context.
-        </p>
-      </section>
+      <h2 class="testnet-section-title">Wallets</h2>
+      <div class="cards-grid">
+        {walletCards.map((w) => (
+          <div class="gs-card">
+            <div class="gs-card-icon"><img src={w.icon.src} alt="" /></div>
+            <h3>{w.title}</h3>
+            <p>{w.desc}</p>
+            <div class="gs-card-actions">
+              <a href={w.primary.href} target="_blank" rel="noreferrer noopener">{w.primary.label}</a>
+            </div>
+          </div>
+        ))}
+      </div>
 
-      <!-- ===== Explorer ===== -->
-      <section class="testnet-block">
-        <h2>3. Watch the chain</h2>
-        <p class="muted">
-          The client-explorer (also being completed this year — see roadmap)
-          is the front-end for the public node API. Once deployed, a link
-          here will route to <code>explorer.warthog.network</code>.
-        </p>
-      </section>
+      <h2 class="testnet-section-title">Fair Batch Matching</h2>
+      <div class="cards-grid">
+        {fbmCards.map((w) => (
+          <div class="gs-card">
+            <div class="gs-card-icon"><img src={w.icon.src} alt="" /></div>
+            <h3>{w.title}</h3>
+            <p>{w.desc}</p>
+            <div class="gs-card-actions">
+              {w.primary ? (
+                <a href={w.primary.href} target="_blank" rel="noreferrer noopener">{w.primary.label}</a>
+              ) : (
+                <span class="gs-card-soon" title={w.status || "Soon"}>{w.status || "Soon"}</span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
 
-      <!-- ===== Try the matching engine ===== -->
-      <section class="testnet-block">
-        <h2>4. Try the matching engine</h2>
-        <p class="muted">
-          The <a href="/defi-demo">DeFi Demo</a> is the fastest way to feel
-          how Fair Batch Matching combines an order book with a continuous
-          liquidity pool without ever leaving the browser (the FBM math runs
-          as WebAssembly locally — no node round-trip).
-        </p>
-        <p>
-          <a class="btn-primary" href="/defi-demo">
-            Open the DeFi Demo →
-          </a>
-        </p>
-      </section>
 
-      <!-- ===== Dry-run matching (future) ===== -->
-      <section class="testnet-block">
-        <h2>5. Dry-run matching (coming soon)</h2>
-        <p class="muted">
-          A live "dry-run" matching preview — for each market, show what the
-          FBM would produce against the node's current pending orders (i.e.
-          preview the matching as if the next block were mined right now).
-          This is on the <a href="#">public roadmap</a>; the underlying data
-          source (client-side recompute vs. a new node endpoint such as
-          <code>GET /dex/preview-match</code>) is still being decided.
-        </p>
-        <p class="muted">
-          <em>Not yet shipped — the API design is tracked in the docs
-          roadmap.</em>
-        </p>
-      </section>
-
-      <!-- ===== Get WART ===== -->
-      <section class="testnet-block">
-        <h2>6. Get testnet WART</h2>
-        <p class="muted">
-          Testnet WART is mined by running a testnet node (see step 2). There
-          is no public faucet documented yet — ask on
-          <a
-            href="https://discord.com/invite/QMDV8bGTdQ"
-            target="_blank"
-            rel="noreferrer noopener"
-          >Discord</a
-          > if you need testnet WART and don't want to run a node.
-        </p>
-      </section>
     </div>
   </section>
 </BaseLayout>
 
 <style>
-  .testnet-block {
-    margin-top: clamp(2.5rem, 4vw, 3.5rem);
-    padding-top: clamp(1.5rem, 3vw, 2rem);
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  .testnet-section {
+    padding-block: clamp(3rem, 6vw, 5.5rem);
+    scroll-margin-top: 5rem;
   }
 
-  .testnet-block h2 {
-    margin: 0 0 0.6rem;
-    font-size: clamp(1.25rem, 2.2vw, 1.5rem);
+  .testnet-section-title {
+    margin: clamp(2rem, 4vw, 3rem) 0 0.6rem;
+    font-size: clamp(1.2rem, 2.2vw, 1.45rem);
     font-weight: 700;
     color: var(--color-text);
   }
 
-  .testnet-block p {
-    color: var(--color-text-muted);
-    line-height: 1.55;
-    margin: 0 0 0.7rem;
-  }
-
-  .wallet-grid {
-    list-style: none;
-    margin: 1rem 0 0;
-    padding: 0;
+  .cards-grid {
     display: grid;
-    gap: 0.85rem;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: clamp(1rem, 2vw, 1.5rem);
+    margin-top: 2rem;
   }
 
-  .wallet-card {
+  .gs-card {
+    background: rgba(8, 12, 24, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 0.85rem;
-    background: rgba(8, 12, 24, 0.7);
-    padding: 1rem 1.1rem;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
   }
 
-  .wallet-card h3 {
-    margin: 0 0 0.35rem;
-    font-size: 1rem;
-    font-weight: 700;
+  .gs-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: var(--shadow-card);
+  }
+
+  .gs-card-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(56, 189, 248, 0.1);
+    border-radius: 0.75rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .gs-card-icon img {
+    width: 28px;
+    height: 28px;
+    filter: brightness(1.4);
+  }
+
+  .gs-card h3 {
+    font-size: 1.125rem;
+    margin: 0;
     color: var(--color-text);
+    font-weight: 600;
   }
 
-  .wallet-card p {
-    margin: 0 0 0.6rem;
-    font-size: 0.88rem;
+  .gs-card p {
+    color: var(--color-text-muted);
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
   }
 
-  .wallet-link {
-    display: inline-block;
-    font-family: ui-monospace, "SF Mono", Menlo, monospace;
-    font-size: 0.78rem;
-    color: var(--color-brand);
-    text-decoration: none;
-    border-bottom: 1px solid transparent;
+  .gs-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: auto;
+    padding-top: 0.5rem;
   }
 
-  .wallet-link:hover,
-  .wallet-link:focus-visible {
-    border-bottom-color: var(--color-brand);
-  }
-
-  .node-list {
-    list-style: none;
-    margin: 0.5rem 0;
-    padding: 0;
-  }
-
-  .node-list li {
-    padding: 0.4rem 0;
-    font-family: ui-monospace, "SF Mono", Menlo, monospace;
-    font-size: 0.86rem;
-  }
-
-  .btn-primary {
+  .gs-card-actions a {
     display: inline-flex;
     align-items: center;
-    padding: 0.7rem 1.4rem;
-    border-radius: 999px;
-    background: var(--color-brand);
-    color: #1f2937;
-    font-weight: 700;
+    padding: 0.45rem 0.95rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: var(--color-text);
     text-decoration: none;
-    transition: filter 0.2s ease;
+    transition: border-color 0.2s, color 0.2s;
   }
 
-  .btn-primary:hover,
-  .btn-primary:focus-visible {
-    filter: brightness(0.95);
+  .gs-card-actions a:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+
+  .gs-card-soon {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px dashed rgba(255, 255, 255, 0.25);
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: default;
+  }
+
+  .muted {
+    color: var(--color-text-muted);
+    margin: 0.5rem 0 0;
+    line-height: 1.55;
   }
 </style>
