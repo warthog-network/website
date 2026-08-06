@@ -131,39 +131,62 @@ export async function GET({ request }) {
 }
 
 export async function POST({ request }) {
+  const url = new URL(request.url);
+  const queryNodePath = url.searchParams.get('nodePath');
+  const queryNodeBase = url.searchParams.get('nodeBase');
   const contentType = request.headers.get('content-type') || '';
 
-  if (contentType.includes('application/json')) {
+  // Read the body at most once. The webwallet posts raw tx JSON with
+  // nodeBase/nodePath in the query string; warthog-js posts an envelope
+  // { nodeBase, nodePath, method, body }. Re-reading request.text() after
+  // request.json() throws and Netlify returns HTTP 500 with an empty body.
+  let rawText = '';
+  try {
+    rawText = await request.text();
+  } catch {
+    rawText = '';
+  }
+
+  let parsed = null;
+  if (rawText && contentType.includes('application/json')) {
     try {
-      const envelope = await request.json();
-      if (envelope?.nodeBase && envelope?.nodePath != null) {
-        const forwardBody = envelope.body != null
-          ? JSON.stringify(envelope.body)
-          : null;
-        return forwardToNode({
-          nodeBase: envelope.nodeBase,
-          nodePath: envelope.nodePath,
-          method: envelope.method || 'GET',
-          body: forwardBody,
-        });
-      }
+      parsed = JSON.parse(rawText);
     } catch {
-      // fall through to legacy query-param POST
+      parsed = null;
     }
   }
 
-  const url = new URL(request.url);
-  const nodePath = url.searchParams.get('nodePath');
-  const nodeBase = url.searchParams.get('nodeBase');
-  if (!nodePath || !nodeBase) {
+  // Envelope style used by browserWarthogApi / warthog-js
+  if (
+    parsed
+    && typeof parsed === 'object'
+    && parsed.nodeBase
+    && parsed.nodePath != null
+  ) {
+    const forwardBody = parsed.body != null
+      ? JSON.stringify(parsed.body)
+      : null;
+    return forwardToNode({
+      nodeBase: parsed.nodeBase,
+      nodePath: parsed.nodePath,
+      method: parsed.method || 'GET',
+      body: forwardBody,
+    });
+  }
+
+  // Legacy style: query params + raw body (webwallet send transaction)
+  if (!queryNodePath || !queryNodeBase) {
     return jsonResponse({ code: 1, error: 'Missing params' }, 400);
   }
 
-  const body = await request.text();
+  const legacyBody = parsed != null
+    ? JSON.stringify(parsed)
+    : (rawText || null);
+
   return forwardToNode({
-    nodeBase,
-    nodePath,
+    nodeBase: queryNodeBase,
+    nodePath: queryNodePath,
     method: 'POST',
-    body: body || null,
+    body: legacyBody,
   });
 }
