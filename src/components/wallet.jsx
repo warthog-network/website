@@ -310,7 +310,7 @@ const Wallet = () => {
   // ==================== FIXED fetchBalanceAndNonce (only change) ====================
   const fetchBalanceAndNonce = async (address) => {
     const nodeUrl = resolveNodeUrl(selectedNode);
-    if (!nodeUrl) return;
+    if (!nodeUrl) return null;
 
     // Read the latest optimistic nonce from localStorage (survives page reload / login)
     let persistentNonce = 0;
@@ -326,7 +326,9 @@ const Wallet = () => {
         headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
       });
       console.log('Chain head response status:', chainHeadResponse.status);
-      const chainHeadData = chainHeadResponse.data.data || chainHeadResponse.data;
+      const chainHeadRaw = chainHeadResponse.data.data || chainHeadResponse.data;
+      // Mainnet: flat pinHash/pinHeight; DeFi nodes: nested under chainHead
+      const chainHeadData = chainHeadRaw?.chainHead || chainHeadRaw;
       console.log('Chain head response data:', chainHeadData);
 
       console.log('Sending balance request to:', `${API_URL}?nodePath=account/${address}/balance&${nodeBaseParam}`);
@@ -352,19 +354,28 @@ const Wallet = () => {
         .then((usd) => setUsdBalance(usd))
         .catch(() => setUsdBalance('N/A'));
 
+      const resolvedPinHeight = chainHeadData.pinHeight ?? null;
+      const resolvedPinHash = chainHeadData.pinHash ?? null;
+
       setNextNonce(newNextNonce);
-      setPinHeight(chainHeadData.pinHeight);
-      setPinHash(chainHeadData.pinHash);
+      setPinHeight(resolvedPinHeight);
+      setPinHash(resolvedPinHash);
 
       if (address) {
         localStorage.setItem(`warthogNextNonce_${address}`, newNextNonce);
       }
 
       console.log('Chain head data:', chainHeadData);
-      return { balanceInWart, nextNonce: newNextNonce, pinHeight: chainHeadData.pinHeight, pinHash: chainHeadData.pinHash };
+      return {
+        balanceInWart,
+        nextNonce: newNextNonce,
+        pinHeight: resolvedPinHeight,
+        pinHash: resolvedPinHash,
+      };
     } catch (err) {
       console.warn('Balance fetch failed:', err.response?.status || err.message);
       // Background balance refresh — don't surface raw proxy errors in the global banner
+      return null;
     }
   };
   // =================================================================================
@@ -728,7 +739,12 @@ const Wallet = () => {
     try {
       const response = await axios.get(`${API_URL}?nodePath=tools/encode16bit/from_string/${feeWart}&${nodeBaseParam}`);
       const feeData = response.data.data || response.data;
-      return feeData.roundedE8;
+      // Mainnet: roundedE8; DeFi nodes: rounded.E8
+      const rounded = feeData.roundedE8 ?? feeData.rounded?.E8 ?? null;
+      if (rounded == null) {
+        throw new Error('Fee encode response missing roundedE8');
+      }
+      return rounded;
     } catch (err) {
       throw new Error('Failed to round fee');
     }
@@ -766,16 +782,24 @@ const Wallet = () => {
       setSending(false);
       return;
     }
-    if (nextNonce === null || pinHeight === null || pinHash === null || nonceInput === '') {
-      setError('Nonce or chain head not available. Fetching latest...');
-      await fetchBalanceAndNonce(wallet.address); // Fetch fresh if missing or auto-calculating
+
+    // Always refresh pin/nonce for send, and use the returned values (React state is async).
+    let usePinHeight = pinHeight;
+    let usePinHash = pinHash;
+    let useNextNonce = nextNonce;
+    const refreshed = await fetchBalanceAndNonce(wallet.address);
+    if (refreshed) {
+      usePinHeight = refreshed.pinHeight;
+      usePinHash = refreshed.pinHash;
+      useNextNonce = refreshed.nextNonce;
     }
-    if (nextNonce === null || pinHeight === null || pinHash === null) {
+    if (useNextNonce === null || usePinHeight === null || usePinHash === null) {
       setError('Failed to fetch nonce or chain head. Please try again.');
       setSending(false);
       return;
     }
-    let txNonce = nextNonce;
+
+    let txNonce = useNextNonce;
     if (nonceInput !== '') {
       const parsedNonce = Number(nonceInput);
       if (isNaN(parsedNonce) || parsedNonce < 0 || !Number.isInteger(parsedNonce)) {
@@ -794,10 +818,10 @@ const Wallet = () => {
       timestamp: new Date().toISOString(),
     };
     try {
-      // Use current state values
-      const pinHashBytes = ethers.getBytes('0x' + pinHash);
+      // Use freshly resolved pin values (not stale React state)
+      const pinHashBytes = ethers.getBytes('0x' + usePinHash);
       const heightBytes = new Uint8Array(4);
-      new DataView(heightBytes.buffer).setUint32(0, pinHeight, false);
+      new DataView(heightBytes.buffer).setUint32(0, usePinHeight, false);
       const nonceBytes = new Uint8Array(4);
       new DataView(nonceBytes.buffer).setUint32(0, txNonce, false); // Use txNonce
       const reserved = new Uint8Array(3);
@@ -830,17 +854,22 @@ const Wallet = () => {
         setSending(false);
         return;
       }
-      const nodeBaseParam = `nodeBase=${encodeURIComponent(nodeUrl)}`;
-      console.log('Sending transaction request to:', `${API_URL}?nodePath=transaction/add&${nodeBaseParam}`);
+      // Envelope POST — works with current /api/proxy (legacy query+body also fixed server-side)
+      console.log('Sending transaction request via proxy envelope to:', nodeUrl);
       const response = await axios.post(
-        `${API_URL}?nodePath=transaction/add&${nodeBaseParam}`,
+        API_URL,
         {
-          pinHeight,
-          nonceId: txNonce, // Use txNonce
-          toAddr,
-          amountE8,
-          feeE8,
-          signature65,
+          nodeBase: nodeUrl,
+          nodePath: 'transaction/add',
+          method: 'POST',
+          body: {
+            pinHeight: usePinHeight,
+            nonceId: txNonce,
+            toAddr,
+            amountE8,
+            feeE8,
+            signature65,
+          },
         },
         { headers: { 'Content-Type': 'application/json' } }
       );
@@ -852,7 +881,7 @@ const Wallet = () => {
       }
       
       // Optimistic updates on success
-      const newNextNonce = Math.max(nextNonce || 0, txNonce + 1);
+      const newNextNonce = Math.max(useNextNonce || 0, txNonce + 1);
       setNextNonce(newNextNonce);
       if (wallet?.address) {
         localStorage.setItem(`warthogNextNonce_${wallet.address}`, newNextNonce);
@@ -868,10 +897,11 @@ const Wallet = () => {
       // Clear input fields
       setToAddr('');
       setAmount('');
-      setFee('');
+      setFee('0.01');
       setNonceInput('');
     } catch (err) {
       const errorMessage =
+        err.response?.data?.error ||
         err.response?.data?.message ||
         err.message ||
         'Failed to send transaction';
