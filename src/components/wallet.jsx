@@ -1241,54 +1241,15 @@ const Wallet = () => {
 
           {wallet && (
             <section className="wallet-overview !p-0 !bg-transparent !border-0 !shadow-none !mb-0">
-              <div className="mb-4 flex flex-col gap-3">
-                <div>
-                  <h2 className="!mb-1">
-                    {walletSection === 'settings' ? 'Settings' : 'Wallet Overview'}
-                  </h2>
-                  <p className="text-xs text-zinc-500 m-0">
-                    {walletSection === 'settings'
-                      ? 'Passkey, backup, number display, node, and utilities'
-                      : 'Balance, send & receive, and transaction history'}
-                  </p>
-                </div>
-                {/* Always visible (mobile + desktop) — not .desktop-tabs which is hidden &lt;768px */}
-                <div
-                  className="wallet-section-tabs"
-                  role="tablist"
-                  aria-label="Wallet sections"
-                >
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={walletSection === 'overview'}
-                    className={`wallet-section-tab${
-                      walletSection === 'overview' ? ' wallet-section-tab--active' : ''
-                    }`}
-                    onClick={() => {
-                      setWalletSection('overview');
-                      setShowSendPanel(false);
-                      setShowReceivePanel(false);
-                    }}
-                  >
-                    Overview
-                  </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={walletSection === 'settings'}
-                    className={`wallet-section-tab${
-                      walletSection === 'settings' ? ' wallet-section-tab--active' : ''
-                    }`}
-                    onClick={() => {
-                      setWalletSection('settings');
-                      setShowSendPanel(false);
-                      setShowReceivePanel(false);
-                    }}
-                  >
-                    Settings
-                  </button>
-                </div>
+              <div className="mb-3">
+                <h2 className="!mb-1">
+                  {walletSection === 'settings' ? 'Settings' : 'Wallet Overview'}
+                </h2>
+                <p className="text-xs text-zinc-500 m-0">
+                  {walletSection === 'settings'
+                    ? 'Passkey, backup, number display, node, and utilities'
+                    : 'Balance, send & receive, and transaction history'}
+                </p>
               </div>
 
               <div className="space-y-4">
@@ -1312,9 +1273,7 @@ const Wallet = () => {
 
                 
 
-                                {walletSection === 'overview' && (
-                  <>
-                <WalletOverviewCard
+                                <WalletOverviewCard
                   balance={balance}
                   balanceDisplay={
                     balance == null
@@ -1381,8 +1340,45 @@ const Wallet = () => {
                   }}
                 />
 
+                <div
+                  className="wallet-section-tabs"
+                  role="tablist"
+                  aria-label="Wallet sections"
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={walletSection === 'overview'}
+                    className={`wallet-section-tab${
+                      walletSection === 'overview' ? ' wallet-section-tab--active' : ''
+                    }`}
+                    onClick={() => {
+                      setWalletSection('overview');
+                      setShowSendPanel(false);
+                      setShowReceivePanel(false);
+                    }}
+                  >
+                    Overview
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={walletSection === 'settings'}
+                    className={`wallet-section-tab${
+                      walletSection === 'settings' ? ' wallet-section-tab--active' : ''
+                    }`}
+                    onClick={() => {
+                      setWalletSection('settings');
+                      setShowSendPanel(false);
+                      setShowReceivePanel(false);
+                    }}
+                  >
+                    Settings
+                  </button>
+                </div>
 
-
+                {walletSection === 'overview' && (
+                  <>
 {showSendPanel && isLoggedIn && (
                   <div className="wallet-send-wrap">
                     <div id="send-transaction" className="bunker-panel wallet-send-panel">
