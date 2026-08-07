@@ -1241,7 +1241,7 @@ const Wallet = () => {
 
           {wallet && (
             <section className="wallet-overview !p-0 !bg-transparent !border-0 !shadow-none !mb-0">
-              <div className="mb-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+              <div className="mb-4 flex flex-col gap-3">
                 <div>
                   <h2 className="!mb-1">
                     {walletSection === 'settings' ? 'Settings' : 'Wallet Overview'}
@@ -1252,9 +1252,9 @@ const Wallet = () => {
                       : 'Balance, send & receive, and transaction history'}
                   </p>
                 </div>
-                {/* Separate sections — same idea as WartBunker Overview vs Tools */}
+                {/* Always visible (mobile + desktop) — not .desktop-tabs which is hidden &lt;768px */}
                 <div
-                  className="desktop-tabs flex flex-wrap gap-1.5 p-1 rounded-xl bg-zinc-950/90 border border-zinc-700/80 shadow-inner"
+                  className="wallet-section-tabs"
                   role="tablist"
                   aria-label="Wallet sections"
                 >
@@ -1262,7 +1262,9 @@ const Wallet = () => {
                     type="button"
                     role="tab"
                     aria-selected={walletSection === 'overview'}
-                    className={`wallet-tab-btn${walletSection === 'overview' ? ' wallet-tab-btn--active' : ''}`}
+                    className={`wallet-section-tab${
+                      walletSection === 'overview' ? ' wallet-section-tab--active' : ''
+                    }`}
                     onClick={() => {
                       setWalletSection('overview');
                       setShowSendPanel(false);
@@ -1275,7 +1277,9 @@ const Wallet = () => {
                     type="button"
                     role="tab"
                     aria-selected={walletSection === 'settings'}
-                    className={`wallet-tab-btn${walletSection === 'settings' ? ' wallet-tab-btn--active' : ''}`}
+                    className={`wallet-section-tab${
+                      walletSection === 'settings' ? ' wallet-section-tab--active' : ''
+                    }`}
                     onClick={() => {
                       setWalletSection('settings');
                       setShowSendPanel(false);

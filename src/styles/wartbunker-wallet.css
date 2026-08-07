@@ -499,7 +499,7 @@
     box-sizing: border-box;
   }
 
-  .container button:not(.mobile-hamburger):not(.remove-token-btn):not(.refresh-balance-btn):not(.icon-square-btn):not(.compact-btn):not(.saved-wallet-card):not(.dex-tab-btn):not(.wallet-tab-btn):not(.wallet-nav-btn):not(.wallet-action-btn):not(.network-node-btn):not(.open-orders-group-btn):not(.bunker-btn):not(.bunker-input-toggle) {
+  .container button:not(.mobile-hamburger):not(.remove-token-btn):not(.refresh-balance-btn):not(.icon-square-btn):not(.compact-btn):not(.saved-wallet-card):not(.dex-tab-btn):not(.wallet-tab-btn):not(.wallet-section-tab):not(.wallet-nav-btn):not(.wallet-action-btn):not(.network-node-btn):not(.open-orders-group-btn):not(.bunker-btn):not(.bunker-input-toggle) {
     font-size: 1rem;
     width: 100%;
     margin-right: 0;
@@ -593,7 +593,7 @@
 
 /* Enhanced touch targets for mobile */
 @media (max-width: 767px) {
-  button:not(.remove-token-btn):not(.refresh-balance-btn):not(.icon-square-btn):not(.compact-btn):not(.saved-wallet-card):not(.dex-tab-btn):not(.wallet-tab-btn):not(.wallet-nav-btn):not(.wallet-action-btn):not(.network-node-btn):not(.bunker-btn):not(.bunker-input-toggle) {
+  button:not(.remove-token-btn):not(.refresh-balance-btn):not(.icon-square-btn):not(.compact-btn):not(.saved-wallet-card):not(.dex-tab-btn):not(.wallet-tab-btn):not(.wallet-section-tab):not(.wallet-nav-btn):not(.wallet-action-btn):not(.network-node-btn):not(.bunker-btn):not(.bunker-input-toggle) {
     min-height: 48px;
     touch-action: manipulation;
   }
@@ -1011,6 +1011,82 @@
 @media (min-width: 768px) {
   .desktop-tabs {
     display: flex !important;
+  }
+}
+
+/* Webwallet Overview | Settings — always visible on phone + desktop */
+.container .wallet-section-tabs {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.375rem;
+  width: 100%;
+  padding: 0.35rem;
+  border-radius: 0.875rem;
+  background: rgba(9, 9, 11, 0.95);
+  border: 1px solid rgba(63, 63, 70, 0.9);
+  box-sizing: border-box;
+}
+
+.container button.wallet-section-tab {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  margin: 0 !important;
+  min-height: 2.75rem !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  padding: 0.65rem 0.75rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  border-radius: 0.65rem !important;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
+  transform: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: #a1a1aa !important;
+  border: 1px solid transparent !important;
+  overflow: hidden;
+  position: relative;
+}
+
+.container button.wallet-section-tab::before {
+  display: none !important;
+}
+
+.container button.wallet-section-tab:hover:not(.wallet-section-tab--active) {
+  background: rgba(39, 39, 42, 0.9) !important;
+  color: #f4f4f5 !important;
+  border-color: rgba(82, 82, 91, 0.7) !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.container button.wallet-section-tab.wallet-section-tab--active,
+.container button.wallet-section-tab.wallet-section-tab--active:hover,
+.container button.wallet-section-tab.wallet-section-tab--active:active {
+  background: var(--primary-hover, #e79300) !important;
+  color: #fff !important;
+  border-color: var(--primary-hover, #e79300) !important;
+  box-shadow: 0 4px 14px rgba(231, 147, 0, 0.28) !important;
+  transform: none !important;
+}
+
+/* Ensure mobile global button rules never hide section tabs */
+@media (max-width: 767px) {
+  .container .wallet-section-tabs {
+    display: grid !important;
+  }
+  .container button.wallet-section-tab {
+    display: inline-flex !important;
+  }
+}
+
+@media (min-width: 640px) {
+  .container .wallet-section-tabs {
+    max-width: 22rem;
   }
 }
 
