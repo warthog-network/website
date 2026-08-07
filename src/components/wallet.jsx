@@ -106,6 +106,8 @@ const Wallet = () => {
   const [registration, setRegistration] = useState(null);
   const [usdBalance, setUsdBalance] = useState(null);
   const [showSendPanel, setShowSendPanel] = useState(false);
+  const [showReceivePanel, setShowReceivePanel] = useState(false);
+  const [showToolsPanel, setShowToolsPanel] = useState(false);
   const [showContactsModal, setShowContactsModal] = useState(false);
   const [contactsModalMode, setContactsModalMode] = useState('manage');
   const [showWalletExportQr, setShowWalletExportQr] = useState(false);
@@ -775,6 +777,8 @@ const Wallet = () => {
     setIsWalletProcessed(false);
     setIsLoggedIn(false);
     setShowSendPanel(false);
+    setShowReceivePanel(false);
+    setShowToolsPanel(false);
     setShowWalletExportQr(false);
     setShowNamePrompt(false);
     setNamePromptDismissed(false);
@@ -1240,20 +1244,25 @@ const Wallet = () => {
                   usdBalance={usdBalance}
                   address={wallet.address}
                   walletName={currentWalletName}
-                  nodeList={nodeList}
-                  selectedNode={selectedNode}
-                  customIP={customIP}
-                  customPort={customPort}
-                  nodesLoading={nodesLoading}
-                  nodesError={nodesError}
-                  onNodeChange={(key) => {
-                    setSelectedNode(key);
-                    localStorage.setItem('selectedNode', key);
-                  }}
-                  onCustomIPChange={setCustomIP}
-                  onCustomPortChange={setCustomPort}
-                  onSaveCustomNode={handleSaveCustomNode}
                   refreshing={balanceRefreshing}
+                  authBadge={
+                    sessionRequire2fa
+                      ? '2fa'
+                      : sessionHasPasskey
+                        ? 'passkey'
+                        : currentWalletName
+                          ? 'password'
+                          : 'session'
+                  }
+                  authBadgeLabel={
+                    sessionRequire2fa
+                      ? '2FA'
+                      : sessionHasPasskey
+                        ? fpLabel
+                        : currentWalletName
+                          ? 'Saved'
+                          : 'Session'
+                  }
                   onRefresh={async () => {
                     if (!wallet?.address || balanceRefreshing) return;
                     setBalanceRefreshing(true);
@@ -1269,11 +1278,9 @@ const Wallet = () => {
                       .writeText(wallet.address)
                       .then(() => alert('Address copied to clipboard!'))
                   }
-                  validateInput={address}
-                  onValidateInputChange={(value) => setAddress(value.trim())}
-                  onValidate={handleValidateAddress}
-                  validateResult={validateResult}
                   onSend={() => {
+                    setShowReceivePanel(false);
+                    setShowToolsPanel(false);
                     setShowSendPanel(true);
                     requestAnimationFrame(() => {
                       document.getElementById('send-transaction')?.scrollIntoView({
@@ -1282,13 +1289,28 @@ const Wallet = () => {
                       });
                     });
                   }}
-                  onDownload={() => setShowDownloadPrompt(true)}
-                  onExportQr={() => setShowWalletExportQr(true)}
-                  onContacts={() => {
-                    setContactsModalMode('manage');
-                    setShowContactsModal(true);
+                  onReceive={() => {
+                    setShowSendPanel(false);
+                    setShowToolsPanel(false);
+                    setShowReceivePanel(true);
+                    requestAnimationFrame(() => {
+                      document.getElementById('receive-wart')?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                      });
+                    });
                   }}
-                  onClear={clearWallet}
+                  onTools={() => {
+                    setShowSendPanel(false);
+                    setShowReceivePanel(false);
+                    setShowToolsPanel((v) => !v);
+                    requestAnimationFrame(() => {
+                      document.getElementById('wallet-tools')?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                      });
+                    });
+                  }}
                 />
 
                 <WalletContactsModal
@@ -1299,6 +1321,7 @@ const Wallet = () => {
                   onSelectContact={(contact) => {
                     setToAddr(contact.address);
                     setShowSendPanel(true);
+                    setShowToolsPanel(false);
                   }}
                 />
 
@@ -1312,7 +1335,7 @@ const Wallet = () => {
                   <div className="wallet-send-wrap">
                     <div id="send-transaction" className="bunker-panel wallet-send-panel">
                       <div className="flex items-center justify-between gap-3 mb-4">
-                        <h2 className="bunker-heading" style={{ margin: 0 }}>Send Transaction</h2>
+                        <h2 className="bunker-heading" style={{ margin: 0 }}>Send WART</h2>
                         <button
                           type="button"
                           onClick={() => setShowSendPanel(false)}
@@ -1380,155 +1403,320 @@ const Wallet = () => {
                   </div>
                 )}
 
-                <p className="text-xs text-zinc-500 italic">
-                  {currentWalletName
-                    ? `Wallet "${currentWalletName}" is saved encrypted in this browser. Use the mobile icon to export via QR.`
-                    : 'Private key is in this session only until you name & save the wallet. Keep your password secure.'}
-                </p>
-
-                {/* Passkey / 2FA — enable after login (wartbunker Tools parity) */}
-                {passkeysSupported && (
-                  <div
-                    className="mt-4 p-4 rounded-xl border"
-                    style={{
-                      borderColor: sessionRequire2fa
-                        ? 'rgba(56, 189, 248, 0.4)'
-                        : sessionHasPasskey
-                          ? 'rgba(52, 211, 153, 0.35)'
-                          : 'rgba(245, 158, 11, 0.45)',
-                      background: sessionRequire2fa
-                        ? 'rgba(12, 74, 110, 0.2)'
-                        : sessionHasPasskey
-                          ? 'rgba(6, 78, 59, 0.18)'
-                          : 'rgba(120, 53, 15, 0.15)',
-                    }}
-                  >
-                    <h3 className="text-base font-semibold text-zinc-100 m-0 mb-2">
-                      Passkey &amp; 2FA login
-                    </h3>
-                    <p className="text-xs text-zinc-500 mb-3 m-0">
-                      Enable one-tap {fpLabel} unlock or require password + {fpLabel} (2FA), same as
-                      wartbunker Tools. You can turn this on any time after login.
+                {showReceivePanel && isLoggedIn && (
+                  <div id="receive-wart" className="bunker-panel">
+                    <div className="flex items-center justify-between gap-3 mb-4">
+                      <h2 className="bunker-heading" style={{ margin: 0 }}>Receive WART</h2>
+                      <button
+                        type="button"
+                        onClick={() => setShowReceivePanel(false)}
+                        className="compact-btn hover:!text-[#E79300] !m-0"
+                      >
+                        Close
+                      </button>
+                    </div>
+                    <p className="text-sm text-zinc-400 mb-3">
+                      Share this address to receive WART on the selected network.
                     </p>
-                    {sessionRequire2fa ? (
-                      <p className="text-sm text-sky-300/95 mb-2 m-0 font-medium">
-                        ✓ 2FA active
-                        {currentWalletName ? (
-                          <>
-                            {' '}
-                            for <span className="font-mono">{currentWalletName}</span>
-                          </>
-                        ) : null}
-                      </p>
-                    ) : sessionHasPasskey ? (
-                      <p className="text-sm text-emerald-400/90 mb-2 m-0 font-medium">
-                        ✓ Passkey enabled
-                        {currentWalletName ? (
-                          <>
-                            {' '}
-                            for <span className="font-mono">{currentWalletName}</span>
-                          </>
-                        ) : null}
-                      </p>
-                    ) : (
-                      <p className="text-sm text-zinc-400 mb-2 m-0">
-                        Not enabled yet
-                        {!currentWalletName
-                          ? ' — saving will name this wallet in the browser.'
-                          : '.'}
-                      </p>
-                    )}
-
-                    <label className="flex items-start gap-2 text-sm text-zinc-300 mb-2 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        className="mt-1 accent-[#E79300]"
-                        checked={toolsWant2fa}
-                        onChange={(e) => setToolsWant2fa(e.target.checked)}
-                        disabled={passkeyBusy}
-                      />
-                      <span>
-                        <strong>Require 2FA</strong> — password and {fpLabel} every login
-                      </span>
-                    </label>
-
-                    {(toolsWant2fa || !sessionHasPassword) && (
-                      <div className="mb-3">
-                        <label className="bunker-label">
-                          Wallet password
-                          {toolsWant2fa ? ' (required for 2FA)' : ' (optional)'}
-                        </label>
-                        <input
-                          type="password"
-                          className="bunker-input"
-                          autoComplete="current-password"
-                          value={toolsPasskeyPassword}
-                          onChange={(e) => setToolsPasskeyPassword(e.target.value)}
-                          placeholder={toolsWant2fa ? 'Password for 2FA' : 'Optional password'}
-                          disabled={passkeyBusy}
-                        />
-                      </div>
-                    )}
-
-                    {!currentWalletName && (
-                      <div className="mb-3">
-                        <label className="bunker-label">Save as name</label>
-                        <input
-                          type="text"
-                          className="bunker-input"
-                          value={promptWalletName}
-                          onChange={(e) => setPromptWalletName(e.target.value)}
-                          placeholder="e.g. main"
-                          disabled={passkeyBusy}
-                        />
-                      </div>
-                    )}
-
-                    <div className="flex flex-col gap-2">
+                    <div className="mb-4 p-3 rounded-xl bg-zinc-900/80 border border-zinc-700/60">
+                      <p className="font-mono text-sm text-[#FDB913] break-all m-0">{wallet.address}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
                         className="bunker-btn bunker-btn--primary"
-                        disabled={passkeyBusy}
                         onClick={() =>
-                          void enablePasskeyOnCurrentWallet({
-                            require2fa: toolsWant2fa,
-                            password: toolsPasskeyPassword || null,
-                          })
+                          navigator.clipboard
+                            .writeText(wallet.address)
+                            .then(() => alert('Address copied to clipboard!'))
                         }
                       >
-                        {passkeyBusy
-                          ? 'Waiting for passkey…'
-                          : toolsWant2fa
-                            ? sessionHasPasskey
-                              ? 'Update passkey + keep 2FA'
-                              : 'Enable passkey with 2FA'
-                            : sessionHasPasskey
-                              ? `Re-register ${fpLabel}`
-                              : `Enable ${fpLabel}`}
+                        Copy address
                       </button>
-                      {sessionHasPasskey && !sessionRequire2fa && (
+                      <button
+                        type="button"
+                        className="bunker-btn"
+                        onClick={() => setShowWalletExportQr(true)}
+                      >
+                        Export to mobile (QR)
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {showToolsPanel && isLoggedIn && (
+                  <div id="wallet-tools" className="bunker-panel space-y-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <h2 className="bunker-heading" style={{ margin: 0 }}>Tools</h2>
+                        <p className="text-xs text-zinc-500 m-0 mt-1">
+                          Node, security, backup, and extras — kept off the balance card.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowToolsPanel(false)}
+                        className="compact-btn hover:!text-[#E79300] !m-0"
+                      >
+                        Close
+                      </button>
+                    </div>
+
+                    {/* Node */}
+                    <section>
+                      <h3 className="text-sm font-semibold text-zinc-200 m-0 mb-2">Network node</h3>
+                      {nodesLoading ? (
+                        <p className="text-xs text-zinc-500">Loading nodes…</p>
+                      ) : nodesError ? (
+                        <p className="text-xs text-red-400">{nodesError}</p>
+                      ) : (
+                        <select
+                          value={
+                            nodeList.some((n) => (n.id || n.url) === selectedNode)
+                              ? selectedNode
+                              : 'losthymns'
+                          }
+                          onChange={(e) => {
+                            setSelectedNode(e.target.value);
+                            localStorage.setItem('selectedNode', e.target.value);
+                          }}
+                          className="bunker-input"
+                        >
+                          {nodeList.map((node) => (
+                            <option key={node.id || node.url} value={node.id || node.url}>
+                              {node.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      {selectedNode === 'custom' && (
+                        <div className="mt-2 flex flex-wrap gap-2 items-center">
+                          <input
+                            type="text"
+                            value={customIP}
+                            onChange={(e) => setCustomIP(e.target.value)}
+                            placeholder="Host"
+                            className="bunker-input"
+                          />
+                          <input
+                            type="text"
+                            value={customPort}
+                            onChange={(e) => setCustomPort(e.target.value)}
+                            placeholder="Port"
+                            className="bunker-input !max-w-[6rem]"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleSaveCustomNode}
+                            disabled={!customIP.trim() || !customPort.trim()}
+                            className="bunker-btn"
+                          >
+                            Save node
+                          </button>
+                        </div>
+                      )}
+                    </section>
+
+                    {/* Validate */}
+                    <section>
+                      <h3 className="text-sm font-semibold text-zinc-200 m-0 mb-2">Validate address</h3>
+                      <div className="flex flex-wrap gap-2 items-center">
+                        <input
+                          type="text"
+                          value={address}
+                          onChange={(e) => setAddress(e.target.value.trim())}
+                          onKeyDown={(e) => e.key === 'Enter' && handleValidateAddress()}
+                          placeholder="48-character address"
+                          className="bunker-input flex-1 min-w-[12rem]"
+                        />
+                        <button type="button" onClick={handleValidateAddress} className="bunker-btn">
+                          Validate
+                        </button>
+                      </div>
+                      {validateResult && (
+                        <p
+                          className={`mt-2 text-sm font-mono m-0 ${
+                            validateResult.valid ? 'text-emerald-400' : 'text-red-400'
+                          }`}
+                        >
+                          {validateResult.valid
+                            ? 'Valid Warthog address'
+                            : address
+                              ? 'Invalid address'
+                              : 'Enter an address to validate'}
+                        </p>
+                      )}
+                    </section>
+
+                    {/* Backup / export */}
+                    <section>
+                      <h3 className="text-sm font-semibold text-zinc-200 m-0 mb-2">Backup &amp; export</h3>
+                      <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
                           className="bunker-btn"
-                          disabled={passkeyBusy}
+                          onClick={() => setShowDownloadPrompt(true)}
+                        >
+                          Download file
+                        </button>
+                        <button
+                          type="button"
+                          className="bunker-btn"
+                          onClick={() => setShowWalletExportQr(true)}
+                        >
+                          Export QR (mobile)
+                        </button>
+                        <button
+                          type="button"
+                          className="bunker-btn"
                           onClick={() => {
-                            setToolsWant2fa(true);
-                            void enablePasskeyOnCurrentWallet({
-                              require2fa: true,
-                              password: toolsPasskeyPassword || null,
-                            });
+                            setContactsModalMode('manage');
+                            setShowContactsModal(true);
                           }}
                         >
-                          Enable 2FA (password + {fpLabel})
+                          Contacts
                         </button>
-                      )}
-                    </div>
-                    {toolsSecurityMsg && (
-                      <p className="text-sm text-emerald-400/90 mt-2 mb-0">{toolsSecurityMsg}</p>
+                      </div>
+                      <p className="text-xs text-zinc-500 mt-2 mb-0">
+                        {currentWalletName
+                          ? `Named “${currentWalletName}” is saved in this browser.`
+                          : 'Session only until you save a name (passkey section below or name prompt).'}
+                      </p>
+                    </section>
+
+                    {/* Passkey / 2FA */}
+                    {passkeysSupported && (
+                      <section
+                        className="p-4 rounded-xl border"
+                        style={{
+                          borderColor: sessionRequire2fa
+                            ? 'rgba(56, 189, 248, 0.4)'
+                            : sessionHasPasskey
+                              ? 'rgba(52, 211, 153, 0.35)'
+                              : 'rgba(245, 158, 11, 0.45)',
+                          background: sessionRequire2fa
+                            ? 'rgba(12, 74, 110, 0.2)'
+                            : sessionHasPasskey
+                              ? 'rgba(6, 78, 59, 0.18)'
+                              : 'rgba(120, 53, 15, 0.15)',
+                        }}
+                      >
+                        <h3 className="text-base font-semibold text-zinc-100 m-0 mb-2">
+                          Passkey &amp; 2FA
+                        </h3>
+                        <p className="text-xs text-zinc-500 mb-3 m-0">
+                          One-tap {fpLabel} unlock or password + {fpLabel} (2FA). Badge on the balance
+                          card shows status.
+                        </p>
+                        {sessionRequire2fa ? (
+                          <p className="text-sm text-sky-300/95 mb-2 m-0 font-medium">✓ 2FA active</p>
+                        ) : sessionHasPasskey ? (
+                          <p className="text-sm text-emerald-400/90 mb-2 m-0 font-medium">
+                            ✓ Passkey enabled
+                          </p>
+                        ) : (
+                          <p className="text-sm text-zinc-400 mb-2 m-0">Not enabled yet</p>
+                        )}
+
+                        <label className="flex items-start gap-2 text-sm text-zinc-300 mb-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            className="mt-1 accent-[#E79300]"
+                            checked={toolsWant2fa}
+                            onChange={(e) => setToolsWant2fa(e.target.checked)}
+                            disabled={passkeyBusy}
+                          />
+                          <span>
+                            <strong>Require 2FA</strong> — password and {fpLabel} every login
+                          </span>
+                        </label>
+
+                        {(toolsWant2fa || !sessionHasPassword) && (
+                          <div className="mb-3">
+                            <label className="bunker-label">
+                              Wallet password
+                              {toolsWant2fa ? ' (required for 2FA)' : ' (optional)'}
+                            </label>
+                            <input
+                              type="password"
+                              className="bunker-input"
+                              autoComplete="current-password"
+                              value={toolsPasskeyPassword}
+                              onChange={(e) => setToolsPasskeyPassword(e.target.value)}
+                              placeholder={toolsWant2fa ? 'Password for 2FA' : 'Optional password'}
+                              disabled={passkeyBusy}
+                            />
+                          </div>
+                        )}
+
+                        {!currentWalletName && (
+                          <div className="mb-3">
+                            <label className="bunker-label">Save as name</label>
+                            <input
+                              type="text"
+                              className="bunker-input"
+                              value={promptWalletName}
+                              onChange={(e) => setPromptWalletName(e.target.value)}
+                              placeholder="e.g. main"
+                              disabled={passkeyBusy}
+                            />
+                          </div>
+                        )}
+
+                        <div className="flex flex-col gap-2">
+                          <button
+                            type="button"
+                            className="bunker-btn bunker-btn--primary"
+                            disabled={passkeyBusy}
+                            onClick={() =>
+                              void enablePasskeyOnCurrentWallet({
+                                require2fa: toolsWant2fa,
+                                password: toolsPasskeyPassword || null,
+                              })
+                            }
+                          >
+                            {passkeyBusy
+                              ? 'Waiting for passkey…'
+                              : toolsWant2fa
+                                ? sessionHasPasskey
+                                  ? 'Update passkey + keep 2FA'
+                                  : 'Enable passkey with 2FA'
+                                : sessionHasPasskey
+                                  ? `Re-register ${fpLabel}`
+                                  : `Enable ${fpLabel}`}
+                          </button>
+                          {sessionHasPasskey && !sessionRequire2fa && (
+                            <button
+                              type="button"
+                              className="bunker-btn"
+                              disabled={passkeyBusy}
+                              onClick={() => {
+                                setToolsWant2fa(true);
+                                void enablePasskeyOnCurrentWallet({
+                                  require2fa: true,
+                                  password: toolsPasskeyPassword || null,
+                                });
+                              }}
+                            >
+                              Enable 2FA (password + {fpLabel})
+                            </button>
+                          )}
+                        </div>
+                        {toolsSecurityMsg && (
+                          <p className="text-sm text-emerald-400/90 mt-2 mb-0">{toolsSecurityMsg}</p>
+                        )}
+                      </section>
                     )}
-                    {error && toolsSecurityMsg === null && (
-                      <p className="text-sm text-red-400 mt-2 mb-0">{error}</p>
-                    )}
+
+                    <section className="pt-2 border-t border-zinc-800">
+                      <button
+                        type="button"
+                        className="bunker-btn bunker-btn--ghost text-red-400"
+                        onClick={clearWallet}
+                      >
+                        Clear wallet (lock session)
+                      </button>
+                    </section>
                   </div>
                 )}
 

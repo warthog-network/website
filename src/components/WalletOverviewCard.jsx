@@ -6,37 +6,56 @@ const abbreviateAddress = (address) => {
   return `${address.slice(0, 5)}…${address.slice(-5)}`;
 };
 
+/**
+ * Plain balance card: balance, Send / Receive, Tools, compact security badge.
+ * Node, passkey/2FA, download, contacts, etc. live under Tools.
+ */
 export default function WalletOverviewCard({
   balance,
   usdBalance,
   address,
   walletName = null,
-  nodeList = [],
-  selectedNode = '',
-  customIP = 'localhost',
-  customPort = '3000',
-  nodesLoading = false,
-  nodesError = null,
-  onNodeChange,
-  onCustomIPChange,
-  onCustomPortChange,
-  onSaveCustomNode,
-  validateInput = '',
-  onValidateInputChange,
-  onValidate,
-  validateResult = null,
   onRefresh,
   refreshing = false,
   onCopyAddress,
-  onDownload,
-  onExportQr,
-  onClear,
-  onContacts,
   onSend,
+  onReceive,
+  onTools,
+  /** Compact security status: '2fa' | 'passkey' | 'password' | 'session' | null */
+  authBadge = null,
+  authBadgeLabel = null,
 }) {
   const balanceMissing = balance === null;
   const usdDisplay =
     usdBalance && usdBalance !== 'N/A' ? usdBalance : '—';
+
+  const badgeStyles = {
+    '2fa': {
+      border: 'rgba(56, 189, 248, 0.45)',
+      bg: 'rgba(12, 74, 110, 0.25)',
+      text: 'text-sky-300',
+      label: authBadgeLabel || '2FA',
+    },
+    passkey: {
+      border: 'rgba(52, 211, 153, 0.4)',
+      bg: 'rgba(6, 78, 59, 0.22)',
+      text: 'text-emerald-400',
+      label: authBadgeLabel || 'Passkey',
+    },
+    password: {
+      border: 'rgba(161, 161, 170, 0.4)',
+      bg: 'rgba(39, 39, 42, 0.5)',
+      text: 'text-zinc-300',
+      label: authBadgeLabel || 'Password',
+    },
+    session: {
+      border: 'rgba(245, 158, 11, 0.4)',
+      bg: 'rgba(120, 53, 15, 0.18)',
+      text: 'text-amber-400/90',
+      label: authBadgeLabel || 'Session only',
+    },
+  };
+  const badge = authBadge ? badgeStyles[authBadge] || badgeStyles.session : null;
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-zinc-700/80 bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-950 min-w-0">
@@ -49,31 +68,44 @@ export default function WalletOverviewCard({
             <div className="text-[10px] uppercase tracking-[0.14em] text-zinc-500 font-medium">
               Total Balance
             </div>
-            <button
-              type="button"
-              onClick={onRefresh}
-              disabled={refreshing}
-              className="refresh-balance-btn flex flex-shrink-0 items-center gap-1 px-2 py-1 text-[10px] font-medium text-zinc-400 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-600/50 rounded-lg transition-colors !m-0 disabled:opacity-60 disabled:cursor-wait"
-              title={refreshing ? 'Refreshing…' : 'Refresh balance & history'}
-              aria-busy={refreshing}
-            >
-              <span
-                className={`text-[#FDB913] text-[11px] leading-none inline-block${refreshing ? ' animate-spin' : ''}`}
-                aria-hidden="true"
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {badge ? (
+                <span
+                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${badge.text}`}
+                  style={{ borderColor: badge.border, background: badge.bg }}
+                  title="Security status — open Tools to manage passkey / 2FA"
+                >
+                  {badge.label}
+                </span>
+              ) : null}
+              <button
+                type="button"
+                onClick={onRefresh}
+                disabled={refreshing}
+                className="refresh-balance-btn flex flex-shrink-0 items-center gap-1 px-2 py-1 text-[10px] font-medium text-zinc-400 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-600/50 rounded-lg transition-colors !m-0 disabled:opacity-60 disabled:cursor-wait"
+                title={refreshing ? 'Refreshing…' : 'Refresh balance & history'}
+                aria-busy={refreshing}
               >
-                ⟳
-              </span>
-              {refreshing ? 'Refreshing…' : 'Refresh'}
-            </button>
+                <span
+                  className={`text-[#FDB913] text-[11px] leading-none inline-block${refreshing ? ' animate-spin' : ''}`}
+                  aria-hidden="true"
+                >
+                  ⟳
+                </span>
+                {refreshing ? '…' : 'Refresh'}
+              </button>
+            </div>
           </div>
 
           {walletName ? (
             <div className="text-[11px] text-zinc-500 mb-2">
-              Saved as <span className="font-mono text-[#FDB913]">{walletName}</span>
+              <span className="font-mono text-[#FDB913]">{walletName}</span>
             </div>
           ) : null}
 
-          <div className={`flex items-baseline gap-2 min-w-0 flex-wrap text-white${refreshing ? ' opacity-60' : ''}`}>
+          <div
+            className={`flex items-baseline gap-2 min-w-0 flex-wrap text-white${refreshing ? ' opacity-60' : ''}`}
+          >
             {balanceMissing ? (
               <div className="h-9 w-36 bg-zinc-800/80 rounded-lg animate-pulse" />
             ) : (
@@ -84,7 +116,9 @@ export default function WalletOverviewCard({
             <span className="text-sm font-medium text-[#FDB913]">WART</span>
           </div>
 
-          <div className={`text-sm text-zinc-400 mt-1 tabular-nums${refreshing ? ' opacity-60' : ''}`}>
+          <div
+            className={`text-sm text-zinc-400 mt-1 tabular-nums${refreshing ? ' opacity-60' : ''}`}
+          >
             {balanceMissing ? (
               <span className="inline-block h-4 w-20 bg-zinc-800/60 rounded animate-pulse" />
             ) : (
@@ -92,153 +126,9 @@ export default function WalletOverviewCard({
             )}
           </div>
 
-          <div className="mt-3 pt-3 border-t border-zinc-800/80 min-w-0">
-            <div className="flex flex-wrap items-center gap-2 min-w-0">
-              <span className="text-[10px] uppercase tracking-[0.12em] text-zinc-500 font-medium flex-shrink-0">
-                Node
-              </span>
-              {nodesLoading ? (
-                <span className="text-[11px] text-zinc-500">Loading…</span>
-              ) : nodesError ? (
-                <span className="text-[11px] text-red-400">{nodesError}</span>
-              ) : (
-                <select
-                  value={
-                    nodeList.some((n) => (n.id || n.url) === selectedNode)
-                      ? selectedNode
-                      : 'losthymns'
-                  }
-                  onChange={(e) => onNodeChange?.(e.target.value)}
-                  className="wallet-node-select"
-                  title="Select node"
-                >
-                  {nodeList.map((node) => (
-                    <option key={node.id || node.url} value={node.id || node.url}>
-                      {node.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-            {selectedNode === 'custom' && (
-              <div className="mt-2 flex flex-wrap gap-2 items-center min-w-0">
-                <input
-                  type="text"
-                  value={customIP}
-                  onChange={(e) => onCustomIPChange?.(e.target.value)}
-                  placeholder="Host (e.g. localhost)"
-                  className="wallet-inline-input"
-                  title="Custom node host"
-                />
-                <input
-                  type="text"
-                  value={customPort}
-                  onChange={(e) => onCustomPortChange?.(e.target.value)}
-                  placeholder="Port"
-                  className="wallet-inline-input !max-w-[5.5rem]"
-                  title="Custom node port"
-                />
-                <button
-                  type="button"
-                  onClick={() => onSaveCustomNode?.()}
-                  disabled={!customIP.trim() || !customPort.trim()}
-                  className="compact-btn hover:!text-[#E79300] !m-0 !flex-shrink-0"
-                  title="Save and use this node"
-                >
-                  Save node
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="mt-3 pt-3 border-t border-zinc-800/80 min-w-0">
-            <div className="text-[10px] uppercase tracking-[0.12em] text-zinc-500 font-medium mb-2">
-              Validate Address
-            </div>
-            <div className="flex flex-wrap gap-2 items-center min-w-0">
-              <input
-                type="text"
-                value={validateInput}
-                onChange={(e) => onValidateInputChange?.(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && onValidate?.()}
-                placeholder="48-character address"
-                className="wallet-inline-input"
-              />
-              <button
-                type="button"
-                onClick={onValidate}
-                className="compact-btn hover:!text-[#E79300] !m-0 !flex-shrink-0"
-              >
-                Validate
-              </button>
-            </div>
-            {validateResult && (
-              <div
-                className={`mt-2 text-[11px] font-mono px-2 py-1.5 rounded-lg border ${
-                  validateResult.valid
-                    ? 'text-emerald-400 border-emerald-800/50 bg-emerald-950/30'
-                    : 'text-red-400 border-red-800/50 bg-red-950/30'
-                }`}
-              >
-                {validateResult.valid ? 'Valid Warthog address' : (validateInput ? 'Invalid address' : 'Enter an address to validate')}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3 min-w-0">
-          {onSend ? (
-            <button
-              type="button"
-              onClick={onSend}
-              className="flex-shrink-0 py-3 px-5 wallet-action-btn !m-0 font-semibold whitespace-nowrap"
-            >
-              Send WART
-            </button>
-          ) : null}
-          {onExportQr ? (
-            <button
-              type="button"
-              onClick={onExportQr}
-              className="icon-square-btn"
-              title="Export wallet to mobile app (QR)"
-              aria-label="Export wallet to mobile app"
-            >
-              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-            </button>
-          ) : null}
-          {onContacts ? (
-            <button
-              type="button"
-              onClick={onContacts}
-              className="compact-btn hover:!text-[#E79300] !mx-0 !my-0 !px-3 !py-1"
-            >
-              Contacts
-            </button>
-          ) : null}
-          {onDownload ? (
-            <button
-              type="button"
-              onClick={onDownload}
-              className="compact-btn hover:!text-[#E79300] !mx-0 !my-0 !px-3 !py-1"
-            >
-              Download File
-            </button>
-          ) : null}
-          {onClear ? (
-            <button
-              type="button"
-              onClick={onClear}
-              className="compact-btn hover:!text-[#E79300] !mx-0 !my-0 !px-3 !py-1"
-            >
-              Clear Wallet
-            </button>
-          ) : null}
-          <div className="min-w-0 flex-1 flex justify-center overflow-hidden">
+          <div className="mt-3 min-w-0">
             <span
-              className="max-w-full truncate whitespace-nowrap font-mono text-[11px] text-zinc-400 hover:text-[#E79300] cursor-pointer transition-colors text-center"
+              className="inline-block max-w-full truncate whitespace-nowrap font-mono text-[11px] text-zinc-400 hover:text-[#E79300] cursor-pointer transition-colors"
               title={`${address} — click to copy`}
               onClick={onCopyAddress}
               role="button"
@@ -254,6 +144,37 @@ export default function WalletOverviewCard({
               <span className="hidden sm:inline">{address}</span>
             </span>
           </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 min-w-0">
+          {onSend ? (
+            <button
+              type="button"
+              onClick={onSend}
+              className="flex-shrink-0 py-3 px-5 wallet-action-btn !m-0 font-semibold whitespace-nowrap"
+            >
+              Send WART
+            </button>
+          ) : null}
+          {onReceive ? (
+            <button
+              type="button"
+              onClick={onReceive}
+              className="flex-shrink-0 py-3 px-5 compact-btn hover:!text-[#E79300] !m-0 font-semibold whitespace-nowrap border border-zinc-600/60 rounded-xl bg-zinc-800/60"
+            >
+              Receive WART
+            </button>
+          ) : null}
+          {onTools ? (
+            <button
+              type="button"
+              onClick={onTools}
+              className="flex-shrink-0 py-3 px-4 compact-btn hover:!text-[#E79300] !m-0 font-semibold whitespace-nowrap border border-zinc-600/60 rounded-xl bg-zinc-800/40"
+              title="Node, passkey, download, contacts, and more"
+            >
+              Tools
+            </button>
+          ) : null}
         </div>
       </div>
     </div>
