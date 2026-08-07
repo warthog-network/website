@@ -416,35 +416,32 @@ export default function WalletSettingsPanel({
       </p>
 
       <div className="space-y-4">
-        {/* WartBunker-style tool picker (dropdown) */}
-        <div className="border border-zinc-800 rounded-xl overflow-hidden bg-zinc-950/60 shadow-sm">
+        {/* Muted “Advanced”-style tool picker (WartBunker swap-advanced) */}
+        <div className="settings-tool-dropdown">
           <button
             type="button"
-            className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-zinc-900/80 transition-colors text-left"
+            className="settings-tool-dropdown-btn"
             onClick={() => setPickerOpen((v) => !v)}
             aria-expanded={pickerOpen}
           >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <span
-                className={`inline-block transition text-zinc-500 text-[10px] flex-shrink-0 ${
-                  pickerOpen ? 'rotate-90' : ''
-                }`}
-              >
-                ▶
+            <span
+              className={`settings-tool-chevron${pickerOpen ? ' is-open' : ''}`}
+              aria-hidden="true"
+            >
+              ▸
+            </span>
+            <span className="min-w-0 flex-1 text-left">
+              <span className="block font-medium text-zinc-300 text-sm">Tool</span>
+              <span className="block text-[11px] text-zinc-500 truncate mt-0.5">
+                {activeToolLabel} — choose a utility
               </span>
-              <div className="min-w-0">
-                <div className="text-xs font-medium text-zinc-200">Tool</div>
-                <div className="text-[10px] text-zinc-500 truncate">
-                  Choose a utility to open below
-                </div>
-              </div>
-            </div>
-            <span className="compact-btn compact-btn--active !mx-0 !my-0 !px-3 !py-1.5 flex-shrink-0 pointer-events-none text-[12px]">
-              {activeToolLabel}
+            </span>
+            <span className="text-[11px] text-zinc-600 shrink-0">
+              {pickerOpen ? 'Hide' : 'Show'}
             </span>
           </button>
           {pickerOpen && (
-            <div className="px-4 pb-3.5 pt-2 border-t border-zinc-800">
+            <div className="settings-tool-dropdown-body">
               <div className="flex flex-wrap items-center gap-1.5" role="tablist" aria-label="Settings tools">
                 {toolOptions.map((tool) => (
                   <button
@@ -456,8 +453,8 @@ export default function WalletSettingsPanel({
                       setActiveTool(tool.id);
                       setPickerOpen(false);
                     }}
-                    className={`compact-btn hover:!text-[#E79300] !mx-0 !my-0 !px-3 !py-1.5${
-                      resolvedTool === tool.id ? ' compact-btn--active' : ''
+                    className={`settings-tool-chip${
+                      resolvedTool === tool.id ? ' settings-tool-chip--active' : ''
                     }`}
                   >
                     {tool.label}
