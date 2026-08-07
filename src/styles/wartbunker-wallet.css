@@ -75,12 +75,35 @@
   min-height: 36px;
 }
 
+/* Section tabs (Overview | Settings): inactive muted, active brand */
+.container .desktop-tabs button.wallet-tab-btn:not(.wallet-tab-btn--active) {
+  background: rgba(39, 39, 42, 0.85);
+  border: 1px solid rgba(82, 82, 91, 0.65);
+  color: #a1a1aa;
+  box-shadow: none;
+  transform: none;
+}
+
+.container .desktop-tabs button.wallet-tab-btn:not(.wallet-tab-btn--active):hover {
+  background: rgba(63, 63, 70, 0.9);
+  color: #fafafa;
+  border-color: rgba(113, 113, 122, 0.8);
+  transform: none;
+  box-shadow: none;
+}
+
 .container .desktop-tabs button.wallet-tab-btn.wallet-tab-btn--active,
 .container .desktop-tabs button.wallet-tab-btn.wallet-tab-btn--active:hover {
   background: var(--primary-hover);
   color: #fff;
   border-color: var(--primary-hover);
   box-shadow: var(--shadow);
+  transform: none;
+}
+
+/* Settings section shell — full-width Tools-style page */
+.wallet-settings-section {
+  margin-top: 0.25rem;
 }
 
 @media (min-width: 768px) {

@@ -409,33 +409,22 @@ export default function WalletSettingsPanel({
     toolOptions.find((t) => t.id === resolvedTool)?.label || resolvedTool;
 
   return (
-    <div id="wallet-tools" className="rounded-2xl border border-zinc-700/80 bg-zinc-950/90 overflow-hidden">
-      <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-zinc-800/80">
-        <div>
-          <h2 className="text-base font-semibold text-white m-0">Settings</h2>
-          <p className="text-[11px] text-zinc-500 m-0 mt-0.5">
-            One tool at a time — pick from the list below
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="compact-btn hover:!text-[#E79300] !m-0"
-        >
-          Close
-        </button>
-      </div>
+    <div id="wallet-settings" className="wallet-settings-section space-y-5">
+      <p className="text-sm text-zinc-400 m-0">
+        Utility helpers for passkey login, backup, display preferences, and node selection — same layout as
+        WartBunker Tools.
+      </p>
 
-      <div className="p-4 space-y-4">
-        {/* WartBunker-style tool picker */}
-        <div className="border border-zinc-800 rounded-xl overflow-hidden bg-zinc-950/50">
+      <div className="space-y-4">
+        {/* WartBunker-style tool picker (dropdown) */}
+        <div className="border border-zinc-800 rounded-xl overflow-hidden bg-zinc-950/60 shadow-sm">
           <button
             type="button"
-            className="w-full flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-zinc-900/80 transition-colors text-left"
+            className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-zinc-900/80 transition-colors text-left"
             onClick={() => setPickerOpen((v) => !v)}
             aria-expanded={pickerOpen}
           >
-            <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-2.5 min-w-0">
               <span
                 className={`inline-block transition text-zinc-500 text-[10px] flex-shrink-0 ${
                   pickerOpen ? 'rotate-90' : ''
@@ -444,17 +433,19 @@ export default function WalletSettingsPanel({
                 ▶
               </span>
               <div className="min-w-0">
-                <div className="text-xs text-zinc-300">Setting</div>
-                <div className="text-[10px] text-zinc-500 truncate">Choose what to open</div>
+                <div className="text-xs font-medium text-zinc-200">Tool</div>
+                <div className="text-[10px] text-zinc-500 truncate">
+                  Choose a utility to open below
+                </div>
               </div>
             </div>
-            <span className="compact-btn compact-btn--active !mx-0 !my-0 !px-3 !py-1 flex-shrink-0 pointer-events-none">
+            <span className="compact-btn compact-btn--active !mx-0 !my-0 !px-3 !py-1.5 flex-shrink-0 pointer-events-none text-[12px]">
               {activeToolLabel}
             </span>
           </button>
           {pickerOpen && (
-            <div className="px-3 pb-3 pt-2 border-t border-zinc-800">
-              <div className="flex flex-wrap items-center gap-1.5" role="tablist" aria-label="Settings">
+            <div className="px-4 pb-3.5 pt-2 border-t border-zinc-800">
+              <div className="flex flex-wrap items-center gap-1.5" role="tablist" aria-label="Settings tools">
                 {toolOptions.map((tool) => (
                   <button
                     key={tool.id}
@@ -465,7 +456,7 @@ export default function WalletSettingsPanel({
                       setActiveTool(tool.id);
                       setPickerOpen(false);
                     }}
-                    className={`compact-btn hover:!text-[#E79300] !mx-0 !my-0 !px-3 !py-1${
+                    className={`compact-btn hover:!text-[#E79300] !mx-0 !my-0 !px-3 !py-1.5${
                       resolvedTool === tool.id ? ' compact-btn--active' : ''
                     }`}
                   >

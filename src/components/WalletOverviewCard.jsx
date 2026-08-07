@@ -24,8 +24,6 @@ export default function WalletOverviewCard({
   onCopyAddress,
   onSend,
   onReceive,
-  onTools,
-  toolsOpen = false,
   /** Compact security status: '2fa' | 'passkey' | 'password' | 'session' | null */
   authBadge = null,
   authBadgeLabel = null,
@@ -171,21 +169,6 @@ export default function WalletOverviewCard({
               className="flex-shrink-0 py-3 px-5 compact-btn hover:!text-[#E79300] !m-0 font-semibold whitespace-nowrap border border-zinc-600/60 rounded-xl bg-zinc-800/60"
             >
               Receive WART
-            </button>
-          ) : null}
-          {onTools ? (
-            <button
-              type="button"
-              onClick={onTools}
-              className={`flex-shrink-0 py-3 px-4 compact-btn hover:!text-[#E79300] !m-0 font-semibold whitespace-nowrap border rounded-xl ${
-                toolsOpen
-                  ? 'border-[#E79300]/60 bg-[#E79300]/15 text-[#FDB913]'
-                  : 'border-zinc-600/60 bg-zinc-800/40'
-              }`}
-              title="Settings — passkey, backup, numbers, node"
-              aria-pressed={toolsOpen}
-            >
-              Settings
             </button>
           ) : null}
         </div>

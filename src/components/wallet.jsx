@@ -113,7 +113,8 @@ const Wallet = () => {
   const [usdBalance, setUsdBalance] = useState(null);
   const [showSendPanel, setShowSendPanel] = useState(false);
   const [showReceivePanel, setShowReceivePanel] = useState(false);
-  const [showToolsPanel, setShowToolsPanel] = useState(false);
+  /** Logged-in main sections — Overview (balance) vs Settings (like WartBunker Tools page). */
+  const [walletSection, setWalletSection] = useState('overview'); // 'overview' | 'settings'
   const [numberPrefs, setNumberPrefs] = useState(() => loadNumberDisplayPrefs());
   const [showContactsModal, setShowContactsModal] = useState(false);
   const [contactsModalMode, setContactsModalMode] = useState('manage');
@@ -785,7 +786,7 @@ const Wallet = () => {
     setIsLoggedIn(false);
     setShowSendPanel(false);
     setShowReceivePanel(false);
-    setShowToolsPanel(false);
+    setWalletSection('overview');
     setShowWalletExportQr(false);
     setShowNamePrompt(false);
     setNamePromptDismissed(false);
@@ -1240,12 +1241,75 @@ const Wallet = () => {
 
           {wallet && (
             <section className="wallet-overview !p-0 !bg-transparent !border-0 !shadow-none !mb-0">
-              <div className="mb-5">
-                <h2 className="!mb-1">Wallet Overview</h2>
-                <p className="text-xs text-zinc-500">Your balance and transaction history</p>
+              <div className="mb-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+                <div>
+                  <h2 className="!mb-1">
+                    {walletSection === 'settings' ? 'Settings' : 'Wallet Overview'}
+                  </h2>
+                  <p className="text-xs text-zinc-500 m-0">
+                    {walletSection === 'settings'
+                      ? 'Passkey, backup, number display, node, and utilities'
+                      : 'Balance, send & receive, and transaction history'}
+                  </p>
+                </div>
+                {/* Separate sections — same idea as WartBunker Overview vs Tools */}
+                <div
+                  className="desktop-tabs flex flex-wrap gap-1.5 p-1 rounded-xl bg-zinc-950/90 border border-zinc-700/80 shadow-inner"
+                  role="tablist"
+                  aria-label="Wallet sections"
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={walletSection === 'overview'}
+                    className={`wallet-tab-btn${walletSection === 'overview' ? ' wallet-tab-btn--active' : ''}`}
+                    onClick={() => {
+                      setWalletSection('overview');
+                      setShowSendPanel(false);
+                      setShowReceivePanel(false);
+                    }}
+                  >
+                    Overview
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={walletSection === 'settings'}
+                    className={`wallet-tab-btn${walletSection === 'settings' ? ' wallet-tab-btn--active' : ''}`}
+                    onClick={() => {
+                      setWalletSection('settings');
+                      setShowSendPanel(false);
+                      setShowReceivePanel(false);
+                    }}
+                  >
+                    Settings
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-4">
+                <WalletContactsModal
+                  open={showContactsModal}
+                  mode={contactsModalMode}
+                  onClose={() => setShowContactsModal(false)}
+                  prefillAddress={toAddr}
+                  onSelectContact={(contact) => {
+                    setToAddr(contact.address);
+                    setShowSendPanel(true);
+                    setWalletSection('overview');
+                  }}
+                />
+
+                <WalletQrExportModal
+                  open={showWalletExportQr}
+                  wallet={wallet}
+                  onClose={() => setShowWalletExportQr(false)}
+                />
+
+                
+
+                                {walletSection === 'overview' && (
+                  <>
                 <WalletOverviewCard
                   balance={balance}
                   balanceDisplay={
@@ -1258,7 +1322,6 @@ const Wallet = () => {
                   address={wallet.address}
                   walletName={currentWalletName}
                   refreshing={balanceRefreshing}
-                  toolsOpen={showToolsPanel}
                   authBadge={
                     sessionRequire2fa
                       ? '2fa'
@@ -1294,7 +1357,6 @@ const Wallet = () => {
                   }
                   onSend={() => {
                     setShowReceivePanel(false);
-                    setShowToolsPanel(false);
                     setShowSendPanel(true);
                     requestAnimationFrame(() => {
                       document.getElementById('send-transaction')?.scrollIntoView({
@@ -1305,7 +1367,6 @@ const Wallet = () => {
                   }}
                   onReceive={() => {
                     setShowSendPanel(false);
-                    setShowToolsPanel(false);
                     setShowReceivePanel(true);
                     requestAnimationFrame(() => {
                       document.getElementById('receive-wart')?.scrollIntoView({
@@ -1314,38 +1375,11 @@ const Wallet = () => {
                       });
                     });
                   }}
-                  onTools={() => {
-                    setShowSendPanel(false);
-                    setShowReceivePanel(false);
-                    setShowToolsPanel((v) => !v);
-                    requestAnimationFrame(() => {
-                      document.getElementById('wallet-tools')?.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center',
-                      });
-                    });
-                  }}
                 />
 
-                <WalletContactsModal
-                  open={showContactsModal}
-                  mode={contactsModalMode}
-                  onClose={() => setShowContactsModal(false)}
-                  prefillAddress={toAddr}
-                  onSelectContact={(contact) => {
-                    setToAddr(contact.address);
-                    setShowSendPanel(true);
-                    setShowToolsPanel(false);
-                  }}
-                />
 
-                <WalletQrExportModal
-                  open={showWalletExportQr}
-                  wallet={wallet}
-                  onClose={() => setShowWalletExportQr(false)}
-                />
 
-                {showSendPanel && isLoggedIn && (
+{showSendPanel && isLoggedIn && (
                   <div className="wallet-send-wrap">
                     <div id="send-transaction" className="bunker-panel wallet-send-panel">
                       <div className="flex items-center justify-between gap-3 mb-4">
@@ -1458,9 +1492,19 @@ const Wallet = () => {
                   </div>
                 )}
 
-                {showToolsPanel && isLoggedIn && (
+                <TransactionHistory
+                  address={wallet.address}
+                  node={resolveNodeUrl(selectedNode)}
+                  onCountsUpdate={setBlockCounts}
+                  blockCounts={blockCounts}
+                  refreshTrigger={refreshHistory}
+                />
+                  </>
+                )}
+
+                {walletSection === 'settings' && isLoggedIn && (
                   <WalletSettingsPanel
-                    onClose={() => setShowToolsPanel(false)}
+                    onClose={() => setWalletSection('overview')}
                     numberPrefs={numberPrefs}
                     onNumberPrefsChange={setNumberPrefs}
                     nodeList={nodeList}
@@ -1504,14 +1548,6 @@ const Wallet = () => {
                     onClear={clearWallet}
                   />
                 )}
-
-                <TransactionHistory
-                  address={wallet.address}
-                  node={resolveNodeUrl(selectedNode)}
-                  onCountsUpdate={setBlockCounts}
-                  blockCounts={blockCounts}
-                  refreshTrigger={refreshHistory}
-                />
               </div>
             </section>
           )}
