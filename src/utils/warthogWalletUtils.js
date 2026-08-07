@@ -24,6 +24,21 @@ export function encryptWallet(walletData, password) {
 }
 
 /**
+ * Decrypt a raw password ciphertext only (no envelope unwrap).
+ * Used by 2FA unlock with envelope.password.
+ */
+export function decryptPasswordCipher(cipher, password) {
+  const bytes = CryptoJS.AES.decrypt(cipher, password);
+  const decryptedStr = bytes.toString(CryptoJS.enc.Utf8);
+  if (!decryptedStr) throw new Error('Invalid password');
+  const parsed = JSON.parse(decryptedStr);
+  if (!parsed?.privateKey || !parsed?.address) {
+    throw new Error('Invalid wallet file');
+  }
+  return parsed;
+}
+
+/**
  * Decrypt a password ciphertext or envelope password field.
  */
 export function decryptWallet(encrypted, password) {
@@ -33,14 +48,7 @@ export function decryptWallet(encrypted, password) {
       'This wallet has no password unlock — use passkey, or re-save with a password',
     );
   }
-  const bytes = CryptoJS.AES.decrypt(cipher, password);
-  const decryptedStr = bytes.toString(CryptoJS.enc.Utf8);
-  if (!decryptedStr) throw new Error('Invalid password');
-  const parsed = JSON.parse(decryptedStr);
-  if (!parsed?.privateKey || !parsed?.address) {
-    throw new Error('Invalid wallet file');
-  }
-  return parsed;
+  return decryptPasswordCipher(cipher, password);
 }
 
 export function getSavedWallets() {
@@ -92,6 +100,9 @@ export function saveNamedWalletBlob(name, encrypted) {
   if (!trimmed) throw new Error('Wallet name is required');
   localStorage.setItem(`${NAMED_PREFIX}${trimmed}`, encrypted);
 }
+
+/** Alias used by guided access hub. */
+export const storeNamedWalletEncrypted = saveNamedWalletBlob;
 
 export function inspectNamedBlob(raw) {
   return inspectWalletBlob(raw);
