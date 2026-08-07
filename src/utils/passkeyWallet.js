@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Passkey / fingerprint unlock for Warthog named wallets.
  *
@@ -38,7 +37,7 @@ const IDB_STORE = 'device-aes-keys';
 const PRF_HKDF_INFO = new TextEncoder().encode('warthog-wallet-passkey-aes-v1');
 
 /** Product label shown in the OS passkey prompt */
-let rpDisplayName = 'Warthog Web Wallet';
+let rpDisplayName = 'Warthog Wallet';
 
 /** Configure RP display name (e.g. "WartBunker") before creating credentials. */
 export function setPasskeyProductName(name) {

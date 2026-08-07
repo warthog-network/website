@@ -1,23 +1,22 @@
 /**
- * Website encrypted wallet files / named saves (CryptoJS AES).
- * Legacy format: AES-encrypt(JSON({ privateKey, publicKey, address }), password)
- * Multi-auth envelopes (password + passkey): kind warthog-wallet-v1 — same as extension.
- *
- * IMPORTANT: Do not change send/signing logic; this module is storage/auth only.
+ * Website wallet crypto + named saves.
+ * Supports legacy AES ciphertext and multi-auth envelopes (password + passkey / 2FA).
  */
 import CryptoJS from 'crypto-js';
 import {
   authBadgeForBlob,
-  cleanupPasskeyStorage,
   getPasswordCipherFromBlob,
   inspectWalletBlob,
   tryParseEnvelope,
-} from './passkeyWallet';
+  setPasskeyProductName,
+} from './passkeyWallet.js';
+
+setPasskeyProductName('Warthog Web Wallet');
 
 const NAMED_PREFIX = 'warthogWallet_';
 
 export function encryptWallet(walletData, password) {
-  const { privateKey, publicKey, address, mnemonic } = walletData;
+  const { privateKey, publicKey, address, mnemonic } = walletData || {};
   return CryptoJS.AES.encrypt(
     JSON.stringify({ privateKey, publicKey, address, mnemonic }),
     password,
@@ -25,22 +24,7 @@ export function encryptWallet(walletData, password) {
 }
 
 /**
- * Decrypt a raw password ciphertext only (no envelope unwrap).
- * Used by 2FA unlock and when you already extracted the password field.
- */
-export function decryptPasswordCipher(cipher, password) {
-  const bytes = CryptoJS.AES.decrypt(cipher, password);
-  const decryptedStr = bytes.toString(CryptoJS.enc.Utf8);
-  if (!decryptedStr) throw new Error('Invalid password');
-  const parsed = JSON.parse(decryptedStr);
-  if (!parsed?.privateKey || !parsed?.address) {
-    throw new Error('Invalid wallet file');
-  }
-  return parsed;
-}
-
-/**
- * Decrypt a legacy AES blob or a multi-auth envelope password field.
+ * Decrypt a password ciphertext or envelope password field.
  */
 export function decryptWallet(encrypted, password) {
   const cipher = getPasswordCipherFromBlob(encrypted);
@@ -49,7 +33,14 @@ export function decryptWallet(encrypted, password) {
       'This wallet has no password unlock — use passkey, or re-save with a password',
     );
   }
-  return decryptPasswordCipher(cipher, password);
+  const bytes = CryptoJS.AES.decrypt(cipher, password);
+  const decryptedStr = bytes.toString(CryptoJS.enc.Utf8);
+  if (!decryptedStr) throw new Error('Invalid password');
+  const parsed = JSON.parse(decryptedStr);
+  if (!parsed?.privateKey || !parsed?.address) {
+    throw new Error('Invalid wallet file');
+  }
+  return parsed;
 }
 
 export function getSavedWallets() {
@@ -64,7 +55,7 @@ export function getSavedWallets() {
   }
 }
 
-/** Named wallets with auth badges for guided login. */
+/** Named wallets with passkey / 2FA badges for login UI. */
 export function getSavedWalletEntries() {
   try {
     if (typeof localStorage === 'undefined') return [];
@@ -72,7 +63,7 @@ export function getSavedWalletEntries() {
     for (const key of Object.keys(localStorage)) {
       if (!key.startsWith(NAMED_PREFIX)) continue;
       const name = key.slice(NAMED_PREFIX.length);
-      const raw = localStorage.getItem(key) || '';
+      const raw = localStorage.getItem(key);
       const info = inspectWalletBlob(raw);
       entries.push({
         name,
@@ -81,7 +72,6 @@ export function getSavedWalletEntries() {
         require2fa: info.require2fa,
         badge: authBadgeForBlob(raw),
         addressHint: info.addressHint || '',
-        raw,
       });
     }
     return entries.sort((a, b) => a.name.localeCompare(b.name));
@@ -92,23 +82,23 @@ export function getSavedWalletEntries() {
 
 export function loadNamedWalletEncrypted(name) {
   if (typeof localStorage === 'undefined') return null;
-  return localStorage.getItem(`${NAMED_PREFIX}${name}`);
+  const trimmed = String(name || '').trim();
+  if (!trimmed) return null;
+  return localStorage.getItem(`${NAMED_PREFIX}${trimmed}`);
 }
 
-export function storeNamedWalletEncrypted(name, encrypted) {
+export function saveNamedWalletBlob(name, encrypted) {
   const trimmed = String(name || '').trim();
   if (!trimmed) throw new Error('Wallet name is required');
   localStorage.setItem(`${NAMED_PREFIX}${trimmed}`, encrypted);
 }
 
-export async function deleteNamedWallet(name) {
-  const raw = loadNamedWalletEncrypted(name);
-  if (raw) await cleanupPasskeyStorage(raw);
-  localStorage.removeItem(`${NAMED_PREFIX}${name}`);
+export function inspectNamedBlob(raw) {
+  return inspectWalletBlob(raw);
 }
 
-export {
-  authBadgeForBlob,
-  inspectWalletBlob,
-  tryParseEnvelope,
-};
+export function isEnvelopeBlob(raw) {
+  return tryParseEnvelope(raw) != null;
+}
+
+export { inspectWalletBlob, tryParseEnvelope, getPasswordCipherFromBlob };
