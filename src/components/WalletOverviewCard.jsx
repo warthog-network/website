@@ -12,6 +12,10 @@ const abbreviateAddress = (address) => {
  */
 export default function WalletOverviewCard({
   balance,
+  /** Pre-formatted balance string (number display prefs). Falls back to raw balance. */
+  balanceDisplay = null,
+  /** Tailwind text class for balance (e.g. text-[#FDB913]). */
+  balanceColorClass = 'text-white',
   usdBalance,
   address,
   walletName = null,
@@ -21,6 +25,7 @@ export default function WalletOverviewCard({
   onSend,
   onReceive,
   onTools,
+  toolsOpen = false,
   /** Compact security status: '2fa' | 'passkey' | 'password' | 'session' | null */
   authBadge = null,
   authBadgeLabel = null,
@@ -28,6 +33,7 @@ export default function WalletOverviewCard({
   const balanceMissing = balance === null;
   const usdDisplay =
     usdBalance && usdBalance !== 'N/A' ? usdBalance : '—';
+  const shownBalance = balanceDisplay != null ? balanceDisplay : balance;
 
   const badgeStyles = {
     '2fa': {
@@ -104,16 +110,18 @@ export default function WalletOverviewCard({
           ) : null}
 
           <div
-            className={`flex items-baseline gap-2 min-w-0 flex-wrap text-white${refreshing ? ' opacity-60' : ''}`}
+            className={`flex items-baseline gap-2 min-w-0 flex-wrap${refreshing ? ' opacity-60' : ''}`}
           >
             {balanceMissing ? (
               <div className="h-9 w-36 bg-zinc-800/80 rounded-lg animate-pulse" />
             ) : (
-              <span className="text-3xl font-semibold tracking-tight break-all tabular-nums">
-                {balance}
+              <span
+                className={`text-3xl font-semibold tracking-tight break-all tabular-nums ${balanceColorClass}`}
+              >
+                {shownBalance}
               </span>
             )}
-            <span className="text-sm font-medium text-[#FDB913]">WART</span>
+            <span className="text-sm font-medium text-zinc-400">WART</span>
           </div>
 
           <div
@@ -169,10 +177,15 @@ export default function WalletOverviewCard({
             <button
               type="button"
               onClick={onTools}
-              className="flex-shrink-0 py-3 px-4 compact-btn hover:!text-[#E79300] !m-0 font-semibold whitespace-nowrap border border-zinc-600/60 rounded-xl bg-zinc-800/40"
-              title="Node, passkey, download, contacts, and more"
+              className={`flex-shrink-0 py-3 px-4 compact-btn hover:!text-[#E79300] !m-0 font-semibold whitespace-nowrap border rounded-xl ${
+                toolsOpen
+                  ? 'border-[#E79300]/60 bg-[#E79300]/15 text-[#FDB913]'
+                  : 'border-zinc-600/60 bg-zinc-800/40'
+              }`}
+              title="Settings — passkey, backup, numbers, node"
+              aria-pressed={toolsOpen}
             >
-              Tools
+              Settings
             </button>
           ) : null}
         </div>
