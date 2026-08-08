@@ -12,11 +12,37 @@ import {
   normalizeSelectedNode,
   saveCustomNode,
 } from '../lib/explorerNodes.js';
-import { encryptWallet, decryptWallet, getSavedWallets } from '../utils/warthogWalletUtils';
+import {
+  encryptWallet,
+  decryptWallet,
+  getSavedWallets,
+  getSavedWalletEntries,
+  loadNamedWalletEncrypted,
+  saveNamedWalletBlob,
+  inspectNamedBlob,
+} from '../utils/warthogWalletUtils';
+import {
+  isWebAuthnAvailable,
+  buildEnvelopeWithPasskey,
+  decryptWithPasskey,
+  unlockEnvelopeWith2fa,
+  serializeEnvelope,
+  tryParseEnvelope,
+  envelopeWithPassword,
+  passkeyLabel,
+} from '../utils/passkeyWallet.js';
+import { paintPasskeyWaiting, clearPasskeyWaiting } from '../utils/passkeyUi.js';
 import { formatWartUsdBalance } from '../lib/wartPrice.js';
 import BunkerShell from './BunkerShell.jsx';
 import WalletContactsModal from './WalletContactsModal.jsx';
+import WalletAccessHub from './WalletAccessHub.jsx';
+import WalletSettingsPanel from './WalletSettingsPanel.jsx';
 import { recordContactUsage } from '../utils/walletContacts';
+import {
+  formatDisplayBalance,
+  getNumberColorClass,
+  loadNumberDisplayPrefs,
+} from '../utils/numberDisplay.js';
 
 const API_URL = '/api/proxy';
 
@@ -86,6 +112,10 @@ const Wallet = () => {
   const [registration, setRegistration] = useState(null);
   const [usdBalance, setUsdBalance] = useState(null);
   const [showSendPanel, setShowSendPanel] = useState(false);
+  const [showReceivePanel, setShowReceivePanel] = useState(false);
+  /** Logged-in main sections — Overview (balance) vs Settings (like WartBunker Tools page). */
+  const [walletSection, setWalletSection] = useState('overview'); // 'overview' | 'settings'
+  const [numberPrefs, setNumberPrefs] = useState(() => loadNumberDisplayPrefs());
   const [showContactsModal, setShowContactsModal] = useState(false);
   const [contactsModalMode, setContactsModalMode] = useState('manage');
   const [showWalletExportQr, setShowWalletExportQr] = useState(false);
@@ -93,6 +123,7 @@ const Wallet = () => {
   const [selectedSavedWallet, setSelectedSavedWallet] = useState('');
   const [walletName, setWalletName] = useState('');
   const [savedWalletList, setSavedWalletList] = useState(() => getSavedWallets());
+  const [savedWalletEntries, setSavedWalletEntries] = useState(() => getSavedWalletEntries());
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [namePromptDismissed, setNamePromptDismissed] = useState(false);
   const [promptWalletName, setPromptWalletName] = useState('');
@@ -101,6 +132,23 @@ const Wallet = () => {
   const [promptError, setPromptError] = useState(null);
   const [showPromptPassword, setShowPromptPassword] = useState(false);
   const [showPromptConfirmPassword, setShowPromptConfirmPassword] = useState(false);
+
+  // Passkey / 2FA (wartbunker parity)
+  const [passkeysSupported] = useState(() =>
+    typeof window !== 'undefined' ? isWebAuthnAvailable() : false,
+  );
+  const [passkeyBusy, setPasskeyBusy] = useState(false);
+  const [enablePasskeyOnSave, setEnablePasskeyOnSave] = useState(false);
+  const [require2faOnSave, setRequire2faOnSave] = useState(false);
+  const [enablePasskeyOnPrompt, setEnablePasskeyOnPrompt] = useState(false);
+  const [require2faOnPrompt, setRequire2faOnPrompt] = useState(false);
+  const [sessionHasPasskey, setSessionHasPasskey] = useState(false);
+  const [sessionRequire2fa, setSessionRequire2fa] = useState(false);
+  const [sessionHasPassword, setSessionHasPassword] = useState(false);
+  const [toolsWant2fa, setToolsWant2fa] = useState(false);
+  const [toolsPasskeyPassword, setToolsPasskeyPassword] = useState('');
+  const [toolsSecurityMsg, setToolsSecurityMsg] = useState(null);
+  const fpLabel = passkeyLabel(false);
 
   // Load node list + restore selection (shared with explorer)
   useEffect(() => {
@@ -409,6 +457,29 @@ const Wallet = () => {
 
   const refreshSavedWalletList = () => {
     setSavedWalletList(getSavedWallets());
+    setSavedWalletEntries(getSavedWalletEntries());
+  };
+
+  const refreshSessionAuthStatus = (name = currentWalletName) => {
+    const tag = String(name || '').trim();
+    if (!tag) {
+      setSessionHasPasskey(false);
+      setSessionRequire2fa(false);
+      setSessionHasPassword(false);
+      return;
+    }
+    try {
+      const raw = loadNamedWalletEncrypted(tag);
+      const info = inspectNamedBlob(raw);
+      setSessionHasPasskey(Boolean(info.hasPasskey));
+      setSessionRequire2fa(Boolean(info.require2fa));
+      setSessionHasPassword(Boolean(info.hasPassword));
+      if (info.require2fa) setToolsWant2fa(true);
+    } catch {
+      setSessionHasPasskey(false);
+      setSessionRequire2fa(false);
+      setSessionHasPassword(false);
+    }
   };
 
   const activateWalletSession = (decryptedWallet, name = null) => {
@@ -427,39 +498,154 @@ const Wallet = () => {
     setIsLoggedIn(true);
     setPassword('');
     setSelectedSavedWallet('');
+    setToolsSecurityMsg(null);
+    refreshSessionAuthStatus(name);
   };
 
-  const saveNamedWallet = (walletData, name, pwd) => {
+  /**
+   * Persist named wallet: password and/or passkey, optional 2FA.
+   * @returns {Promise<boolean>}
+   */
+  const saveNamedWallet = async (
+    walletData,
+    name,
+    pwd,
+    { withPasskey = false, require2fa = false } = {},
+  ) => {
     const trimmedName = String(name || '').trim();
-    if (!trimmedName || !pwd) {
-      setError('Please provide a wallet name and password');
+    const wantPasskey = Boolean(withPasskey) && passkeysSupported;
+    const want2fa = Boolean(require2fa);
+
+    if (!trimmedName) {
+      setError('Please provide a wallet name');
       return false;
     }
+    if (!pwd && !wantPasskey) {
+      setError('Provide a password and/or enable passkey');
+      return false;
+    }
+    if (want2fa && (!pwd || !wantPasskey)) {
+      setError('2FA needs both a password and passkey');
+      return false;
+    }
+
     try {
-      const encrypted = encryptWallet(walletData, pwd);
-      localStorage.setItem(`warthogWallet_${trimmedName}`, encrypted);
+      const existing = loadNamedWalletEncrypted(trimmedName);
+      const prevEnv = existing ? tryParseEnvelope(existing) : null;
+      let passwordCipher = pwd ? encryptWallet(walletData, pwd) : null;
+      if (!passwordCipher && prevEnv?.password) passwordCipher = prevEnv.password;
+      if (!passwordCipher && existing && !prevEnv) passwordCipher = existing;
+
+      if (wantPasskey) {
+        if (!isWebAuthnAvailable()) {
+          setError('Passkey unlock needs HTTPS and a modern browser');
+          return false;
+        }
+        await paintPasskeyWaiting(setPasskeyBusy);
+        try {
+          const { envelope } = await buildEnvelopeWithPasskey(walletData, {
+            displayName: trimmedName,
+            existingPasswordCipher: passwordCipher,
+            previousEnvelope: prevEnv,
+            require2fa: want2fa && Boolean(passwordCipher || pwd),
+            preferFingerprint: false,
+          });
+          if (want2fa && pwd) {
+            envelope.password = encryptWallet(walletData, pwd);
+            envelope.require2fa = true;
+          }
+          saveNamedWalletBlob(trimmedName, serializeEnvelope(envelope));
+        } finally {
+          clearPasskeyWaiting(setPasskeyBusy);
+        }
+      } else if (pwd) {
+        const cipher = encryptWallet(walletData, pwd);
+        if (prevEnv?.passkey) {
+          saveNamedWalletBlob(
+            trimmedName,
+            serializeEnvelope(
+              envelopeWithPassword(walletData, cipher, prevEnv, { require2fa: want2fa }),
+            ),
+          );
+        } else {
+          saveNamedWalletBlob(trimmedName, cipher);
+        }
+      }
+
       refreshSavedWalletList();
       activateWalletSession(walletData, trimmedName);
       setSaveWalletConsent(false);
       setWalletName('');
       setConfirmPassword('');
+      setEnablePasskeyOnSave(false);
+      setRequire2faOnSave(false);
       return true;
     } catch (err) {
-      setError(err.message);
+      clearPasskeyWaiting(setPasskeyBusy);
+      setError(err?.message || 'Failed to save wallet');
       return false;
     }
   };
 
-  const saveWallet = (walletData) => {
-    if (!saveWalletConsent || !walletName.trim() || !password) {
-      setError('Please provide a wallet name, password, and consent to save the wallet');
+  const saveWallet = async (walletData) => {
+    if (!saveWalletConsent || !walletName.trim()) {
+      setError('Please provide a wallet name and consent to save the wallet');
       return false;
     }
-    if (password !== confirmPassword) {
+    const wantPasskey = enablePasskeyOnSave && passkeysSupported;
+    if (!password && !wantPasskey) {
+      setError('Provide a password and/or enable passkey');
+      return false;
+    }
+    if (password && password !== confirmPassword) {
       setError('Passwords do not match');
       return false;
     }
-    return saveNamedWallet(walletData, walletName, password);
+    if (require2faOnSave && (!password || !wantPasskey)) {
+      setError('2FA needs both a password and passkey');
+      return false;
+    }
+    return saveNamedWallet(walletData, walletName, password || null, {
+      withPasskey: wantPasskey,
+      require2fa: require2faOnSave,
+    });
+  };
+
+  /** Enable passkey / 2FA on the currently logged-in named wallet (Tools-style). */
+  const enablePasskeyOnCurrentWallet = async ({
+    require2fa = false,
+    password: pwd = null,
+  } = {}) => {
+    if (!wallet) {
+      setToolsSecurityMsg('Unlock your wallet first');
+      return false;
+    }
+    const tag = String(currentWalletName || promptWalletName || 'Main').trim() || 'Main';
+    const want2fa = Boolean(require2fa);
+    const passwordToUse = (pwd && String(pwd).trim()) || null;
+    if (want2fa && !passwordToUse && !sessionHasPassword) {
+      setToolsSecurityMsg('2FA needs a password — enter it below');
+      return false;
+    }
+    setToolsSecurityMsg(null);
+    setError(null);
+    // saveNamedWallet shows the passkey waiting overlay itself
+    const ok = await saveNamedWallet(wallet, tag, passwordToUse, {
+      withPasskey: true,
+      require2fa: want2fa,
+    });
+    if (ok) {
+      setToolsSecurityMsg(
+        want2fa
+          ? `2FA enabled for “${tag}” — next login: password + ${fpLabel}`
+          : `Passkey enabled for “${tag}” — next login: Unlock with ${fpLabel}`,
+      );
+      setToolsPasskeyPassword('');
+      refreshSessionAuthStatus(tag);
+    } else if (!error) {
+      setToolsSecurityMsg('Could not enable passkey');
+    }
+    return ok;
   };
 
   const downloadWallet = (walletData, pwd) => {
@@ -496,35 +682,85 @@ const Wallet = () => {
     reader.readAsText(file);
   };
 
-  const loadWallet = (savedName = null) => {
-    if (!password) {
-      setError('Please provide a password');
-      return;
+  const resolveEncryptedBlob = (savedName = null) => {
+    if (uploadedFile) {
+      return { encrypted: uploadedFile, walletLabel: savedName || null };
     }
+    if (savedName) {
+      const encrypted = localStorage.getItem(`warthogWallet_${savedName}`);
+      if (!encrypted) throw new Error('Selected wallet not found');
+      return { encrypted, walletLabel: savedName };
+    }
+    const encrypted = localStorage.getItem('warthogWallet');
+    if (!encrypted) throw new Error('No wallet found in storage or file');
+    return { encrypted, walletLabel: null };
+  };
+
+  /** Password login (and 2FA first factor). */
+  const loadWallet = async (savedName = null) => {
     try {
-      let encrypted;
-      let walletLabel = savedName;
-      if (uploadedFile) {
-        encrypted = uploadedFile;
-      } else if (savedName) {
-        encrypted = localStorage.getItem(`warthogWallet_${savedName}`);
-        if (!encrypted) throw new Error('Selected wallet not found');
-      } else {
-        encrypted = localStorage.getItem('warthogWallet');
-        if (!encrypted) throw new Error('No wallet found in storage or file');
-        walletLabel = null;
+      const { encrypted, walletLabel } = resolveEncryptedBlob(savedName);
+      const info = inspectNamedBlob(encrypted);
+
+      if (info.require2fa) {
+        if (!password) {
+          setError('2FA wallet: enter password, then confirm with passkey');
+          return;
+        }
+        await paintPasskeyWaiting(setPasskeyBusy);
+        try {
+          const decryptedWallet = await unlockEnvelopeWith2fa(
+            info.envelope,
+            password,
+            decryptWallet,
+          );
+          activateWalletSession(decryptedWallet, walletLabel);
+        } finally {
+          clearPasskeyWaiting(setPasskeyBusy);
+        }
+        return;
+      }
+
+      if (!password) {
+        setError('Please provide a password');
+        return;
       }
       const decryptedWallet = decryptWallet(encrypted, password);
       activateWalletSession(decryptedWallet, walletLabel);
     } catch (err) {
+      clearPasskeyWaiting(setPasskeyBusy);
       const msg = err?.message || 'Unknown error';
       setError(
-        msg === 'Invalid password'
-          ? 'Invalid password'
-          : msg.startsWith('Failed to decrypt')
+        msg === 'Invalid password' || msg.startsWith('Failed to decrypt')
           ? 'Invalid password'
           : msg,
       );
+    }
+  };
+
+  /** Passkey-only login (not for require2fa wallets). */
+  const loadWalletWithPasskey = async (savedName = null) => {
+    try {
+      const { encrypted, walletLabel } = resolveEncryptedBlob(savedName);
+      const info = inspectNamedBlob(encrypted);
+      if (info.require2fa) {
+        setError('This wallet requires password + passkey. Enter password, then tap Login.');
+        return;
+      }
+      if (!info.hasPasskey || !info.envelope?.passkey) {
+        setError('This wallet has no passkey unlock — use password, or enable passkey after unlock');
+        return;
+      }
+      await paintPasskeyWaiting(setPasskeyBusy);
+      try {
+        const decryptedWallet = await decryptWithPasskey(info.envelope.passkey);
+        activateWalletSession(decryptedWallet, walletLabel);
+      } finally {
+        clearPasskeyWaiting(setPasskeyBusy);
+      }
+    } catch (err) {
+      clearPasskeyWaiting(setPasskeyBusy);
+      setError(err?.message || 'Passkey unlock failed');
     }
   };
 
@@ -549,6 +785,8 @@ const Wallet = () => {
     setIsWalletProcessed(false);
     setIsLoggedIn(false);
     setShowSendPanel(false);
+    setShowReceivePanel(false);
+    setWalletSection('overview');
     setShowWalletExportQr(false);
     setShowNamePrompt(false);
     setNamePromptDismissed(false);
@@ -651,15 +889,17 @@ const Wallet = () => {
     }
   };
 
+  const selectedEntry = savedWalletEntries.find((e) => e.name === selectedSavedWallet);
+
   const handleWalletAction = async () => {
     setError(null);
     setIsWalletProcessed(false);
     if (walletAction === 'login-saved') {
-      if (!selectedSavedWallet || !password) {
-        setError('Please select a saved wallet and enter password');
+      if (!selectedSavedWallet) {
+        setError('Please select a saved wallet');
         return;
       }
-      loadWallet(selectedSavedWallet);
+      await loadWallet(selectedSavedWallet);
       return;
     }
     if (walletAction === 'login' && !uploadedFile) {
@@ -667,7 +907,7 @@ const Wallet = () => {
       return;
     }
     if (walletAction === 'login') {
-      loadWallet();
+      await loadWallet();
       return;
     }
     if (walletAction === 'derive' && !mnemonic) {
@@ -1001,31 +1241,68 @@ const Wallet = () => {
 
           {wallet && (
             <section className="wallet-overview !p-0 !bg-transparent !border-0 !shadow-none !mb-0">
-              <div className="mb-5">
-                <h2 className="!mb-1">Wallet Overview</h2>
-                <p className="text-xs text-zinc-500">Your balance and transaction history</p>
+              <div className="mb-3">
+                <h2 className="!mb-1">
+                  {walletSection === 'settings' ? 'Settings' : 'Wallet Overview'}
+                </h2>
+                <p className="text-xs text-zinc-500 m-0">
+                  {walletSection === 'settings'
+                    ? 'Passkey, backup, number display, node, and utilities'
+                    : 'Balance, send & receive, and transaction history'}
+                </p>
               </div>
 
               <div className="space-y-4">
-                <WalletOverviewCard
+                <WalletContactsModal
+                  open={showContactsModal}
+                  mode={contactsModalMode}
+                  onClose={() => setShowContactsModal(false)}
+                  prefillAddress={toAddr}
+                  onSelectContact={(contact) => {
+                    setToAddr(contact.address);
+                    setShowSendPanel(true);
+                    setWalletSection('overview');
+                  }}
+                />
+
+                <WalletQrExportModal
+                  open={showWalletExportQr}
+                  wallet={wallet}
+                  onClose={() => setShowWalletExportQr(false)}
+                />
+
+                
+
+                                <WalletOverviewCard
                   balance={balance}
+                  balanceDisplay={
+                    balance == null
+                      ? null
+                      : formatDisplayBalance(balance, numberPrefs)
+                  }
+                  balanceColorClass={getNumberColorClass(numberPrefs.balanceColor)}
                   usdBalance={usdBalance}
                   address={wallet.address}
                   walletName={currentWalletName}
-                  nodeList={nodeList}
-                  selectedNode={selectedNode}
-                  customIP={customIP}
-                  customPort={customPort}
-                  nodesLoading={nodesLoading}
-                  nodesError={nodesError}
-                  onNodeChange={(key) => {
-                    setSelectedNode(key);
-                    localStorage.setItem('selectedNode', key);
-                  }}
-                  onCustomIPChange={setCustomIP}
-                  onCustomPortChange={setCustomPort}
-                  onSaveCustomNode={handleSaveCustomNode}
                   refreshing={balanceRefreshing}
+                  authBadge={
+                    sessionRequire2fa
+                      ? '2fa'
+                      : sessionHasPasskey
+                        ? 'passkey'
+                        : currentWalletName
+                          ? 'password'
+                          : 'session'
+                  }
+                  authBadgeLabel={
+                    sessionRequire2fa
+                      ? '2FA'
+                      : sessionHasPasskey
+                        ? fpLabel
+                        : currentWalletName
+                          ? 'Saved'
+                          : 'Session'
+                  }
                   onRefresh={async () => {
                     if (!wallet?.address || balanceRefreshing) return;
                     setBalanceRefreshing(true);
@@ -1041,11 +1318,8 @@ const Wallet = () => {
                       .writeText(wallet.address)
                       .then(() => alert('Address copied to clipboard!'))
                   }
-                  validateInput={address}
-                  onValidateInputChange={(value) => setAddress(value.trim())}
-                  onValidate={handleValidateAddress}
-                  validateResult={validateResult}
                   onSend={() => {
+                    setShowReceivePanel(false);
                     setShowSendPanel(true);
                     requestAnimationFrame(() => {
                       document.getElementById('send-transaction')?.scrollIntoView({
@@ -1054,37 +1328,62 @@ const Wallet = () => {
                       });
                     });
                   }}
-                  onDownload={() => setShowDownloadPrompt(true)}
-                  onExportQr={() => setShowWalletExportQr(true)}
-                  onContacts={() => {
-                    setContactsModalMode('manage');
-                    setShowContactsModal(true);
-                  }}
-                  onClear={clearWallet}
-                />
-
-                <WalletContactsModal
-                  open={showContactsModal}
-                  mode={contactsModalMode}
-                  onClose={() => setShowContactsModal(false)}
-                  prefillAddress={toAddr}
-                  onSelectContact={(contact) => {
-                    setToAddr(contact.address);
-                    setShowSendPanel(true);
+                  onReceive={() => {
+                    setShowSendPanel(false);
+                    setShowReceivePanel(true);
+                    requestAnimationFrame(() => {
+                      document.getElementById('receive-wart')?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                      });
+                    });
                   }}
                 />
 
-                <WalletQrExportModal
-                  open={showWalletExportQr}
-                  wallet={wallet}
-                  onClose={() => setShowWalletExportQr(false)}
-                />
+                <div
+                  className="wallet-section-tabs"
+                  role="tablist"
+                  aria-label="Wallet sections"
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={walletSection === 'overview'}
+                    className={`wallet-section-tab${
+                      walletSection === 'overview' ? ' wallet-section-tab--active' : ''
+                    }`}
+                    onClick={() => {
+                      setWalletSection('overview');
+                      setShowSendPanel(false);
+                      setShowReceivePanel(false);
+                    }}
+                  >
+                    Overview
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={walletSection === 'settings'}
+                    className={`wallet-section-tab${
+                      walletSection === 'settings' ? ' wallet-section-tab--active' : ''
+                    }`}
+                    onClick={() => {
+                      setWalletSection('settings');
+                      setShowSendPanel(false);
+                      setShowReceivePanel(false);
+                    }}
+                  >
+                    Settings
+                  </button>
+                </div>
 
-                {showSendPanel && isLoggedIn && (
+                {walletSection === 'overview' && (
+                  <>
+{showSendPanel && isLoggedIn && (
                   <div className="wallet-send-wrap">
                     <div id="send-transaction" className="bunker-panel wallet-send-panel">
                       <div className="flex items-center justify-between gap-3 mb-4">
-                        <h2 className="bunker-heading" style={{ margin: 0 }}>Send Transaction</h2>
+                        <h2 className="bunker-heading" style={{ margin: 0 }}>Send WART</h2>
                         <button
                           type="button"
                           onClick={() => setShowSendPanel(false)}
@@ -1152,11 +1451,46 @@ const Wallet = () => {
                   </div>
                 )}
 
-                <p className="text-xs text-zinc-500 italic">
-                  {currentWalletName
-                    ? `Wallet "${currentWalletName}" is saved encrypted in this browser. Use the mobile icon to export via QR.`
-                    : 'Private key is in this session only until you name & save the wallet. Keep your password secure.'}
-                </p>
+                {showReceivePanel && isLoggedIn && (
+                  <div id="receive-wart" className="bunker-panel">
+                    <div className="flex items-center justify-between gap-3 mb-4">
+                      <h2 className="bunker-heading" style={{ margin: 0 }}>Receive WART</h2>
+                      <button
+                        type="button"
+                        onClick={() => setShowReceivePanel(false)}
+                        className="compact-btn hover:!text-[#E79300] !m-0"
+                      >
+                        Close
+                      </button>
+                    </div>
+                    <p className="text-sm text-zinc-400 mb-3">
+                      Share this address to receive WART on the selected network.
+                    </p>
+                    <div className="mb-4 p-3 rounded-xl bg-zinc-900/80 border border-zinc-700/60">
+                      <p className="font-mono text-sm text-[#FDB913] break-all m-0">{wallet.address}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        className="bunker-btn bunker-btn--primary"
+                        onClick={() =>
+                          navigator.clipboard
+                            .writeText(wallet.address)
+                            .then(() => alert('Address copied to clipboard!'))
+                        }
+                      >
+                        Copy address
+                      </button>
+                      <button
+                        type="button"
+                        className="bunker-btn"
+                        onClick={() => setShowWalletExportQr(true)}
+                      >
+                        Export to mobile (QR)
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <TransactionHistory
                   address={wallet.address}
@@ -1165,6 +1499,55 @@ const Wallet = () => {
                   blockCounts={blockCounts}
                   refreshTrigger={refreshHistory}
                 />
+                  </>
+                )}
+
+                {walletSection === 'settings' && isLoggedIn && (
+                  <WalletSettingsPanel
+                    onClose={() => setWalletSection('overview')}
+                    numberPrefs={numberPrefs}
+                    onNumberPrefsChange={setNumberPrefs}
+                    nodeList={nodeList}
+                    selectedNode={selectedNode}
+                    customIP={customIP}
+                    customPort={customPort}
+                    nodesLoading={nodesLoading}
+                    nodesError={nodesError}
+                    onNodeChange={(key) => {
+                      setSelectedNode(key);
+                      localStorage.setItem('selectedNode', key);
+                    }}
+                    onCustomIPChange={setCustomIP}
+                    onCustomPortChange={setCustomPort}
+                    onSaveCustomNode={handleSaveCustomNode}
+                    validateInput={address}
+                    onValidateInputChange={(value) => setAddress(value.trim())}
+                    onValidate={handleValidateAddress}
+                    validateResult={validateResult}
+                    passkeysSupported={passkeysSupported}
+                    fpLabel={fpLabel}
+                    sessionRequire2fa={sessionRequire2fa}
+                    sessionHasPasskey={sessionHasPasskey}
+                    sessionHasPassword={sessionHasPassword}
+                    toolsWant2fa={toolsWant2fa}
+                    setToolsWant2fa={setToolsWant2fa}
+                    toolsPasskeyPassword={toolsPasskeyPassword}
+                    setToolsPasskeyPassword={setToolsPasskeyPassword}
+                    promptWalletName={promptWalletName}
+                    setPromptWalletName={setPromptWalletName}
+                    currentWalletName={currentWalletName}
+                    passkeyBusy={passkeyBusy}
+                    toolsSecurityMsg={toolsSecurityMsg}
+                    onEnablePasskey={(opts) => void enablePasskeyOnCurrentWallet(opts)}
+                    onDownload={() => setShowDownloadPrompt(true)}
+                    onExportQr={() => setShowWalletExportQr(true)}
+                    onContacts={() => {
+                      setContactsModalMode('manage');
+                      setShowContactsModal(true);
+                    }}
+                    onClear={clearWallet}
+                  />
+                )}
               </div>
             </section>
           )}
@@ -1236,199 +1619,13 @@ const Wallet = () => {
           )}
 
           {!isLoggedIn && (
-            <div className="bunker-panel">
-              <h2 className="bunker-heading">Wallet Management</h2>
-              <div className="mb-4">
-                <label className="bunker-label">Action:</label>
-                <select
-                  value={walletAction}
-                  onChange={(e) => {
-                    setWalletAction(e.target.value);
-                    setError(null);
-                    setMnemonic('');
-                    setPrivateKeyInput('');
-                    setUploadedFile(null);
-                    setPassword('');
-                    setSelectedSavedWallet('');
-                    setIsWalletProcessed(false);
-                    setShowLoginPassword(false);
-                    refreshSavedWalletList();
-                  }}
-                  className="bunker-input"
-                >
-                  <option value="create">Create New Wallet</option>
-                  <option value="derive">Derive Wallet from Seed Phrase</option>
-                  <option value="import">Import from Private Key</option>
-                  <option value="login-saved">Login to Saved Wallet</option>
-                  <option value="login">Login with Wallet File</option>
-                </select>
-              </div>
-              {walletAction === 'login-saved' && (
-                <>
-                  <div className="mb-4">
-                    <label className="bunker-label">Select Saved Wallet:</label>
-                    {savedWalletList.length > 0 ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
-                        {savedWalletList.map((name) => {
-                          const isSelected = selectedSavedWallet === name;
-                          return (
-                            <button
-                              key={name}
-                              type="button"
-                              onClick={() => {
-                                setSelectedSavedWallet(name);
-                                setError(null);
-                              }}
-                              className={`saved-wallet-card${isSelected ? ' saved-wallet-card--selected' : ''}`}
-                              aria-pressed={isSelected}
-                            >
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0 flex-1">
-                                  <div className="saved-wallet-card__name">{name}</div>
-                                  <div className="saved-wallet-card__meta">
-                                    {isSelected ? 'Selected' : 'Saved in this browser'}
-                                  </div>
-                                </div>
-                                <span className="saved-wallet-card__check" aria-hidden="true">
-                                  {isSelected && (
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" fill="currentColor" className="w-2.5 h-2.5">
-                                      <path d="M10.28 2.28a.75.75 0 0 1 0 1.06l-5.5 5.5a.75.75 0 0 1-1.06 0l-2.5-2.5a.75.75 0 1 1 1.06-1.06L4.5 7.19l4.97-4.97a.75.75 0 0 1 1.06 0Z" />
-                                    </svg>
-                                  )}
-                                </span>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-zinc-500 mt-1">
-                        No saved wallets yet. Create a wallet and save it for quick login.
-                      </p>
-                    )}
-                  </div>
-                  <div className="mb-4">
-                    <label className="bunker-label">Password:</label>
-                    <div className="bunker-input-wrap">
-                      <input
-                        type={showLoginPassword ? 'text' : 'password'}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Enter password"
-                        className="bunker-input"
-                        autoComplete="current-password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowLoginPassword(!showLoginPassword)}
-                        className="bunker-input-toggle"
-                      >
-                        {showLoginPassword ? 'hide' : 'show'}
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-              {walletAction === 'derive' && (
-                <div className="mb-4">
-                  <label className="bunker-label">Seed Phrase:</label>
-                  <input
-                    type="text"
-                    value={mnemonic}
-                    onChange={(e) => setMnemonic(e.target.value)}
-                    placeholder="Enter 12 or 24-word seed phrase"
-                    className="bunker-input"
-                  />
-                </div>
-              )}
-              {walletAction === 'import' && (
-                <div className="mb-4">
-                  <label className="bunker-label">Private Key:</label>
-                  <input
-                    type="text"
-                    value={privateKeyInput}
-                    onChange={(e) => setPrivateKeyInput(e.target.value.replace(/\s/g, ''))}
-                    placeholder="Enter 64-character hex private key"
-                    className="bunker-input"
-                  />
-                </div>
-              )}
-              {walletAction === 'login' && (
-                <>
-                  <div className="mb-4">
-                    <label className="bunker-label">Upload Wallet File (warthog_wallet.txt):</label>
-                    <input
-                      type="file"
-                      accept=".txt"
-                      onChange={handleFileUpload}
-                      className="bunker-input"
-                    />
-                  </div>
-                  <div className="mb-4">
-                    <label className="bunker-label">Password:</label>
-                    <div className="bunker-input-wrap">
-                      <input
-                        type={showLoginPassword ? "text" : "password"}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Enter password to decrypt wallet"
-                        className="bunker-input"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowLoginPassword(!showLoginPassword)}
-                        className="bunker-input-toggle"
-                      >
-                        {showLoginPassword ? 'hide' : 'show'}
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-              {(walletAction === 'create' || walletAction === 'derive') && (
-                <div className="mb-4">
-                  <label className="bunker-label">Word Count:</label>
-                  <select
-                    value={wordCount}
-                    onChange={(e) => setWordCount(e.target.value)}
-                    className="bunker-input"
-                  >
-                    <option value="12">12 Words</option>
-                    <option value="24">24 Words</option>
-                  </select>
-                </div>
-              )}
-              {(walletAction === 'create' || walletAction === 'derive') && wordCount === '12' && (
-                <div className="mb-4">
-                  <label className="bunker-label">Derivation Path Type:</label>
-                  <select
-                    value={pathType}
-                    onChange={(e) => setPathType(e.target.value)}
-                    className="bunker-input"
-                  >
-                    <option value="hardened">Hardened (m/44'/2070'/0'/0/0)</option>
-                    <option value="non-hardened">Non-Hardened (m/44'/2070'/0/0/0)</option>
-                  </select>
-                </div>
-              )}
-              <button
-                onClick={handleWalletAction}
-                disabled={walletAction === 'login-saved' && (!password || !selectedSavedWallet)}
-                className="bunker-btn bunker-btn--primary"
-              >
-                {walletAction === 'create'
-                  ? 'Create Wallet'
-                  : walletAction === 'derive'
-                  ? 'Derive Wallet'
-                  : walletAction === 'import'
-                  ? 'Import Wallet'
-                  : walletAction === 'login-saved'
-                  ? 'Login to Wallet'
-                  : 'Login'}
-              </button>
-            </div>
+            <WalletAccessHub
+              onActivate={(data, name) => {
+                setError(null);
+                activateWalletSession(data, name);
+              }}
+            />
           )}
-
          {isLoggedIn && sentTransactions.length > 0 && (
   <div className="bunker-panel">
     <div className="flex justify-between items-center mb-4">
@@ -1651,19 +1848,50 @@ const Wallet = () => {
                   onChange={(e) => setSaveWalletConsent(e.target.checked)}
                   className="bunker-checkbox"
                 />
-                <span>Save named wallet to this browser (encrypted with password)</span>
+                <span>Save named wallet to this browser for quick login</span>
               </label>
             </div>
             {saveWalletConsent && (
-              <div className="mb-4">
-                <label className="bunker-label">Wallet Name:</label>
-                <input
-                  type="text"
-                  value={walletName}
-                  onChange={(e) => setWalletName(e.target.value)}
-                  placeholder="e.g. main or trading"
-                  className="bunker-input"
-                />
+              <div className="mb-4 space-y-3">
+                <div>
+                  <label className="bunker-label">Wallet Name:</label>
+                  <input
+                    type="text"
+                    value={walletName}
+                    onChange={(e) => setWalletName(e.target.value)}
+                    placeholder="e.g. main or trading"
+                    className="bunker-input"
+                  />
+                </div>
+                {passkeysSupported && (
+                  <>
+                    <label className="bunker-check-label">
+                      <input
+                        type="checkbox"
+                        checked={enablePasskeyOnSave}
+                        onChange={(e) => {
+                          setEnablePasskeyOnSave(e.target.checked);
+                          if (!e.target.checked) setRequire2faOnSave(false);
+                        }}
+                        className="bunker-checkbox"
+                      />
+                      <span>Enable {fpLabel} unlock (passkey)</span>
+                    </label>
+                    <label className="bunker-check-label">
+                      <input
+                        type="checkbox"
+                        checked={require2faOnSave}
+                        onChange={(e) => {
+                          setRequire2faOnSave(e.target.checked);
+                          if (e.target.checked) setEnablePasskeyOnSave(true);
+                        }}
+                        className="bunker-checkbox"
+                        disabled={!enablePasskeyOnSave && !require2faOnSave}
+                      />
+                      <span>Require 2FA — password and {fpLabel} every login</span>
+                    </label>
+                  </>
+                )}
               </div>
             )}
             <div className="mb-4">
@@ -1679,7 +1907,7 @@ const Wallet = () => {
             </div>
             <div className="flex flex-wrap gap-2 mb-4">
               <button
-                disabled={!consentToClose}
+                disabled={!consentToClose || passkeyBusy}
                 onClick={() => {
                   if (!consentToClose) {
                     setError('Please confirm you have saved the seed/private key securely');
@@ -1693,6 +1921,8 @@ const Wallet = () => {
                   setConfirmPassword('');
                   setWalletName('');
                   setSaveWalletConsent(false);
+                  setEnablePasskeyOnSave(false);
+                  setRequire2faOnSave(false);
                   setConsentToClose(false);
                   setShowPassword(false);
                   setShowConfirmPassword(false);
@@ -1702,23 +1932,36 @@ const Wallet = () => {
                 Use Wallet Now
               </button>
               <button
-                disabled={!consentToClose || !saveWalletConsent || !walletName.trim() || !password || password !== confirmPassword}
+                disabled={
+                  !consentToClose ||
+                  !saveWalletConsent ||
+                  !walletName.trim() ||
+                  passkeyBusy ||
+                  (!password && !(enablePasskeyOnSave && passkeysSupported)) ||
+                  (password && password !== confirmPassword) ||
+                  (require2faOnSave && (!password || !enablePasskeyOnSave))
+                }
                 onClick={() => {
-                  setError(null);
-                  if (saveWallet(walletData)) {
-                    setShowModal(false);
-                    setWalletData(null);
-                    setPassword('');
-                    setConfirmPassword('');
-                    setWalletName('');
-                    setConsentToClose(false);
-                    setShowPassword(false);
-                    setShowConfirmPassword(false);
-                  }
+                  void (async () => {
+                    setError(null);
+                    const ok = await saveWallet(walletData);
+                    if (ok) {
+                      setShowModal(false);
+                      setWalletData(null);
+                      setPassword('');
+                      setConfirmPassword('');
+                      setWalletName('');
+                      setConsentToClose(false);
+                      setShowPassword(false);
+                      setShowConfirmPassword(false);
+                      setEnablePasskeyOnSave(false);
+                      setRequire2faOnSave(false);
+                    }
+                  })();
                 }}
                 className="bunker-btn"
               >
-                Save Named Wallet
+                {passkeyBusy ? 'Waiting for passkey…' : 'Save Named Wallet'}
               </button>
               <button
                 onClick={() => {
@@ -1756,7 +1999,7 @@ const Wallet = () => {
           <div className="bunker-modal">
             <h2 className="bunker-heading">Name &amp; Save This Wallet</h2>
             <p className="bunker-text bunker-muted" style={{ marginBottom: '1rem' }}>
-              This wallet isn&apos;t tagged with an account name yet. Give it a name and password so you can select it easily from &quot;Login to Saved Wallet&quot; next time.
+              Tag this session with a name so you can use Login to Saved Wallet next time. Optional: passkey / 2FA.
             </p>
             {promptError && (
               <div className="bunker-alert bunker-alert--error" style={{ marginBottom: '1rem' }}>
@@ -1811,25 +2054,75 @@ const Wallet = () => {
                 </button>
               </div>
             </div>
+            {passkeysSupported && (
+              <div className="mb-4 space-y-2">
+                <label className="bunker-check-label">
+                  <input
+                    type="checkbox"
+                    checked={enablePasskeyOnPrompt}
+                    onChange={(e) => {
+                      setEnablePasskeyOnPrompt(e.target.checked);
+                      if (!e.target.checked) setRequire2faOnPrompt(false);
+                    }}
+                    className="bunker-checkbox"
+                  />
+                  <span>Enable {fpLabel} unlock</span>
+                </label>
+                <label className="bunker-check-label">
+                  <input
+                    type="checkbox"
+                    checked={require2faOnPrompt}
+                    onChange={(e) => {
+                      setRequire2faOnPrompt(e.target.checked);
+                      if (e.target.checked) setEnablePasskeyOnPrompt(true);
+                    }}
+                    className="bunker-checkbox"
+                  />
+                  <span>Require 2FA (password + {fpLabel})</span>
+                </label>
+              </div>
+            )}
             <div className="flex space-x-2">
               <button
+                disabled={passkeyBusy}
                 onClick={() => {
-                  setPromptError(null);
-                  const name = promptWalletName.trim();
-                  if (!name || !promptPassword || promptPassword !== promptConfirmPassword) {
-                    setPromptError('Please provide a wallet name and matching passwords to save');
-                    return;
-                  }
-                  if (saveNamedWallet(wallet, name, promptPassword)) {
-                    setShowNamePrompt(false);
-                    setPromptWalletName('');
-                    setPromptPassword('');
-                    setPromptConfirmPassword('');
+                  void (async () => {
                     setPromptError(null);
-                    setNamePromptDismissed(false);
-                  } else {
-                    setPromptError('Save failed — check the error above');
-                  }
+                    const name = promptWalletName.trim();
+                    const wantPk = enablePasskeyOnPrompt && passkeysSupported;
+                    if (!name) {
+                      setPromptError('Enter a wallet name');
+                      return;
+                    }
+                    if (!promptPassword && !wantPk) {
+                      setPromptError('Provide a password and/or enable passkey');
+                      return;
+                    }
+                    if (promptPassword && promptPassword !== promptConfirmPassword) {
+                      setPromptError('Passwords do not match');
+                      return;
+                    }
+                    if (require2faOnPrompt && (!promptPassword || !wantPk)) {
+                      setPromptError('2FA needs both a password and passkey');
+                      return;
+                    }
+                    const ok = await saveNamedWallet(wallet, name, promptPassword || null, {
+                      withPasskey: wantPk,
+                      require2fa: require2faOnPrompt,
+                    });
+                    if (ok) {
+                      setShowNamePrompt(false);
+                      setPromptWalletName('');
+                      setPromptPassword('');
+                      setPromptConfirmPassword('');
+                      setPromptError(null);
+                      setNamePromptDismissed(false);
+                      setEnablePasskeyOnPrompt(false);
+                      setRequire2faOnPrompt(false);
+                    } else {
+                      setPromptError(error || 'Save failed');
+                    }
+                  })();
                 }}
                 className="bunker-btn"
                 style={{ flex: 1 }}
@@ -1853,6 +2146,27 @@ const Wallet = () => {
             </div>
             <p className="bunker-text bunker-muted" style={{ marginTop: '0.75rem', fontSize: '0.625rem' }}>
               This stores an encrypted copy in localStorage under your chosen name. Mnemonic is never saved.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {passkeyBusy && (
+        <div
+          className="bunker-modal-overlay"
+          style={{ zIndex: 2000 }}
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <div className="bunker-modal" style={{ maxWidth: 360, textAlign: 'center' }}>
+            <div
+              className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-2 border-[#E79300] border-t-transparent"
+              aria-hidden="true"
+            />
+            <p className="text-zinc-100 font-medium m-0 mb-1">Waiting for passkey…</p>
+            <p className="text-zinc-500 text-sm m-0">
+              Complete the browser or device prompt (PIN, biometrics, or password manager).
             </p>
           </div>
         </div>
