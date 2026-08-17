@@ -16,6 +16,9 @@ const mobileWalletRelease = `https://github.com/warthog-network/mobile-wallet/re
 const browserNodeUrl = "https://browser-node.netlify.app/";
 /** Same-site path → Netlify redirect to browser-node zip (see public/_redirects). */
 const browserNodeExtensionZip = "/downloads/warthog-browser-node-extension.zip";
+/** GitHub always-latest release page for the Browser Node extension zip. */
+const browserNodeExtensionReleases =
+  "https://github.com/warthog-network/browser-node/releases/latest";
 
 const wallets = [
   {
@@ -338,11 +341,11 @@ const wallets = [
                 Download
               </a>
               <a
-                href={browserNodeUrl}
+                href={browserNodeExtensionReleases}
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Open site
+                Latest release
               </a>
             </div>
           </div>
