@@ -12,9 +12,9 @@ const MOBILE_WALLET_VERSION = "1.0.11";
 const mobileWalletApk = `https://github.com/warthog-network/mobile-wallet/releases/download/v${MOBILE_WALLET_VERSION}/defi-mobile.apk`;
 const mobileWalletRelease = `https://github.com/warthog-network/mobile-wallet/releases/tag/v${MOBILE_WALLET_VERSION}`;
 
-/** In-browser full node (Netlify). Extension zip is packaged there on deploy. */
+/** In-browser full node (Netlify). */
 const browserNodeUrl = "https://browser-node.netlify.app/";
-/** Same-site path → Netlify redirect to browser-node zip (see public/_redirects). */
+/** Zip shipped from this repo: public/downloads/warthog_node_extension.zip */
 const browserNodeExtensionZip = "/downloads/warthog_node_extension.zip";
 /** GitHub always-latest release page for the Browser Node extension zip. */
 const browserNodeExtensionReleases =
