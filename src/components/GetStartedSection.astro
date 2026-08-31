@@ -8,9 +8,12 @@ import Book from "../BalkyImages/getstartedimgs/book.svg";
 
 const webWalletUrl = "/webwallet";
 /** Android APK ships via GitHub Releases (same pattern as warthog_extension). */
-const MOBILE_WALLET_VERSION = "1.0.11";
+const MOBILE_WALLET_VERSION = "1.0.12";
 const mobileWalletApk = `https://github.com/warthog-network/mobile-wallet/releases/download/v${MOBILE_WALLET_VERSION}/defi-mobile.apk`;
 const mobileWalletRelease = `https://github.com/warthog-network/mobile-wallet/releases/tag/v${MOBILE_WALLET_VERSION}`;
+
+const EXTENSION_VERSION = "1.2.5";
+const extensionZip = `https://github.com/warthog-network/extension-update/releases/download/${EXTENSION_VERSION}/warthog_extension.zip`;
 
 /** In-browser full node (Netlify). */
 const browserNodeUrl = "https://browser-node.netlify.app/";
@@ -45,9 +48,8 @@ const wallets = [
   {
     title: "warthog_extension",
     description:
-      "Browser extension for Chrome and Firefox (warthog_extension.zip). Mainnet + DeFi testnet, assets, DEX, and activity. Unzip → Load unpacked.",
-    // Shipped from extension-update (built browser-wallet). Artifact: warthog_extension.zip
-    download: "https://github.com/warthog-network/extension-update/releases",
+      `Browser extension v${EXTENSION_VERSION} for Chrome and Firefox (warthog_extension.zip). Mainnet + DeFi testnet, assets, DEX, and activity. Unzip → Load unpacked.`,
+    download: extensionZip,
     guide: "https://docs.warthog.network/guides/wallet/browser-extension-wallet/",
   },
 ];
