@@ -75,7 +75,7 @@ Today's DeFi platforms are constantly plagued by security vulnerabilities which 
 
 ## Novel Features
 
-Compared to smart contract based DeFi implementations, a hard-coded approach allows the implementation of **novel features impossible in smart contracts**. Warthog's revolutionary sandwich-free order matching algorithm simply cannot be implemented without native node support because it treats all orders jointly, erasing their implicit order of appearance within a block. A smart contract based approach is not capable of joint processing of transactions but instead implicitly relies on an ordering.
+Compared to smart contract based DeFi implementations, a hard-coded approach allows the implementation of **novel features impossible in smart contracts**. Warthog's revolutionary MEV-proof order matching algorithm simply cannot be implemented without native node support because it treats all orders jointly, erasing their implicit order of appearance within a block. A smart contract based approach is not capable of joint processing of transactions but instead implicitly relies on an ordering.
 
 ## First-Class Citizen
 
@@ -103,7 +103,7 @@ The coming weeks will be exciting. Things will be rolled out. Bugs will be fixed
 # How You Can Help
 
 - **Mining**: Prepare mine on the Warthog DeFi testnet when it launches. For now, miners can already run a `defi` branch node and test mining.
-- **Testing**: Once the testnet launches, try all DeFi features including asset creation, token transfers, order placement and matching, liquidity provision and withdrawal, and the matching engine's sandwich-proof guarantees. Report any bugs you find on Discord to help us improve.
+- **Testing**: Once the testnet launches, try all DeFi features including asset creation, token transfers, order placement and matching, liquidity provision and withdrawal, and the matching engine's MEV-proof guarantees. Report any bugs you find on Discord to help us improve.
 - **Development**: Contributions are welcome across the Warthog ecosystem. The core node repository, client explorer, and documentation all need developers to help build the future of DeFi.
 
 # Stay Connected
@@ -113,7 +113,7 @@ The coming weeks will be exciting. Things will be rolled out. Bugs will be fixed
 - **[Warthog Core's `defi` branch](https://github.com/warthog-network/core/tree/defi)**: This branch of Warthog core contains all new DeFi features.
 - **[Client Explorer](https://github.com/warthog-network/client-explorer)**: The new blockchain explorer repository.
 - **[Documentation](https://github.com/warthog-network/docs)**: Comprehensive documentation for developers and users.
-- **[DeFi Demo](https://warthog.network/defi-demo)**: Try the sandwich-proof matching algorithm in your browser.
+- **[DeFi Demo](https://warthog.network/defi-demo)**: Try the MEV-proof matching algorithm in your browser.
 
 # Thank You
 

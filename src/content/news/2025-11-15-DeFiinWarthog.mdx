@@ -17,7 +17,7 @@ Today's DeFi platforms are constantly plagued by security vulnerabilities which 
 
 ## 2. Feature Support
 
-Compared to smart contract based DeFi implementations, a hard-coded approach allows the implementation of novel features. For example, Warthog's revolutionary sandwich-free order matching algorithm simply not possible to implement without native node support because it treats all order jointly, erasing their implicit order of appearance within a block. A smart contract based approach is not capable of joint processing of transactions but instead requires an ordering.
+Compared to smart contract based DeFi implementations, a hard-coded approach allows the implementation of novel features. For example, Warthog's revolutionary MEV-proof order matching algorithm simply not possible to implement without native node support because it treats all order jointly, erasing their implicit order of appearance within a block. A smart contract based approach is not capable of joint processing of transactions but instead requires an ordering.
 
 ## 3. First-Class Citizen
 
@@ -27,7 +27,7 @@ Warthog will be a crypto platform built with specific focus in DeFi. The entire 
 
 As elaborated above, in line with Warthog's spirit to push the boundaries of what is possible in blockchain technology, we are exploring new DeFi features not found in any other project:
 
-- Sandwich-free DeFi
+- MEV-proof DeFi
 - Forking existing token distributions
 
 By using a lazy copy-on-write database and careful design it is possible to allow forking existing balance distributions when creating new assets.
