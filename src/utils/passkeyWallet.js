@@ -459,8 +459,13 @@ export async function createPasskeyCredential({
 /**
  * Assert passkey + optionally evaluate PRF.
  * userVerification: required → fingerprint / PIN / Face ID on platform authenticators.
+ *
+ * The saved transport list is not sent. A stored "hybrid" value makes Chrome
+ * open on "Scan QR Code" and hide a passkey already saved in this browser.
+ * hints prefer this device, then a phone, then a security key. Browsers that
+ * do not understand hints ignore them, and no store is excluded.
  */
-export async function assertPasskey({ credentialId, prfSalt, transports } = {}) {
+export async function assertPasskey({ credentialId, prfSalt } = {}) {
   if (!isWebAuthnAvailable()) {
     throw new Error('Passkey unlock is not available in this browser');
   }
@@ -472,9 +477,6 @@ export async function assertPasskey({ credentialId, prfSalt, transports } = {}) 
     type: 'public-key',
     id: idBytes,
   };
-  if (Array.isArray(transports) && transports.length) {
-    allowCred.transports = transports;
-  }
 
   const publicKey = {
     challenge,
@@ -482,6 +484,7 @@ export async function assertPasskey({ credentialId, prfSalt, transports } = {}) 
     allowCredentials: [allowCred],
     userVerification: 'required',
     timeout: 120_000,
+    hints: ['client-device', 'hybrid', 'security-key'],
   };
 
   if (prfSalt) {
@@ -547,7 +550,6 @@ export async function encryptWithNewPasskey(walletData, { displayName, preferFin
       const got = await assertPasskey({
         credentialId: created.credentialId,
         prfSalt,
-        transports: created.transports,
       });
       prfFirst = got.prfFirst;
     } catch (err) {
@@ -607,7 +609,6 @@ export async function decryptWithPasskey(passkeyBlock) {
     const { prfFirst } = await assertPasskey({
       credentialId: passkeyBlock.credentialId,
       prfSalt: passkeyBlock.prfSalt,
-      transports: passkeyBlock.transports,
     });
     if (!prfFirst || prfFirst.length < 32) {
       throw new Error(
@@ -618,7 +619,6 @@ export async function decryptWithPasskey(passkeyBlock) {
   } else {
     await assertPasskey({
       credentialId: passkeyBlock.credentialId,
-      transports: passkeyBlock.transports,
     });
     key = await idbGetKey(passkeyBlock.credentialId);
     if (!key) {
