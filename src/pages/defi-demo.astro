@@ -592,13 +592,13 @@ Astro.csp?.insertDirective(`font-src * data:`);
     <div class="md:p-6 p-3 container">
       <h2>Questions and Answers</h2>
       <FAQ question="What is this?">
-    Warthog is implementing a completely new DeFi model supporting a matching engine, which, in a one-of-a-kind way combines <em>two</em> sources of liquidity in a fair and sandwich-proof way: 
+    Warthog is implementing a completely new DeFi model supporting a matching engine, which, in a one-of-a-kind way combines <em>two</em> sources of liquidity in a fair and MEV-proof way: 
     <ul>
       <li>discrete liquidity in the form of order books</li>
       <li>continuous liquidity in the form of a liquidity pool</li>
     </ul>
       </FAQ>
-      <FAQ question='What do you mean by "sandwich-proof"?'>
+      <FAQ question='What do you mean by "MEV-proof"?'>
         Sandwich attacks are one of the most dreaded DeFi attacks. They are part of a bigger problem called <em>front-running</em> which is inherently caused by that fact that in current DeFi designs reordering of transactions has an effect on their fill price. This is highly unfair against traders because their transactions are regularly sandwiched (front-run and back-run) by exploiters of this design. For example they buy before normal buy orders are executed, and sell immediately afterwards, essentially doing arbitrage trading within a block and causing financial loss to their victims. Reordering of Warthog's transactions won't have any effect such that sandwich attacks are not possible.
       </FAQ>
       <FAQ question="What is a matching engine?">

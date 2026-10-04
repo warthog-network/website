@@ -70,11 +70,11 @@ In other words: the fee is paid by traders and accumulated by the pool. It is no
 
 The pool's current price is simply the quotient of its reserves: if the pool holds `B` units of base and `Q` units of WART, the current price is `Q / B` (WART per unit of base). There are no upper or lower price boundaries set on the pool. A pool with very low reserves (relative to typical trade sizes) will move price dramatically on each trade; a deep pool will be relatively stable.
 
-## Why is this sandwich-proof?
+## Why is this MEV-proof?
 
 Traditional DeFi processes swaps one at a time against a pool. Each trade changes the pool state, and an attacker watching the mempool can sandwich a victim's order: buy just before to push the price up, then sell just after at the higher price. Warthog's FBM processes all orders within a block *jointly*. There is no "before" and "after" — every order in the block executes at the same single equilibrium price. The attacker's sandwich orders receive the same price as the victim, so no profit can be extracted by reordering.
 
-This is the unique property of Warthog's DEX: the matching algorithm is sandwich-proof by construction, without any need for encrypted mempools, MEV auctions, or other workarounds. See the [Fair Batch Matching paper](https://warthog.network/FairBatchMatching.pdf) for the mathematical proof.
+This is the unique property of Warthog's DEX: the matching algorithm is MEV-proof by construction, without any need for encrypted mempools, MEV auctions, or other workarounds. See the [Fair Batch Matching paper](https://warthog.network/FairBatchMatching.pdf) for the mathematical proof.
 
 ## Order priority within the same price level
 
