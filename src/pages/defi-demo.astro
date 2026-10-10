@@ -72,6 +72,7 @@ Astro.csp?.insertDirective(`font-src * data:`);
         width: 70vw !important;
       }
     }
+    .invalid { border-color: red; background: #fff5f5; }
   </style>
   <Joyride
   client:only="react"
@@ -643,325 +644,282 @@ Astro.csp?.insertDirective(`font-src * data:`);
         set a limit price that crosses the pool price enough to make the other
         side prefer your order.
       </FAQ>
-    </div>
     <script>
+      import FbmEngine from "warthog-fbm";
       import LeaderLine from "leader-line-new";
-      const arrowTokenFromSeller = new LeaderLine(
-        document.getElementById("sellTokenArrowPoint"),
-        document.getElementById("buyTokenArrowPoint")
-      );
-      const arrowTokenFromPool = new LeaderLine(
-        document.getElementById("poolInteractedTokenArrowPoint"),
-        document.getElementById("buyTokenArrowPoint")
-      );
-      console.log(`arrow`, arrowTokenFromSeller);
-      const arrowWartFromBuyer = new LeaderLine(
-        document.getElementById("sellWartArrowPoint"),
-        document.getElementById("buyWartArrowPoint"),
-        { color: "blue" }
-      );
-      const arrowWartFromPool = new LeaderLine(
-        document.getElementById("poolInteractedWartArrowPoint"),
-        document.getElementById("buyWartArrowPoint"),
-        { color: "blue" }
-      );
-      const arrowWartToPool = new LeaderLine(
-        document.getElementById("sellWartArrowPoint"),
-        document.getElementById("poolInteractedWartArrowPoint"),
-        { color: "blue" }
-      );
-      const arrowTokenToPool = new LeaderLine(
-        document.getElementById("sellTokenArrowPoint"),
-        document.getElementById("poolInteractedTokenArrowPoint")
-      );
-      arrowTokenFromSeller.hide();
-      arrowTokenFromPool.hide();
-      arrowWartFromBuyer.hide();
-      arrowWartFromPool.hide();
-      arrowWartToPool.hide();
-      arrowTokenToPool.hide();
 
-      function setValuesAndDrawLines(match) {
-        arrowTokenFromSeller.hide();
-        arrowTokenFromPool.hide();
-        arrowWartFromBuyer.hide();
-        arrowWartFromPool.hide();
-        arrowWartToPool.hide();
-        arrowTokenToPool.hide();
+      const $ = (id) => document.getElementById(id);
 
-        arrowTokenFromSeller.position();
-        arrowTokenFromPool.position();
-        arrowWartFromBuyer.position();
-        arrowWartFromPool.position();
-        arrowWartToPool.position();
-        arrowTokenToPool.position();
+      // Engine is permissive; we own field validity on the JS side and
+      // gate engine.match() on it.
+      let engine = null;
+      try {
+        await FbmEngine.init();
+        engine = new FbmEngine({ baseDecimals: 8, feeE4: 5 });
+      } catch (err) {
+        document.body.innerHTML = `<pre>Failed to load FBM engine: ${err.message}</pre>`;
+        throw err;
+      }
 
-        document.getElementById("sellToken").innerHTML =
-          match.filled.outBaseSeller;
-        document.getElementById("buyWart").innerHTML =
-          match.filled.inQuoteSeller;
-        document.getElementById("sellWart").innerHTML =
-          match.filled.outQuoteBuyer;
-        document.getElementById("buyToken").innerHTML =
-          match.filled.inBaseBuyer;
-        if (match.toPool && match.toPool.isQuote === true) {
-          document.getElementById("poolInteractedToken").innerHTML =
-            "-" + match.toPool.base || "0";
-          document.getElementById("poolInteractedWart").innerHTML =
-            "+" + match.toPool.quote || "0";
-        }
-        if (match.toPool && match.toPool.isQuote === false) {
-          document.getElementById("poolInteractedToken").innerHTML =
-            "+" + match.toPool.base || "0";
-          document.getElementById("poolInteractedWart").innerHTML =
-            "-" + match.toPool.quote || "0";
-        }
-        if (match.toPool) {
-          document.getElementById("poolInteractedPrice").innerHTML =
-            match.toPool.price;
-        }
+      // ── State model ────────────────────────────────────────────────
+      const state = {
+        poolBase:   { valid: true,  error: "" },  // HTML defaults 100, 200
+        poolQuote:  { valid: true,  error: "" },
+        buyLimit:   { valid: false, error: "" },
+        buyAmount:  { valid: false, error: "" },
+        sellLimit:  { valid: false, error: "" },
+        sellAmount: { valid: false, error: "" },
+        lastMatch: null,
+      };
 
-        // matched lines
-        if (match.matched) {
-          if (match.matched.base !== "0") {
-            arrowTokenFromSeller.middleLabel = LeaderLine.pathLabel(
-              match.matched.base
-            );
-            arrowTokenFromSeller.show();
-          }
-          if (match.matched.quote !== "0") {
-            arrowWartFromBuyer.middleLabel = LeaderLine.pathLabel(
-              match.matched.quote
-            );
-            arrowWartFromBuyer.show();
-          }
-        }
+      // ── DOM refs ───────────────────────────────────────────────────
+      const buyPriceEl    = $("buyPrice");
+      const wartAmountEl  = $("wartAmount");
+      const sellPriceEl   = $("sellPrice");
+      const tokenAmountEl = $("tokenAmount");
+      const beforeTokenEl = $("beforeToken");
+      const beforeWartEl  = $("beforeWart");
+      const buyButton     = $("buyButton");
+      const sellButton    = $("sellButton");
+      const tbodyBuy      = $("tbodyBuy");
+      const tbodySell     = $("tbodySell");
+      const tbodyBuyers   = $("tbodyBuyers");
+      const tbodySellers  = $("tbodySellers");
 
-        // pool interacted lines
-        if (match.toPool && match.toPool !== null) {
-          if (match.toPool.isQuote === true) {
-            arrowTokenFromPool.middleLabel = LeaderLine.pathLabel(
-              match.toPool.base
-            );
-            arrowWartToPool.middleLabel = LeaderLine.pathLabel(
-              match.toPool.quote
-            );
-            arrowTokenFromPool.show();
-            arrowWartToPool.show();
-          }
-          if (match.toPool.isQuote === false) {
-            arrowTokenToPool.middleLabel = LeaderLine.pathLabel(
-              match.toPool.base
-            );
-            arrowWartFromPool.middleLabel = LeaderLine.pathLabel(
-              match.toPool.quote
-            );
-            arrowTokenToPool.show();
-            arrowWartFromPool.show();
-          }
+      // ── Field renderer (red border + tooltip) ──────────────────────
+      function renderField(input, f) {
+        input.classList.toggle("invalid", !f.valid);
+        input.title = f.error || "";
+      }
+
+      // ── Row inserter (vanilla DOM, matches old behaviour) ──────────
+      function insertRow(obj, rowarr, id) {
+        const row = obj.insertRow(-1);
+        row.className = "p-4 h-9";
+        for (let i = 0; i < rowarr.length; ++i) {
+          const cell = row.insertCell(i);
+          cell.className =
+            "px-4 border-b border-blue-gray-50 font-sans text-sm antialiased font-normal leading-normal";
+          if (i === rowarr.length - 1) cell.className += " " + id;
+          cell.innerHTML = `${rowarr[i]}`;
         }
       }
-      document.addEventListener("DOMContentLoaded", () => {
-        let Module: any;
-        const initModule = import("../scripts/demo").then((module) => {
-          Module = {
-            onRuntimeInitialized: () => {
-              console.log("runtime initialized");
-            },
-          };
-          module.default(Module);
-        });
-        const svg = document.getElementById("curveSvg");
-        function createPath() {
-          const path = document.createElementNS(
-            "http://www.w3.org/2000/svg",
-            "path"
-          );
-          path.setAttribute("stroke", "black");
-          path.setAttribute("stroke-width", "2");
-          path.setAttribute("fill", "none");
-          path.setAttribute("marker-end", "url(#arrowhead)");
-          svg.appendChild(path);
-          return path;
-        }
 
-        function insertRow(obj, rowarr, id) {
-          var row = obj.insertRow(-1);
-          row.className = "p-4 h-9";
-          for (var i = 0; i < rowarr.length; ++i) {
-            var cell = row.insertCell(i); // Create a new cell
-            cell.className =
-              "px-4 border-b border-blue-gray-50 font-sans text-sm antialiased font-normal leading-normal";
-            if (i === rowarr.length - 1) cell.className += " " + id;
-            cell.innerHTML = `${rowarr[i]}`; // Set the innerHTML directly
+      // ── Single source of match() calls ─────────────────────────────
+      // engine.match() always returns a full result; we re-render on
+      // every change to keep the UI in sync.
+      function tryMatch() {
+        state.lastMatch = engine.match();
+        renderOrderBooks();
+        renderSummary();
+        renderPool();
+        drawArrows();
+      }
+
+      function renderOrderBooks() {
+        const m = state.lastMatch;
+        tbodyBuy.innerHTML = "";
+        for (const o of m.buys) {
+          insertRow(tbodyBuy, [o.limit, o.amount, o.filled], "filledAmountWartItem");
+        }
+        tbodySell.innerHTML = "";
+        for (const o of m.sells) {
+          insertRow(tbodySell, [o.limit, o.amount, o.filled], "filledAmountTokenItem");
+        }
+        let sumToken = 0;
+        for (const el of document.getElementsByClassName("filledAmountTokenItem")) {
+          sumToken += parseFloat(el.innerHTML);
+        }
+        let sumWart = 0;
+        for (const el of document.getElementsByClassName("filledAmountWartItem")) {
+          sumWart += parseFloat(el.innerHTML);
+        }
+        $("filledAmountToken").innerHTML = sumToken.toString();
+        $("filledAmountWart").innerHTML  = sumWart.toString();
+      }
+
+      function renderSummary() {
+        const m = state.lastMatch;
+        tbodyBuyers.innerHTML = "";
+        insertRow(tbodyBuyers, ["orders", m.matched.quote, m.matched.base, m.matched.price], "");
+        if (m.toPool && m.toPool.isQuote) {
+          insertRow(tbodyBuyers, ["via pool", m.toPool.quote, m.toPool.base, m.toPool.price], "");
+        }
+        insertRow(tbodyBuyers, ["total", m.filled.outQuoteBuyer, m.filled.inBaseBuyer, m.filled.priceBuyer], "");
+        tbodySellers.innerHTML = "";
+        insertRow(tbodySellers, ["orders", m.matched.base, m.matched.quote, m.matched.price], "");
+        if (m.toPool && !m.toPool.isQuote) {
+          insertRow(tbodySellers, ["via pool", m.toPool.base, m.toPool.quote, m.toPool.price], "");
+        }
+        insertRow(tbodySellers, ["total", m.filled.outBaseSeller, m.filled.inQuoteSeller, m.filled.priceSeller], "");
+      }
+
+      function renderPool() {
+        const m = state.lastMatch;
+        $("beforePrice").innerHTML = m.poolBefore.price;
+        $("afterToken").innerHTML  = m.poolAfter.base;
+        $("afterWart").innerHTML   = m.poolAfter.quote;
+        $("afterPrice").innerHTML  = m.poolAfter.price;
+      }
+
+      // ── LeaderLine arrows ──────────────────────────────────────────
+      const arrowTokenFromSeller = new LeaderLine($("sellTokenArrowPoint"), $("buyTokenArrowPoint"));
+      const arrowTokenFromPool   = new LeaderLine($("poolInteractedTokenArrowPoint"), $("buyTokenArrowPoint"));
+      const arrowWartFromBuyer   = new LeaderLine($("sellWartArrowPoint"), $("buyWartArrowPoint"), { color: "blue" });
+      const arrowWartFromPool    = new LeaderLine($("poolInteractedWartArrowPoint"), $("buyWartArrowPoint"), { color: "blue" });
+      const arrowWartToPool      = new LeaderLine($("sellWartArrowPoint"), $("poolInteractedWartArrowPoint"), { color: "blue" });
+      const arrowTokenToPool     = new LeaderLine($("sellTokenArrowPoint"), $("poolInteractedTokenArrowPoint"));
+      const allArrows = [
+        arrowTokenFromSeller, arrowTokenFromPool,
+        arrowWartFromBuyer,   arrowWartFromPool,
+        arrowWartToPool,      arrowTokenToPool,
+      ];
+      for (const a of allArrows) a.hide();
+
+      function drawArrows() {
+        const m = state.lastMatch;
+        for (const a of allArrows) { a.hide(); a.position(); }
+        $("sellToken").innerHTML = m.filled.outBaseSeller;
+        $("buyWart").innerHTML   = m.filled.inQuoteSeller;
+        $("sellWart").innerHTML  = m.filled.outQuoteBuyer;
+        $("buyToken").innerHTML  = m.filled.inBaseBuyer;
+        if (m.toPool) {
+          $("poolInteractedPrice").innerHTML = m.toPool.price;
+          if (m.toPool.isQuote) {
+            $("poolInteractedToken").innerHTML = "-" + m.toPool.base;
+            $("poolInteractedWart").innerHTML  = "+" + m.toPool.quote;
+          } else {
+            $("poolInteractedToken").innerHTML = "+" + m.toPool.base;
+            $("poolInteractedWart").innerHTML  = "-" + m.toPool.quote;
           }
         }
-        function price(base, quote) {
-          if (base != 0) {
-            return quote / base;
-          }
-          return "N/A";
+        if (m.matched && m.matched.base !== "0") {
+          arrowTokenFromSeller.middleLabel = LeaderLine.pathLabel(m.matched.base);
+          arrowTokenFromSeller.show();
         }
-        function annotate_parse_errors({ poolToken, poolWart }) {
-          document.getElementById("beforeToken").style.backgroundColor =
-            poolToken ? "red" : "transparent";
-          document.getElementById("beforeWart").style.backgroundColor = poolWart
-            ? "red"
-            : "transparent";
-          return !poolToken && !poolWart; // true if both don't have parse errors
+        if (m.matched && m.matched.quote !== "0") {
+          arrowWartFromBuyer.middleLabel = LeaderLine.pathLabel(m.matched.quote);
+          arrowWartFromBuyer.show();
         }
-        function updateData(res) {
-          console.log(res);
-          if (res["error"] != null) {
-            alert("Error" + res["error"]);
-            return;
-          }
-
-          if (!annotate_parse_errors(res.parseErrors)) return; // cannot evaluate if there are parse errors
-          const match = res.match;
-
-          var buys = match.buys;
-          var tbodyBuy = document.getElementById("tbodyBuy");
-          tbodyBuy.innerHTML = "";
-          for (var i = 0, len = buys.length; i < len; i++) {
-            insertRow(
-              tbodyBuy,
-              [buys[i]["limit"], buys[i]["amount"], buys[i]["filled"]],
-              "filledAmountWartItem"
-            );
-          }
-          var sells = match.sells;
-          var tbodySell = document.getElementById("tbodySell");
-          tbodySell.innerHTML = "";
-          for (var i = 0, len = sells.length; i < len; i++) {
-            insertRow(
-              tbodySell,
-              [sells[i]["limit"], sells[i]["amount"], sells[i]["filled"]],
-              "filledAmountTokenItem"
-            );
-          }
-
-          // summary part
-          const toPool = match.toPool;
-          const filled = match.filled;
-
-          var tbodyBuyers = document.getElementById("tbodyBuyers")
-          tbodyBuyers.innerHTML=""
-          insertRow(tbodyBuyers,["orders",match.matched.quote, match.matched.base, match.matched.price], '');
-          if (toPool && toPool.isQuote){
-              insertRow(tbodyBuyers,["via pool",toPool.quote, toPool.base, toPool.price], '');
-          }
-          insertRow(tbodyBuyers,["total",filled.outQuoteBuyer, filled.inBaseBuyer, match.filled.priceBuyer], '');
-
-          var tbodySellers = document.getElementById("tbodySellers")
-          tbodySellers.innerHTML=""
-          insertRow(tbodySellers,["orders", match.matched.base, match.matched.quote, match.matched.price], '');
-          if (toPool && !toPool.isQuote){
-              insertRow(tbodySellers,["via pool", toPool.base, toPool.quote, toPool.price], '');
-          }
-          insertRow(tbodySellers,["total",filled.outBaseSeller, filled.inQuoteSeller, filled.priceSeller], '');
-
-          var tbodyPool = document.getElementById("tbodyPool");
-          document.getElementById("beforePrice").innerHTML =
-            match.poolBefore.price;
-          document.getElementById("afterToken").innerHTML =
-            match.poolAfter.base;
-          document.getElementById("afterWart").innerHTML =
-            match.poolAfter.quote;
-          document.getElementById("afterPrice").innerHTML =
-            match.poolAfter.price;
-
-          var sumToken = 0;
-          var amountTokenArray = document.getElementsByClassName(
-            "filledAmountTokenItem"
-          );
-          Array.from(amountTokenArray).forEach((element) => {
-            sumToken += parseFloat(element.innerHTML);
-          });
-
-          var sumWart = 0;
-          var amountWartArray = document.getElementsByClassName(
-            "filledAmountWartItem"
-          );
-          Array.from(amountWartArray).forEach((element) => {
-            sumWart += parseFloat(element.innerHTML);
-          });
-
-          document.getElementById("filledAmountToken").innerHTML =
-            sumToken.toString();
-          document.getElementById("filledAmountWart").innerHTML =
-            sumWart.toString();
-
-          setValuesAndDrawLines(match);
+        if (m.toPool && m.toPool.isQuote) {
+          arrowTokenFromPool.middleLabel = LeaderLine.pathLabel(m.toPool.base);
+          arrowWartToPool.middleLabel    = LeaderLine.pathLabel(m.toPool.quote);
+          arrowTokenFromPool.show();
+          arrowWartToPool.show();
         }
-        function addSell() {
-          console.log("click add sell");
-          var str = JSON.stringify({
-            price: (document.getElementById("sellPrice") as HTMLInputElement)
-              .value,
-            amount: (document.getElementById("tokenAmount") as HTMLInputElement)
-              .value,
-          });
-          editPool();
-          console.log("add Sell 1");
-          var res = JSON.parse(
-            Module.ccall("addSell", "string", ["string"], [str])
-          );
-          console.log("add Sell 2");
-          updateData(res);
+        if (m.toPool && !m.toPool.isQuote) {
+          arrowTokenToPool.middleLabel  = LeaderLine.pathLabel(m.toPool.base);
+          arrowWartFromPool.middleLabel = LeaderLine.pathLabel(m.toPool.quote);
+          arrowTokenToPool.show();
+          arrowWartFromPool.show();
         }
-        function addBuy() {
-          console.log("click add buy");
-          var str = JSON.stringify({
-            price: (document.getElementById("buyPrice") as HTMLInputElement)
-              .value,
-            amount: (document.getElementById("wartAmount") as HTMLInputElement)
-              .value,
-          });
-          editPool();
-          var res = JSON.parse(
-            Module.ccall("addBuy", "string", ["string"], [str])
-          );
-          updateData(res);
-        }
-        function editPool() {
-          console.log("Edit Pool Function");
-          var str = JSON.stringify({
-            token: (document.getElementById("beforeToken") as HTMLInputElement)
-              .value,
-            wart: (document.getElementById("beforeWart") as HTMLInputElement)
-              .value,
-          });
-          console.log(str);
-          var res = JSON.parse(
-            Module.ccall("editPool", "string", ["string"], [str])
-          );
-          console.log(res);
-          updateData(res);
-        }
+      }
 
-        // Attach the event listener to the buttons
-        document
-          .getElementById("sellButton")
-          .addEventListener("click", addSell);
-        document.getElementById("buyButton").addEventListener("click", addBuy);
-        document
-          .getElementById("beforeToken")
-          .addEventListener("input", editPool);
-        document
-          .getElementById("beforeWart")
-          .addEventListener("input", editPool);
-        document
-          .getElementById("parentBeforeToken")
-          .addEventListener("click", () =>
-            document.getElementById("beforeToken").focus()
-          );
-        document
-          .getElementById("parentBeforeWart")
-          .addEventListener("click", () =>
-            document.getElementById("beforeWart").focus()
-          );
+      // ── Button gating ──────────────────────────────────────────────
+      function updateBuyButton() {
+        buyButton.disabled = !(state.buyLimit.valid && state.buyAmount.valid);
+      }
+      function updateSellButton() {
+        sellButton.disabled = !(state.sellLimit.valid && state.sellAmount.valid);
+      }
+
+      // ── Input handlers ─────────────────────────────────────────────
+      beforeTokenEl.addEventListener("input", () => {
+        const res = engine.setPool({ base: beforeTokenEl.value });
+        state.poolBase.valid = "ok" in res;
+        state.poolBase.error = "error" in res ? res.error : "";
+        beforeTokenEl.style.backgroundColor = state.poolBase.valid ? "transparent" : "red";
+        renderField(beforeTokenEl, state.poolBase);
+        tryMatch();
+        updateBuyButton();
+        updateSellButton();
       });
+      beforeWartEl.addEventListener("input", () => {
+        const res = engine.setPool({ quote: beforeWartEl.value });
+        state.poolQuote.valid = "ok" in res;
+        state.poolQuote.error = "error" in res ? res.error : "";
+        beforeWartEl.style.backgroundColor = state.poolQuote.valid ? "transparent" : "red";
+        renderField(beforeWartEl, state.poolQuote);
+        tryMatch();
+        updateBuyButton();
+        updateSellButton();
+      });
+
+      buyPriceEl.addEventListener("input", () => {
+        const res = engine.validateLimit(buyPriceEl.value);
+        state.buyLimit.valid = "ok" in res;
+        state.buyLimit.error = "error" in res ? res.error : "";
+        renderField(buyPriceEl, state.buyLimit);
+        updateBuyButton();
+      });
+      wartAmountEl.addEventListener("input", () => {
+        const res = engine.validateBaseAmount(wartAmountEl.value);
+        state.buyAmount.valid = "ok" in res;
+        state.buyAmount.error = "error" in res ? res.error : "";
+        renderField(wartAmountEl, state.buyAmount);
+        updateBuyButton();
+      });
+      sellPriceEl.addEventListener("input", () => {
+        const res = engine.validateLimit(sellPriceEl.value);
+        state.sellLimit.valid = "ok" in res;
+        state.sellLimit.error = "error" in res ? res.error : "";
+        renderField(sellPriceEl, state.sellLimit);
+        updateSellButton();
+      });
+      tokenAmountEl.addEventListener("input", () => {
+        const res = engine.validateQuoteAmount(tokenAmountEl.value);
+        state.sellAmount.valid = "ok" in res;
+        state.sellAmount.error = "error" in res ? res.error : "";
+        renderField(tokenAmountEl, state.sellAmount);
+        updateSellButton();
+      });
+
+      // Pool inputs: click parent to focus the inner input.
+      $("parentBeforeToken").addEventListener("click", () => beforeTokenEl.focus());
+      $("parentBeforeWart").addEventListener("click",  () => beforeWartEl.focus());
+
+      // ── Button handlers ────────────────────────────────────────────
+      buyButton.addEventListener("click", () => {
+        const res = engine.addBuy({ limit: buyPriceEl.value, amount: wartAmountEl.value });
+        if ("ok" in res) {
+          tryMatch();
+        } else {
+          alert("Error: " + res.error);
+        }
+      });
+      sellButton.addEventListener("click", () => {
+        const res = engine.addSell({ limit: sellPriceEl.value, amount: tokenAmountEl.value });
+        if ("ok" in res) {
+          tryMatch();
+        } else {
+          alert("Error: " + res.error);
+        }
+      });
+
+      // ─── Initial state ────────────────────────────────────────────
+      // Push the HTML's default pool values (100 TOKEN, 200 WART) to
+      // the engine so the initial render reflects the visible inputs.
+      engine.setPool({ base: beforeTokenEl.value, quote: beforeWartEl.value });
+      // Validate buy/sell fields with empty defaults (they stay invalid
+      // until the user types). Arrow functions preserve the `engine`
+      // binding — Embind exposes methods bound to the instance only at
+      // the method-call site, not when stored in a variable.
+      for (const [el, key, validator] of [
+        [buyPriceEl,    "buyLimit",   (v) => engine.validateLimit(v)],
+        [wartAmountEl,  "buyAmount",  (v) => engine.validateBaseAmount(v)],
+        [sellPriceEl,   "sellLimit",  (v) => engine.validateLimit(v)],
+        [tokenAmountEl, "sellAmount", (v) => engine.validateQuoteAmount(v)],
+      ]) {
+        if (el.value) {
+          const res = validator(el.value);
+          state[key].valid = "ok" in res;
+          state[key].error = "error" in res ? res.error : "";
+          renderField(el, state[key]);
+        }
+      }
+      updateBuyButton();
+      updateSellButton();
+      tryMatch();
     </script>
   </div>
 </BaseLayout>
