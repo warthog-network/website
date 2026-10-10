@@ -47,7 +47,7 @@ experimental: {
       },
     },
     ssr: {
-      external: ['warthog-js', 'crypto-browserify', 'stream-browserify', 'buffer', 'elliptic', 'ethers'],
+      external: ['warthog-js', 'warthog-fbm', 'crypto-browserify', 'stream-browserify', 'buffer', 'elliptic', 'ethers'],
     },
     optimizeDeps: {
       include: [
