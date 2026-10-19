@@ -1,9 +1,7 @@
 ---
-import Tidoex from '../BalkyImages/wheretobuyimgs/tidoex.png';
 import Safetrade from '../BalkyImages/wheretobuyimgs/safetrade.png'
 
 const icons = [
-    {Visible: true, Name:"TidoEx exchange", ImgSrc: Tidoex.src, Url:"https://tidoex.com/trade/wart-usdt"},
     {Visible: true, Name:"Safetrade exchange", ImgSrc: Safetrade.src, Url:"https://safetrade.com/exchange/WART-USDT?type=basic"},
 ];
 ---
@@ -17,7 +15,8 @@ const icons = [
   .buy-grid {
     display: grid;
     gap: clamp(1rem, 3vw, 1.5rem);
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 280px));
+    justify-content: center;
   }
 
   .exchange-card {
