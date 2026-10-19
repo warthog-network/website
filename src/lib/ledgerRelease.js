@@ -29,7 +29,7 @@ export const LEDGER_DEVICES = {
     releasePage: RELEASE_PAGE,
     plug: "Plug in your Nano S+.",
     approve: "On a Nano S+, press both buttons at the same time.",
-    note: "This file is for Nano S+ OS 1.7.0. The same SDK generation also covers Nano X OS 2.8.0, Stax OS 1.11.0, Flex OS 1.7.0, and Apex P (Nano Gen5) OS 1.2.0. Those versions need their own builds. A Nano X cannot sideload an app.",
+    note: "This file is for Nano S+ OS 1.7.0, over a USB cable. Today this works on a Nano S and a Nano S+. Bluetooth models (Nano X, Stax, Flex, and Nano Gen5) do not work yet. Bluetooth support is in the works.",
   },
   nanos: {
     id: "nanos",
@@ -47,7 +47,7 @@ export const LEDGER_DEVICES = {
     releasePage: "",
     plug: "Plug in your Nano S.",
     approve: "On a Nano S, press both buttons at the same time.",
-    note: "This file is the original Nano S build for OS 2.1.0. The eight review rows are paged with the two buttons on the 128×32 screen. The dashboard icon is 16×16.",
+    note: "This file is the original Nano S build for OS 2.1.0, over a USB cable. The eight review rows are paged with the two buttons on the 128×32 screen. The dashboard icon is 16×16. Bluetooth models (Nano X, Stax, Flex, and Nano Gen5) do not work yet. Bluetooth support is in the works.",
   },
 };
 

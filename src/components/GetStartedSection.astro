@@ -565,11 +565,11 @@ const wallets = [
             <h3>Ledger Nano S+</h3>
             <p>
               Install Warthog 0.2.0 on a Nano S+ with OS 1.7.0. The page
-              checks the file hash, then loads that file. The same SDK
-              generation also covers Nano X OS 2.8.0, Stax OS 1.11.0, Flex
-              OS 1.7.0, and Apex P (Nano Gen5) OS 1.2.0. Those versions need
-              their own builds. A Nano X cannot sideload an app. Use a test
-              seed. This sideload is not in Ledger Wallet yet.
+              checks the file hash, then loads that file over a USB cable.
+              Today this works on a Nano S and a Nano S+. Bluetooth models
+              (Nano X, Stax, Flex, and Nano Gen5) do not work yet. Bluetooth
+              support is in the works. Use a test seed. This sideload is not
+              in Ledger Wallet yet.
             </p>
             <div class="gs-card-actions">
               <button type="button" data-ledger="nanosplus">Install on Nano S+</button>
@@ -583,10 +583,12 @@ const wallets = [
             <h3>Ledger Nano S</h3>
             <p>
               Install Warthog 0.2.0 on an original Nano S with OS 2.1.0. The
-              page checks this Nano S file, then loads it. The eight review
-              rows are paged with the two buttons on the 128×32 screen. The
-              dashboard icon is 16×16. Use a test seed. This sideload is not
-              in Ledger Wallet yet.
+              page checks this Nano S file, then loads it over a USB cable.
+              The eight review rows are paged with the two buttons on the
+              128×32 screen. The dashboard icon is 16×16. Today this works on
+              a Nano S and a Nano S+. Bluetooth models (Nano X, Stax, Flex,
+              and Nano Gen5) do not work yet. Bluetooth support is in the
+              works. Use a test seed. This sideload is not in Ledger Wallet yet.
             </p>
             <div class="gs-card-actions">
               <button type="button" data-ledger="nanos">Install on Nano S</button>
@@ -606,7 +608,7 @@ const wallets = [
       <div class="ledger-warn">
         <p>Use a Ledger with a test seed. Your seed and coins stay on the device. This page only puts the Warthog app on it, or takes that app off.</p>
         <p>File for this Ledger: <strong id="ledger-expected">0.2.0 for Nano S+, OS 1.7.0</strong></p>
-        <p id="ledger-also">This file is for Nano S+ OS 1.7.0. The same SDK generation also covers Nano X OS 2.8.0, Stax OS 1.11.0, Flex OS 1.7.0, and Apex P (Nano Gen5) OS 1.2.0. Those versions need their own builds. A Nano X cannot sideload an app.</p>
+        <p id="ledger-also">This file is for Nano S+ OS 1.7.0, over a USB cable. Today this works on a Nano S and a Nano S+. Bluetooth models (Nano X, Stax, Flex, and Nano Gen5) do not work yet. Bluetooth support is in the works.</p>
         <p class="ledger-muted">File SHA-256, checked before install:</p>
         <p class="ledger-hash" id="ledger-hash"></p>
         <p class="ledger-muted">Build digest recorded by the Ledger toolchain:</p>

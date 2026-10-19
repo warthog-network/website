@@ -2,6 +2,9 @@
   "name": "Warthog",
   "version": "0.2.0",
   "release": "https://github.com/warthog-network/ledger-warthog/releases/tag/v0.2.0",
+  "connection": "USB cable",
+  "worksToday": ["Nano S", "Nano S+"],
+  "bluetooth": "in the works",
   "devices": [
     {
       "device": "Nano S+",
@@ -11,13 +14,7 @@
       "apdu": "/downloads/ledger/warthog-nanosplus-0.2.0.apdu",
       "apduSha256": "1f9ed6cdd29d46afce08eaf1b111a70dedb1624b4af72aec9b789546b8c99074",
       "elfSha256": "9ec0c84d215f721184b2c428cb90d414515036ae67fa1852a7eac7525abd6cbf",
-      "buildSha256File": "83ff349eba098accb1a27705317d0788a70c18c2587f43aa8989fe9f9af1a6b9",
-      "sameSdkOs": [
-        "Nano X 2.8.0",
-        "Stax 1.11.0",
-        "Flex 1.7.0",
-        "Apex P (Nano Gen5) 1.2.0"
-      ]
+      "buildSha256File": "83ff349eba098accb1a27705317d0788a70c18c2587f43aa8989fe9f9af1a6b9"
     },
     {
       "device": "Nano S",
