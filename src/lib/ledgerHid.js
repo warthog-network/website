@@ -57,13 +57,76 @@ function checkHeader(frame, expectedSeq) {
   if (seq !== expectedSeq) throw new Error("The Ledger reply arrived out of order.");
 }
 
+/**
+ * HIDDevice has sendReport and an "inputreport" event. It has no receive().
+ * Reports are queued so a reply that arrives before the next read is kept.
+ */
+const readers = new WeakMap();
+
+function reportBytes(event) {
+  const data = event && event.data;
+  if (data instanceof DataView) {
+    return new Uint8Array(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength));
+  }
+  if (data instanceof Uint8Array) return new Uint8Array(data);
+  throw new Error("The Ledger reply was not a HID report.");
+}
+
+function ensureReader(device) {
+  const existing = readers.get(device);
+  if (existing) return existing;
+  const queue = [];
+  let waiting = null;
+  const onReport = (event) => {
+    const bytes = reportBytes(event);
+    if (waiting) {
+      const resolve = waiting;
+      waiting = null;
+      resolve(bytes);
+      return;
+    }
+    queue.push(bytes);
+  };
+  device.addEventListener("inputreport", onReport);
+  const reader = {
+    onReport,
+    drain() {
+      queue.length = 0;
+      waiting = null;
+    },
+    receive() {
+      if (queue.length) return Promise.resolve(queue.shift());
+      return new Promise((resolve) => {
+        waiting = resolve;
+      });
+    },
+  };
+  readers.set(device, reader);
+  return reader;
+}
+
+function detachReader(device) {
+  const reader = readers.get(device);
+  if (!reader) return;
+  device.removeEventListener("inputreport", reader.onReport);
+  reader.drain();
+  readers.delete(device);
+}
+
 async function receiveFrame(device, timeoutMs) {
+  const reader = ensureReader(device);
   let timer;
+  let timedOut = false;
   const timeout = new Promise((_, reject) => {
-    timer = setTimeout(() => reject(new Error("The Ledger did not answer. Unlock it and leave the home screen open.")), timeoutMs);
+    timer = setTimeout(() => {
+      timedOut = true;
+      reader.drain();
+      reject(new Error("The Ledger did not answer. Unlock it and leave the home screen open."));
+    }, timeoutMs);
   });
   try {
-    const report = await Promise.race([device.receive(), timeout]);
+    const report = await Promise.race([reader.receive(), timeout]);
+    if (timedOut) throw new Error("The Ledger did not answer. Unlock it and leave the home screen open.");
     return asFrame(report);
   } finally {
     clearTimeout(timer);
@@ -72,6 +135,8 @@ async function receiveFrame(device, timeoutMs) {
 
 export async function exchangeRaw(device, apdu, timeoutMs = 20000) {
   if (!device.opened) await device.open();
+  const reader = ensureReader(device);
+  reader.drain();
   for (const frame of framesForApdu(apdu)) {
     await device.sendReport(0x00, frame);
   }
@@ -122,9 +187,12 @@ export async function connectLedger() {
   const device = list[0];
   if (!device) throw new Error("No Ledger was selected.");
   if (!device.opened) await device.open();
+  ensureReader(device);
   return device;
 }
 
 export async function closeLedger(device) {
-  if (device?.opened) await device.close();
+  if (!device) return;
+  detachReader(device);
+  if (device.opened) await device.close();
 }

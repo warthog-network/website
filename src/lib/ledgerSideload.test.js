@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { sha256 } from "@noble/hashes/sha2";
 import { getPublicKey, utils, verify } from "@noble/secp256k1";
-import { framesForApdu } from "./ledgerHid.js";
+import { exchangeRaw, framesForApdu } from "./ledgerHid.js";
 import { LEDGER_DEVICES, LEDGER_RELEASE, LEDGER_REPO } from "./ledgerRelease.js";
 import {
   ScpChannel,
@@ -193,6 +193,64 @@ function decodeDer(der) {
   };
   return { r: read(), s: read() };
 }
+
+function fakeLedger(replyFrames) {
+  const listeners = [];
+  let emitted = false;
+  return {
+    opened: true,
+    open: async () => {},
+    close: async () => {},
+    sendReport: async () => {
+      if (emitted) return;
+      emitted = true;
+      for (const reply of replyFrames) {
+        await Promise.resolve();
+        const event = { data: new DataView(reply.buffer, reply.byteOffset, reply.byteLength) };
+        for (const listener of listeners) listener(event);
+      }
+    },
+    addEventListener: (name, fn) => {
+      assert.equal(name, "inputreport");
+      listeners.push(fn);
+    },
+    removeEventListener: (name, fn) => {
+      assert.equal(name, "inputreport");
+      const index = listeners.indexOf(fn);
+      if (index >= 0) listeners.splice(index, 1);
+    },
+  };
+}
+
+function hidFrame(seq, payload, total) {
+  const frame = new Uint8Array(64);
+  frame[0] = 0x01;
+  frame[1] = 0x01;
+  frame[2] = 0x05;
+  frame[3] = (seq >> 8) & 0xff;
+  frame[4] = seq & 0xff;
+  let dataOff = 5;
+  if (seq === 0) {
+    frame[5] = (total >> 8) & 0xff;
+    frame[6] = total & 0xff;
+    dataOff = 7;
+  }
+  frame.set(payload, dataOff);
+  return frame;
+}
+
+test("WebHID exchange reads inputreport events and does not call receive", async () => {
+  const payload = new Uint8Array(60);
+  payload.set([0x11, 0x22], 0);
+  payload[59] = 0x33;
+  const device = fakeLedger([
+    hidFrame(0, payload.subarray(0, 57), 60),
+    hidFrame(1, payload.subarray(57), 60),
+  ]);
+  const raw = await exchangeRaw(device, new Uint8Array([0xb0, 0x01, 0x00, 0x00, 0x00]), 1000);
+  assert.deepEqual(raw, payload);
+  assert.equal(typeof device.receive, "undefined");
+});
 
 test("HID frames carry the length on the first packet", () => {
   const apdu = new Uint8Array(100);
