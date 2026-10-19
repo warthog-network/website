@@ -103,7 +103,7 @@ async function exchangeInstall(apdu) {
 async function runChecked(kind) {
   const file = await loadCheckedApdu();
   log(`File hash matches ${current.apduSha256}.`);
-  log("Opening a channel. Approve the prompt on the Ledger if it asks.");
+  log(`Opening a channel. ${current.approve}`);
   const channel = await openSecureChannel(exchangeInstall, current.targetId);
   if (kind === "remove") {
     await runApduScript(exchangeInstall, channel, [deleteWarthogApdu()]);

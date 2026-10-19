@@ -167,7 +167,10 @@ export async function exchangeOk(device, apdu, timeoutMs) {
   const raw = await exchangeRaw(device, apdu, timeoutMs);
   if (raw.length < 2) throw new Error("The Ledger reply was too short.");
   const sw = (raw[raw.length - 2] << 8) | raw[raw.length - 1];
-  if (sw !== 0x9000) throw new LedgerStatusError(sw);
+  if (sw !== 0x9000) {
+    const ins = apdu.length > 1 ? apdu[1].toString(16).padStart(2, "0") : "??";
+    throw new LedgerStatusError(sw, `Command ${ins} was refused.`);
+  }
   return raw.subarray(0, raw.length - 2);
 }
 

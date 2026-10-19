@@ -34,7 +34,8 @@ export const LEDGER_DEVICES = {
     buildSha256File: "6f6567b7ac220e73f297284e372e28d6a172eb1e58fc8e3200b0459e0ba57f2a",
     releasePage: RELEASE_030,
     plug: "Plug in your Nano S+.",
-    approve: "On a Nano S+, press both buttons at the same time.",
+    approve:
+      "On a Nano S+, press the right button until the screen says Allow unsafe manager, then press both buttons. Both buttons on Deny unsafe manager reject the install.",
     note: "This file is Warthog 0.3.0 for Nano S+ OS 1.7.0 over a USB cable. It installs only on a Nano S+. The app source is the ledger-warthog repo.",
   },
   stax: {
@@ -52,7 +53,7 @@ export const LEDGER_DEVICES = {
     buildSha256File: "f78bf3f9645794c247b72d6ca414bf93d0412a89bbab3b678178f40cde8c7bf6",
     releasePage: RELEASE_030,
     plug: "Plug in your Stax.",
-    approve: "On a Stax, tap the screen to approve.",
+    approve: "On a Stax, tap Allow unsafe manager.",
     note: "This file is Warthog 0.3.0 for Stax OS 1.11.0 over a USB cable. It installs only on a Stax. The app source is the ledger-warthog repo.",
   },
   flex: {
@@ -70,7 +71,7 @@ export const LEDGER_DEVICES = {
     buildSha256File: "3f00a50e353f7b5039175808c358a984474557609cef655e88480b649ba03224",
     releasePage: RELEASE_030,
     plug: "Plug in your Flex.",
-    approve: "On a Flex, tap the screen to approve.",
+    approve: "On a Flex, tap Allow unsafe manager.",
     note: "This file is Warthog 0.3.0 for Flex OS 1.7.0 over a USB cable. It installs only on a Flex. The app source is the ledger-warthog repo.",
   },
   apex_p: {
@@ -88,7 +89,7 @@ export const LEDGER_DEVICES = {
     buildSha256File: "3826229a01986dd83ce249d15d96481ccedf34a9648c78eb5e4f28c5f9df9683",
     releasePage: RELEASE_030,
     plug: "Plug in your Apex P.",
-    approve: "On an Apex P, tap the screen to approve.",
+    approve: "On an Apex P, tap Allow unsafe manager.",
     note: "This file is Warthog 0.3.0 for Apex P OS 1.2.0 over a USB cable. It installs only on an Apex P. The app source is the ledger-warthog repo.",
   },
   nanos: {
@@ -106,7 +107,8 @@ export const LEDGER_DEVICES = {
     buildSha256File: "5583da409ab8010e0546d0f4f993e8e58220f993b53859ec2aa941d5827bac4d",
     releasePage: RELEASE_020,
     plug: "Plug in your Nano S.",
-    approve: "On a Nano S, press both buttons at the same time.",
+    approve:
+      "On a Nano S, press the right button until the screen says Allow unsafe manager, then press both buttons. Both buttons on Deny unsafe manager reject the install.",
     note: "This file is Warthog 0.2.0 for the original Nano S, OS 2.1.0, over a USB cable. The 0.3.0 Rust app has no Nano S build, so this page still serves the v0.2.0 file from the same repo. The eight review rows are paged with the two buttons on the 128×32 screen.",
   },
 };

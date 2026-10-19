@@ -14,7 +14,8 @@ const SCP_MAC_LENGTH = 14;
 
 const STATUS_CAUSE = {
   0x6982: "Remove the custom certificate on this Ledger first, then try again.",
-  0x6985: "The Ledger denied the prompt. Approve it and try again.",
+  0x6985:
+    "The Ledger rejected the manager. On a Nano, press the right button until the screen says Allow unsafe manager, then press both buttons. Both buttons on the Deny screen reject the install.",
   0x6a83: "This app needs another app installed first.",
   0x6a84: "The Ledger does not have enough room. Remove an app in Ledger Wallet, then try again.",
   0x6a85: "The Ledger does not have enough room. Remove an app in Ledger Wallet, then try again.",
