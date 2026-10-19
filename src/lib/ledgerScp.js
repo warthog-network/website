@@ -23,6 +23,7 @@ const STATUS_CAUSE = {
   0x6814: "This file does not match the plugged-in Ledger. Choose the install for this device.",
   0x511f: "Update the Ledger in Ledger Wallet, then try again. This app was built for a newer OS.",
   0x5120: "This Ledger cannot sideload the file. A Nano X will not accept it.",
+  0x5708: "The Ledger rejected a signature in the install handshake. Stay on the home screen and try again.",
   0x6d00: "Close the open app until the home screen with the app icons is showing, then try again.",
   0x6e00: "Close the open app until the home screen with the app icons is showing, then try again.",
 };
@@ -359,7 +360,8 @@ export async function openSecureChannel(exchange, targetId) {
 
   const ephemeral = utils.randomPrivateKey();
   const ephemeralPub = getPublicKey(ephemeral, false);
-  const ephemeralSig = signMessageDer(concatBytes([0x11], hostNonce, deviceNonce, ephemeralPub), ephemeral);
+  // The device verifies this certificate with the master key from the previous command.
+  const ephemeralSig = signMessageDer(concatBytes([0x11], hostNonce, deviceNonce, ephemeralPub), master);
   await exchange(command(0xe0, 0x51, 0x80, 0x00, pair(ephemeralPub, ephemeralSig)));
 
   let lastPub = masterPub;

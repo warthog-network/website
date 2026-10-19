@@ -161,6 +161,22 @@ test("secure channel round-trips and a fake Ledger accepts the handshake", async
   const channel = await openSecureChannel(exchange, LEDGER_RELEASE.targetId);
   assert.equal(channel.mode, "v3");
   assert.deepEqual(seen.map((apdu) => apdu[1]), [0x04, 0x50, 0x51, 0x51, 0x52, 0x52, 0x53]);
+  const masterCert = readLvPair(seen[2].subarray(5));
+  const ephemeralCert = readLvPair(seen[3].subarray(5));
+  const nonceApdu = seen[1];
+  const sentHostNonce = nonceApdu.subarray(5, 5 + nonceApdu[4]);
+  assert.equal(
+    verify(decodeDer(masterCert.right), sha256(concatBytes([0x01], masterCert.left)), masterCert.left),
+    true,
+  );
+  assert.equal(
+    verify(
+      decodeDer(ephemeralCert.right),
+      sha256(concatBytes([0x11], sentHostNonce, deviceNonce, ephemeralCert.left)),
+      masterCert.left,
+    ),
+    true,
+  );
   seen.length = 0;
   const nanosChannel = await openSecureChannel(exchange, LEDGER_DEVICES.nanos.targetId);
   assert.equal(nanosChannel.mode, "v3");
@@ -180,6 +196,14 @@ test("secure channel round-trips and a fake Ledger accepts the handshake", async
   const sig = signMessageDer(message, priv);
   assert.equal(verify(decodeDer(sig), sha256(message), getPublicKey(priv, false)), true);
 });
+
+function readLvPair(bytes) {
+  const leftLen = bytes[0];
+  const left = bytes.subarray(1, 1 + leftLen);
+  const rightLen = bytes[1 + leftLen];
+  const right = bytes.subarray(2 + leftLen, 2 + leftLen + rightLen);
+  return { left, right };
+}
 
 function decodeDer(der) {
   let offset = 2;
