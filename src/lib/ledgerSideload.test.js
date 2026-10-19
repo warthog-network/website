@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { sha256 } from "@noble/hashes/sha2";
 import { getPublicKey, utils, verify } from "@noble/secp256k1";
 import { framesForApdu } from "./ledgerHid.js";
-import { LEDGER_DEVICES, LEDGER_RELEASE } from "./ledgerRelease.js";
+import { LEDGER_DEVICES, LEDGER_RELEASE, LEDGER_REPO } from "./ledgerRelease.js";
 import {
   ScpChannel,
   bytesToHex,
@@ -18,16 +18,56 @@ import {
   signMessageDer,
 } from "./ledgerScp.js";
 
-const apduPath = new URL("../../public/downloads/ledger/warthog-nanosplus-0.2.0.apdu", import.meta.url);
+const RELEASE_030 = `${LEDGER_REPO}/releases/tag/v0.3.0`;
 
-test("published Nano S+ file matches the pinned hash and starts by deleting Warthog", () => {
-  const bytes = readFileSync(apduPath);
-  assert.equal(bytesToHex(sha256(bytes)), LEDGER_RELEASE.apduSha256);
-  const apdus = parseApduScript(bytes.toString("ascii"));
-  assert.ok(apdus.length > 10);
-  assert.deepEqual(apdus[0], deleteWarthogApdu());
-  assert.equal(apdus[0][0], 0xe0);
-  assert.equal(LEDGER_RELEASE.targetId, 0x33100004);
+test("published 0.3.0 files match the pinned hashes and start by deleting Warthog", async () => {
+  const ids = ["nanosplus", "stax", "flex", "apex_p"];
+  const targetIds = {
+    nanosplus: 0x33100004,
+    stax: 0x33200004,
+    flex: 0x33300004,
+    apex_p: 0x33400004,
+  };
+  for (const id of ids) {
+    const device = LEDGER_DEVICES[id];
+    assert.equal(device.version, "0.3.0");
+    assert.equal(device.releasePage, RELEASE_030);
+    assert.equal(device.targetId, targetIds[id]);
+    const path = new URL(`../../public/downloads/ledger/${device.fileName}`, import.meta.url);
+    const bytes = readFileSync(path);
+    assert.equal(bytesToHex(sha256(bytes)), device.apduSha256);
+    const apdus = parseApduScript(bytes.toString("ascii"));
+    assert.ok(apdus.length > 10);
+    assert.deepEqual(apdus[0], deleteWarthogApdu());
+    assert.equal(apdus[0][0], 0xe0);
+    const channel = new ScpChannel(new Uint8Array(32).fill(3), "v3");
+    for (const apdu of apdus) {
+      const wrapped = await channel.wrap(apdu.subarray(5));
+      assert.ok(wrapped.length <= 255, `${id} command is too long to send`);
+    }
+  }
+  assert.equal(LEDGER_RELEASE, LEDGER_DEVICES.nanosplus);
+});
+
+test("site manifest lists the same files and hashes", () => {
+  const manifest = JSON.parse(
+    readFileSync(new URL("../../public/downloads/ledger/manifest.json", import.meta.url), "utf8"),
+  );
+  assert.equal(manifest.version, "0.3.0");
+  assert.equal(manifest.source, LEDGER_REPO);
+  assert.equal(manifest.release, RELEASE_030);
+  const byTarget = Object.fromEntries(manifest.devices.map((device) => [device.target, device]));
+  for (const device of Object.values(LEDGER_DEVICES)) {
+    const row = byTarget[device.target];
+    assert.ok(row, device.target);
+    assert.equal(row.version, device.version);
+    assert.equal(row.apdu, device.apduPath);
+    assert.equal(row.apduSha256, device.apduSha256);
+    assert.equal(row.elfSha256, device.elfSha256);
+    assert.equal(row.buildSha256File, device.buildSha256File);
+    assert.equal(row.targetId, `0x${device.targetId.toString(16)}`);
+    assert.equal(row.release, device.releasePage);
+  }
 });
 
 test("Nano S file is a different target and every wrapped command fits one APDU", async () => {
@@ -57,16 +97,18 @@ test("version reply parser and home-screen wording", () => {
     0x07,
     ...new TextEncoder().encode("Warthog"),
     0x05,
-    ...new TextEncoder().encode("0.2.0"),
+    ...new TextEncoder().encode("0.3.0"),
     0x90,
     0x00,
   ]);
-  assert.deepEqual(parseAppVersion(body), { name: "Warthog", version: "0.2.0" });
-  const home = describeApp({ name: "BOLOS", version: "1.0.0" }, "0.2.0");
+  assert.deepEqual(parseAppVersion(body), { name: "Warthog", version: "0.3.0" });
+  const home = describeApp({ name: "BOLOS", version: "1.0.0" }, LEDGER_RELEASE.version);
   assert.equal(home.readyToInstall, true);
-  const match = describeApp({ name: "Warthog", version: "0.2.0" }, "0.2.0");
+  const match = describeApp({ name: "Warthog", version: "0.3.0" }, "0.3.0");
   assert.equal(match.versionMatches, true);
   assert.equal(match.readyToInstall, false);
+  const older = describeApp({ name: "Warthog", version: "0.2.0" }, "0.3.0");
+  assert.equal(older.versionMatches, false);
   assert.throws(() => parseAppVersion(new Uint8Array([0x55, 0x15])), /locked/i);
 });
 

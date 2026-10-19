@@ -137,6 +137,7 @@ function applyRelease(release) {
   setText("ledger-headline", release.plug);
   setText("ledger-detail", "Unlock it and stay on the home screen, the one with the app icons. Then click Check my Ledger.");
   setText("ledger-install-help", `The button stays off until the Ledger is on the home screen. After you click it, watch the Ledger and approve the prompt. ${release.approve}`);
+  setText("ledger-version-help", `On the Ledger, open the Warthog app. Then click the button. The status above should say Warthog ${release.version}.`);
   setText("ledger-log", "Nothing yet.");
   const match = el("ledger-match");
   if (match) match.hidden = true;

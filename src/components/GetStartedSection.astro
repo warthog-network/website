@@ -189,6 +189,11 @@ const wallets = [
     line-height: 1.5;
   }
 
+  .gs-card p a {
+    color: var(--color-accent);
+    text-decoration: underline;
+  }
+
   .gs-card-actions {
     display: flex;
     gap: 0.5rem;
@@ -564,16 +569,63 @@ const wallets = [
             </div>
             <h3>Ledger Nano S+</h3>
             <p>
-              Install Warthog 0.2.0 on a Nano S+ with OS 1.7.0. The page
+              Install Warthog 0.3.0 on a Nano S+ with OS 1.7.0. The page
               checks the file hash, then loads that file over a USB cable.
-              Today this works on a Nano S and a Nano S+. Bluetooth models
-              (Nano X, Stax, Flex, and Nano Gen5) do not work yet. Bluetooth
-              support is in the works. Use a test seed. This sideload is not
-              in Ledger Wallet yet.
+              The app is the Rust build in
+              <a href="https://github.com/warthog-network/ledger-warthog">ledger-warthog</a>.
+              Use a test seed. This sideload is not in Ledger Wallet yet.
             </p>
             <div class="gs-card-actions">
               <button type="button" data-ledger="nanosplus">Install on Nano S+</button>
-              <a href="https://github.com/warthog-network/ledger-warthog/releases/tag/v0.2.0">Release</a>
+              <a href="https://github.com/warthog-network/ledger-warthog/releases/tag/v0.3.0">Release</a>
+            </div>
+          </div>
+          <div class="gs-card">
+            <div class="gs-card-icon">
+              <img src={Ledger.src} alt="" />
+            </div>
+            <h3>Ledger Stax</h3>
+            <p>
+              Install Warthog 0.3.0 on a Stax with OS 1.11.0. The page checks
+              this Stax file, then loads it over a USB cable. Approve the
+              prompt by tapping the screen. Use a test seed. This sideload is
+              not in Ledger Wallet yet.
+            </p>
+            <div class="gs-card-actions">
+              <button type="button" data-ledger="stax">Install on Stax</button>
+              <a href="https://github.com/warthog-network/ledger-warthog/releases/tag/v0.3.0">Release</a>
+            </div>
+          </div>
+          <div class="gs-card">
+            <div class="gs-card-icon">
+              <img src={Ledger.src} alt="" />
+            </div>
+            <h3>Ledger Flex</h3>
+            <p>
+              Install Warthog 0.3.0 on a Flex with OS 1.7.0. The page checks
+              this Flex file, then loads it over a USB cable. Approve the
+              prompt by tapping the screen. Use a test seed. This sideload is
+              not in Ledger Wallet yet.
+            </p>
+            <div class="gs-card-actions">
+              <button type="button" data-ledger="flex">Install on Flex</button>
+              <a href="https://github.com/warthog-network/ledger-warthog/releases/tag/v0.3.0">Release</a>
+            </div>
+          </div>
+          <div class="gs-card">
+            <div class="gs-card-icon">
+              <img src={Ledger.src} alt="" />
+            </div>
+            <h3>Ledger Apex P</h3>
+            <p>
+              Install Warthog 0.3.0 on an Apex P with OS 1.2.0. The page
+              checks this Apex P file, then loads it over a USB cable. Approve
+              the prompt by tapping the screen. Use a test seed. This sideload
+              is not in Ledger Wallet yet.
+            </p>
+            <div class="gs-card-actions">
+              <button type="button" data-ledger="apex_p">Install on Apex P</button>
+              <a href="https://github.com/warthog-network/ledger-warthog/releases/tag/v0.3.0">Release</a>
             </div>
           </div>
           <div class="gs-card">
@@ -583,15 +635,16 @@ const wallets = [
             <h3>Ledger Nano S</h3>
             <p>
               Install Warthog 0.2.0 on an original Nano S with OS 2.1.0. The
-              page checks this Nano S file, then loads it over a USB cable.
-              The eight review rows are paged with the two buttons on the
-              128×32 screen. The dashboard icon is 16×16. Today this works on
-              a Nano S and a Nano S+. Bluetooth models (Nano X, Stax, Flex,
-              and Nano Gen5) do not work yet. Bluetooth support is in the
-              works. Use a test seed. This sideload is not in Ledger Wallet yet.
+              0.3.0 Rust app has no Nano S build, so this page still serves
+              the 0.2.0 file from the same
+              <a href="https://github.com/warthog-network/ledger-warthog">ledger-warthog</a>
+              repo. The eight review rows are paged with the two buttons on
+              the 128×32 screen. Use a test seed. This sideload is not in
+              Ledger Wallet yet.
             </p>
             <div class="gs-card-actions">
               <button type="button" data-ledger="nanos">Install on Nano S</button>
+              <a href="https://github.com/warthog-network/ledger-warthog/releases/tag/v0.2.0">Release</a>
             </div>
           </div>
         </div>
@@ -607,8 +660,8 @@ const wallets = [
       </div>
       <div class="ledger-warn">
         <p>Use a Ledger with a test seed. Your seed and coins stay on the device. This page only puts the Warthog app on it, or takes that app off.</p>
-        <p>File for this Ledger: <strong id="ledger-expected">0.2.0 for Nano S+, OS 1.7.0</strong></p>
-        <p id="ledger-also">This file is for Nano S+ OS 1.7.0, over a USB cable. Today this works on a Nano S and a Nano S+. Bluetooth models (Nano X, Stax, Flex, and Nano Gen5) do not work yet. Bluetooth support is in the works.</p>
+        <p>File for this Ledger: <strong id="ledger-expected">0.3.0 for Nano S+, OS 1.7.0</strong></p>
+        <p id="ledger-also">This file is Warthog 0.3.0 for Nano S+ OS 1.7.0 over a USB cable. It installs only on a Nano S+. The app source is the ledger-warthog repo.</p>
         <p class="ledger-muted">File SHA-256, checked before install:</p>
         <p class="ledger-hash" id="ledger-hash"></p>
         <p class="ledger-muted">Build digest recorded by the Ledger toolchain:</p>
@@ -627,19 +680,19 @@ const wallets = [
         <div class="ledger-actions">
           <button class="secondary" id="ledger-check" type="button">Check my Ledger</button>
           <button class="secondary" id="ledger-download" type="button">Download the file</button>
-          <a class="ledger-link" id="ledger-release" href="https://github.com/warthog-network/ledger-warthog/releases/tag/v0.2.0">Release</a>
+          <a class="ledger-link" id="ledger-release" href="https://github.com/warthog-network/ledger-warthog/releases/tag/v0.3.0">Release</a>
         </div>
       </section>
 
       <section class="ledger-step">
         <h3>2. Install Warthog</h3>
         <p id="ledger-install-help">The button stays off until the Ledger is on the home screen. After you click it, watch the Ledger and approve the prompt. On a Nano S+, press both buttons at the same time.</p>
-        <button class="primary" id="ledger-install" type="button" disabled>Install Warthog 0.2.0</button>
+        <button class="primary" id="ledger-install" type="button" disabled>Install Warthog 0.3.0</button>
       </section>
 
       <section class="ledger-step">
         <h3>3. Check that it worked</h3>
-        <p>On the Ledger, open the Warthog app. Then click the button. The status above should say Warthog 0.2.0.</p>
+        <p id="ledger-version-help">On the Ledger, open the Warthog app. Then click the button. The status above should say Warthog 0.3.0.</p>
         <button class="secondary" id="ledger-version" type="button">Check the version</button>
       </section>
 
