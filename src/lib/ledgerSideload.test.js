@@ -11,6 +11,7 @@ import {
   concatBytes,
   deleteWarthogApdu,
   describeApp,
+  LedgerStatusError,
   openSecureChannel,
   parseApduScript,
   parseAppVersion,
@@ -190,6 +191,32 @@ test("secure channel round-trips and a fake Ledger accepts the handshake", async
   }, channel, script);
   assert.equal(sent.length, 2);
   assert.ok(sent[0].length > deleteWarthogApdu().length);
+
+  const absent = new ScpChannel(secret, "v3");
+  const absentSeen = [];
+  const notes = [];
+  await runApduScript(
+    async () => {
+      absentSeen.push(1);
+      if (absentSeen.length === 1) throw new LedgerStatusError(0x6985);
+      return new Uint8Array();
+    },
+    absent,
+    [deleteWarthogApdu(), new Uint8Array([0xe0, 0x00, 0x00, 0x00, 0x01, 0x0b])],
+    (_index, _total, note) => {
+      if (note) notes.push(note);
+    },
+  );
+  assert.equal(absentSeen.length, 2);
+  assert.equal(notes.length, 1);
+
+  const refused = new ScpChannel(secret, "v3");
+  await assert.rejects(
+    runApduScript(async () => {
+      throw new LedgerStatusError(0x6985);
+    }, refused, [new Uint8Array([0xe0, 0x00, 0x00, 0x00, 0x01, 0x0b])]),
+    /Create app, command 1 of 1/,
+  );
 
   const message = new TextEncoder().encode("ok");
   const priv = utils.randomPrivateKey();

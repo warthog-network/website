@@ -15,7 +15,7 @@ const SCP_MAC_LENGTH = 14;
 const STATUS_CAUSE = {
   0x6982: "Remove the custom certificate on this Ledger first, then try again.",
   0x6985:
-    "The Ledger rejected the manager. On a Nano, press the right button until the screen says Allow unsafe manager, then press both buttons. Both buttons on the Deny screen reject the install.",
+    "The Ledger rejected the action. Press the right button until the screen says Allow, then press both buttons. Both buttons on a Deny screen reject it.",
   0x6a83: "This app needs another app installed first.",
   0x6a84: "The Ledger does not have enough room. Remove an app in Ledger Wallet, then try again.",
   0x6a85: "The Ledger does not have enough room. Remove an app in Ledger Wallet, then try again.",
@@ -386,6 +386,19 @@ export async function openSecureChannel(exchange, targetId) {
   return new ScpChannel(secret, nibble === 2 ? "v2" : "v3");
 }
 
+const INSTALL_STEP = {
+  0x0b: "Create app",
+  0x0c: "Delete app",
+  0x05: "Select segment",
+  0x06: "Load",
+  0x07: "Flush",
+  0x08: "Check",
+  0x09: "Install app",
+};
+
+// A missing app still answers the delete command with one of these.
+const DELETE_ABSENT = new Set([0x6985, 0x6984, 0x6807, 0x6a82, 0x6a88]);
+
 export async function runApduScript(exchange, channel, apdus, onProgress) {
   for (let i = 0; i < apdus.length; i++) {
     if (onProgress) onProgress(i + 1, apdus.length);
@@ -396,7 +409,21 @@ export async function runApduScript(exchange, channel, apdus, onProgress) {
     out.set(raw.subarray(0, 4), 0);
     out[4] = wrapped.length;
     out.set(wrapped, 5);
-    const response = await exchange(out);
+    let response;
+    try {
+      response = await exchange(out);
+    } catch (err) {
+      const tag = raw.length > 5 ? raw[5] : 0;
+      if (tag === 0x0c && err instanceof LedgerStatusError && DELETE_ABSENT.has(err.sw)) {
+        if (onProgress) onProgress(i + 1, apdus.length, "Warthog is not already installed. Continuing.");
+        continue;
+      }
+      if (err instanceof LedgerStatusError) {
+        const step = INSTALL_STEP[tag] || "Install";
+        throw new LedgerStatusError(err.sw, `${step}, command ${i + 1} of ${apdus.length}.`);
+      }
+      throw err;
+    }
     await channel.unwrap(response);
   }
 }

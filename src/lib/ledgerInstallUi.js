@@ -105,13 +105,15 @@ async function runChecked(kind) {
   log(`File hash matches ${current.apduSha256}.`);
   log(`Opening a channel. ${current.approve}`);
   const channel = await openSecureChannel(exchangeInstall, current.targetId);
+  log("The channel is open. If the Ledger asks to delete or install Warthog, press the right button until Allow, then press both buttons. That does not touch the PIN or the seed.");
   if (kind === "remove") {
     await runApduScript(exchangeInstall, channel, [deleteWarthogApdu()]);
     return;
   }
-  await runApduScript(exchangeInstall, channel, file.apdus, (index, total) => {
-    setText("ledger-headline", `Installing Warthog… ${index} of ${total}`);
-    setText("ledger-detail", `Stay on the home screen. Approve the prompt on the Ledger. ${current.approve}`);
+  await runApduScript(exchangeInstall, channel, file.apdus, (index, total, note) => {
+    setText("ledger-headline", note || `Installing Warthog… ${index} of ${total}`);
+    setText("ledger-detail", `Stay on the home screen. If the Ledger asks, press the right button until Allow, then press both buttons. ${current.approve}`);
+    if (note) log(note);
   });
 }
 
