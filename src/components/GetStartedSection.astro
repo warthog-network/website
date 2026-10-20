@@ -711,8 +711,15 @@ const wallets = [
 <script>
   document.querySelectorAll("[data-ledger]").forEach((button) => {
     button.addEventListener("click", async () => {
-      const { openLedgerModal } = await import("../lib/ledgerInstallUi.js");
-      await openLedgerModal(button.dataset.ledger);
+      try {
+        const { openLedgerModal } = await import("../lib/ledgerInstallUi.js");
+        await openLedgerModal(button.dataset.ledger);
+      } catch (err) {
+        const modal = document.getElementById("ledger-modal");
+        const headline = document.getElementById("ledger-headline");
+        if (modal) modal.hidden = false;
+        if (headline) headline.textContent = err && err.message ? err.message : "The installer did not open.";
+      }
     });
   });
 </script>

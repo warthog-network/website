@@ -25,6 +25,7 @@ const STATUS_CAUSE = {
   0x511f: "Update the Ledger in Ledger Wallet, then try again. This app was built for a newer OS.",
   0x5120: "This Ledger cannot sideload the file. A Nano X will not accept it.",
   0x5708: "The Ledger rejected a signature in the install handshake. Stay on the home screen and try again.",
+  0x6615: "The install channel got out of step. Unplug the Ledger, open the home screen, and try again.",
   0x6d00: "Close the open app until the home screen with the app icons is showing, then try again.",
   0x6e00: "Close the open app until the home screen with the app icons is showing, then try again.",
 };
@@ -266,11 +267,142 @@ function unpad80(data) {
   return data.subarray(0, end);
 }
 
-async function aesCbc(keyBytes, iv, data, decrypt) {
-  const key = await crypto.subtle.importKey("raw", keyBytes, { name: "AES-CBC" }, false, [decrypt ? "decrypt" : "encrypt"]);
-  const op = decrypt ? "decrypt" : "encrypt";
-  const result = await crypto.subtle[op]({ name: "AES-CBC", iv }, key, data);
-  return new Uint8Array(result);
+// ledgerblue uses raw AES-CBC. WebCrypto always adds a PKCS#7 block, which the Ledger rejects.
+// This stays in plain JS so opening the installer does not pull in Node's crypto package.
+const AES_SBOX = new Uint8Array([
+  99, 124, 119, 123, 242, 107, 111, 197, 48, 1, 103, 43, 254, 215, 171, 118, 202, 130, 201, 125, 250, 89, 71, 240,
+  173, 212, 162, 175, 156, 164, 114, 192, 183, 253, 147, 38, 54, 63, 247, 204, 52, 165, 229, 241, 113, 216, 49, 21,
+  4, 199, 35, 195, 24, 150, 5, 154, 7, 18, 128, 226, 235, 39, 178, 117, 9, 131, 44, 26, 27, 110, 90, 160, 82, 59,
+  214, 179, 41, 227, 47, 132, 83, 209, 0, 237, 32, 252, 177, 91, 106, 203, 190, 57, 74, 76, 88, 207, 208, 239, 170,
+  251, 67, 77, 51, 133, 69, 249, 2, 127, 80, 60, 159, 168, 81, 163, 64, 143, 146, 157, 56, 245, 188, 182, 218, 33,
+  16, 255, 243, 210, 205, 12, 19, 236, 95, 151, 68, 23, 196, 167, 126, 61, 100, 93, 25, 115, 96, 129, 79, 220, 34,
+  42, 144, 136, 70, 238, 184, 20, 222, 94, 11, 219, 224, 50, 58, 10, 73, 6, 36, 92, 194, 211, 172, 98, 145, 149,
+  228, 121, 231, 200, 55, 109, 141, 213, 78, 169, 108, 86, 244, 234, 101, 122, 174, 8, 186, 120, 37, 46, 28, 166,
+  180, 198, 232, 221, 116, 31, 75, 189, 139, 138, 112, 62, 181, 102, 72, 3, 246, 14, 97, 53, 87, 185, 134, 193, 29,
+  158, 225, 248, 152, 17, 105, 217, 142, 148, 155, 30, 135, 233, 206, 85, 40, 223, 140, 161, 137, 13, 191, 230, 66,
+  104, 65, 153, 45, 15, 176, 84, 187, 22,
+]);
+const AES_INV_SBOX = new Uint8Array(256);
+for (let s = 0; s < 256; s++) AES_INV_SBOX[AES_SBOX[s]] = s;
+const AES_RCON = [0, 1, 2, 4, 8, 16, 32, 64, 128, 27, 54];
+
+function aesMul(a, b) {
+  let product = 0;
+  for (let bit = 0; bit < 8; bit++) {
+    if (b & 1) product ^= a;
+    const high = a & 0x80;
+    a = (a << 1) & 0xff;
+    if (high) a ^= 0x1b;
+    b >>= 1;
+  }
+  return product;
+}
+
+function expandAesKey(key) {
+  const words = new Uint8Array(176);
+  words.set(key.subarray(0, 16));
+  let filled = 16;
+  let round = 1;
+  const temp = new Uint8Array(4);
+  while (filled < 176) {
+    temp.set(words.subarray(filled - 4, filled));
+    if (filled % 16 === 0) {
+      const first = temp[0];
+      temp[0] = AES_SBOX[temp[1]] ^ AES_RCON[round++];
+      temp[1] = AES_SBOX[temp[2]];
+      temp[2] = AES_SBOX[temp[3]];
+      temp[3] = AES_SBOX[first];
+    }
+    for (let i = 0; i < 4; i++) words[filled] = words[filled - 16] ^ temp[i], filled++;
+  }
+  return words;
+}
+
+function addRoundKey(state, words, round) {
+  for (let i = 0; i < 16; i++) state[i] ^= words[round * 16 + i];
+}
+
+function shiftRows(state, inverse) {
+  const prior = state.slice();
+  for (let row = 1; row < 4; row++) {
+    for (let col = 0; col < 4; col++) {
+      const from = inverse ? (col - row + 4) % 4 : (col + row) % 4;
+      state[row + 4 * col] = prior[row + 4 * from];
+    }
+  }
+}
+
+function mixColumns(state, inverse) {
+  for (let col = 0; col < 4; col++) {
+    const at = 4 * col;
+    const a0 = state[at];
+    const a1 = state[at + 1];
+    const a2 = state[at + 2];
+    const a3 = state[at + 3];
+    if (inverse) {
+      state[at] = aesMul(a0, 14) ^ aesMul(a1, 11) ^ aesMul(a2, 13) ^ aesMul(a3, 9);
+      state[at + 1] = aesMul(a0, 9) ^ aesMul(a1, 14) ^ aesMul(a2, 11) ^ aesMul(a3, 13);
+      state[at + 2] = aesMul(a0, 13) ^ aesMul(a1, 9) ^ aesMul(a2, 14) ^ aesMul(a3, 11);
+      state[at + 3] = aesMul(a0, 11) ^ aesMul(a1, 13) ^ aesMul(a2, 9) ^ aesMul(a3, 14);
+    } else {
+      state[at] = aesMul(a0, 2) ^ aesMul(a1, 3) ^ a2 ^ a3;
+      state[at + 1] = a0 ^ aesMul(a1, 2) ^ aesMul(a2, 3) ^ a3;
+      state[at + 2] = a0 ^ a1 ^ aesMul(a2, 2) ^ aesMul(a3, 3);
+      state[at + 3] = aesMul(a0, 3) ^ a1 ^ a2 ^ aesMul(a3, 2);
+    }
+  }
+}
+
+function aesBlock(block, words, decrypt) {
+  const state = new Uint8Array(block);
+  if (!decrypt) {
+    addRoundKey(state, words, 0);
+    for (let round = 1; round < 10; round++) {
+      for (let i = 0; i < 16; i++) state[i] = AES_SBOX[state[i]];
+      shiftRows(state, false);
+      mixColumns(state, false);
+      addRoundKey(state, words, round);
+    }
+    for (let i = 0; i < 16; i++) state[i] = AES_SBOX[state[i]];
+    shiftRows(state, false);
+    addRoundKey(state, words, 10);
+    return state;
+  }
+  addRoundKey(state, words, 10);
+  for (let round = 9; round >= 1; round--) {
+    shiftRows(state, true);
+    for (let i = 0; i < 16; i++) state[i] = AES_INV_SBOX[state[i]];
+    addRoundKey(state, words, round);
+    mixColumns(state, true);
+  }
+  shiftRows(state, true);
+  for (let i = 0; i < 16; i++) state[i] = AES_INV_SBOX[state[i]];
+  addRoundKey(state, words, 0);
+  return state;
+}
+
+function aesCbc(keyBytes, iv, data, decrypt) {
+  if (keyBytes.length !== 16 || iv.length !== 16 || data.length === 0 || data.length % 16 !== 0) {
+    throw new Error("The install channel sent a block that is not aligned.");
+  }
+  const words = expandAesKey(keyBytes);
+  const out = new Uint8Array(data.length);
+  let previous = iv;
+  for (let offset = 0; offset < data.length; offset += 16) {
+    const block = data.subarray(offset, offset + 16);
+    if (decrypt) {
+      const plain = aesBlock(block, words, true);
+      for (let i = 0; i < 16; i++) out[offset + i] = plain[i] ^ previous[i];
+      previous = block;
+    } else {
+      const mixed = new Uint8Array(16);
+      for (let i = 0; i < 16; i++) mixed[i] = block[i] ^ previous[i];
+      const cipher = aesBlock(mixed, words, false);
+      out.set(cipher, offset);
+      previous = cipher;
+    }
+  }
+  return out;
 }
 
 function last16(bytes) {
@@ -296,13 +428,13 @@ export class ScpChannel {
     if (!data || data.length === 0) return new Uint8Array();
     const padded = pad80(data);
     if (this.mode === "v2") {
-      const encrypted = await aesCbc(this.key, this.encIv, padded, false);
+      const encrypted = aesCbc(this.key, this.encIv, padded, false);
       this.encIv = last16(encrypted);
       return encrypted;
     }
-    const encrypted = await aesCbc(this.encKey, this.encIv, padded, false);
+    const encrypted = aesCbc(this.encKey, this.encIv, padded, false);
     this.encIv = last16(encrypted);
-    const mac = await aesCbc(this.macKey, this.macIv, encrypted, false);
+    const mac = aesCbc(this.macKey, this.macIv, encrypted, false);
     this.macIv = last16(mac);
     return concatBytes(encrypted, this.macIv.subarray(16 - SCP_MAC_LENGTH));
   }
@@ -310,13 +442,13 @@ export class ScpChannel {
   async unwrap(data) {
     if (!data || data.length === 0 || data.length === 2) return data || new Uint8Array();
     if (this.mode === "v2") {
-      const decrypted = await aesCbc(this.key, this.encIv, data, true);
+      const decrypted = aesCbc(this.key, this.encIv, data, true);
       this.encIv = last16(data);
       return unpad80(decrypted);
     }
     if (data.length <= SCP_MAC_LENGTH) throw new Error("The Ledger reply could not be read.");
     const encrypted = data.subarray(0, data.length - SCP_MAC_LENGTH);
-    const mac = await aesCbc(this.macKey, this.macIv, encrypted, false);
+    const mac = aesCbc(this.macKey, this.macIv, encrypted, false);
     this.macIv = last16(mac);
     const expect = this.macIv.subarray(16 - SCP_MAC_LENGTH);
     const got = data.subarray(data.length - SCP_MAC_LENGTH);
@@ -325,7 +457,7 @@ export class ScpChannel {
     }
     const iv = this.encIv;
     this.encIv = last16(encrypted);
-    const decrypted = await aesCbc(this.encKey, iv, encrypted, true);
+    const decrypted = aesCbc(this.encKey, iv, encrypted, true);
     return unpad80(decrypted);
   }
 }
@@ -396,9 +528,6 @@ const INSTALL_STEP = {
   0x09: "Install app",
 };
 
-// A missing app still answers the delete command with one of these.
-const DELETE_ABSENT = new Set([0x6985, 0x6984, 0x6807, 0x6a82, 0x6a88]);
-
 export async function runApduScript(exchange, channel, apdus, onProgress) {
   for (let i = 0; i < apdus.length; i++) {
     if (onProgress) onProgress(i + 1, apdus.length);
@@ -414,10 +543,6 @@ export async function runApduScript(exchange, channel, apdus, onProgress) {
       response = await exchange(out);
     } catch (err) {
       const tag = raw.length > 5 ? raw[5] : 0;
-      if (tag === 0x0c && err instanceof LedgerStatusError && DELETE_ABSENT.has(err.sw)) {
-        if (onProgress) onProgress(i + 1, apdus.length, "Warthog is not already installed. Continuing.");
-        continue;
-      }
       if (err instanceof LedgerStatusError) {
         const step = INSTALL_STEP[tag] || "Install";
         throw new LedgerStatusError(err.sw, `${step}, command ${i + 1} of ${apdus.length}.`);

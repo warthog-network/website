@@ -11,6 +11,7 @@ import {
   concatBytes,
   deleteWarthogApdu,
   describeApp,
+  hexToBytes,
   LedgerStatusError,
   openSecureChannel,
   parseApduScript,
@@ -194,21 +195,33 @@ test("secure channel round-trips and a fake Ledger accepts the handshake", async
 
   const absent = new ScpChannel(secret, "v3");
   const absentSeen = [];
-  const notes = [];
-  await runApduScript(
-    async () => {
-      absentSeen.push(1);
-      if (absentSeen.length === 1) throw new LedgerStatusError(0x6985);
-      return new Uint8Array();
-    },
-    absent,
-    [deleteWarthogApdu(), new Uint8Array([0xe0, 0x00, 0x00, 0x00, 0x01, 0x0b])],
-    (_index, _total, note) => {
-      if (note) notes.push(note);
-    },
+  await assert.rejects(
+    runApduScript(
+      async () => {
+        absentSeen.push(1);
+        throw new LedgerStatusError(0x6985);
+      },
+      absent,
+      [deleteWarthogApdu(), new Uint8Array([0xe0, 0x00, 0x00, 0x00, 0x01, 0x0b])],
+    ),
+    /Delete app, command 1 of 2/,
   );
-  assert.equal(absentSeen.length, 2);
-  assert.equal(notes.length, 1);
+  assert.equal(absentSeen.length, 1);
+
+  const vector = new ScpChannel(new Uint8Array(32).fill(0x11), "v3");
+  const deletePayload = hexToBytes("0c0757617274686f67");
+  const deleteWrapped = await vector.wrap(deletePayload);
+  assert.equal(
+    bytesToHex(deleteWrapped),
+    "663e285ef5904b02e797104ad4cc8eff86067aee64aeaf7207f96f300920",
+  );
+  const createWrapped = await vector.wrap(hexToBytes("0b1b00008a0000000c000000003f0000000000000001"));
+  assert.equal(
+    bytesToHex(createWrapped),
+    "05ebc952dd4e86299a69c86663563947174f92546df808b6348ad7cbbe10a838ec018ed97bb86395a75c03b5df66",
+  );
+  const reader = new ScpChannel(new Uint8Array(32).fill(0x11), "v3");
+  assert.deepEqual(await reader.unwrap(deleteWrapped), deletePayload);
 
   const refused = new ScpChannel(secret, "v3");
   await assert.rejects(
