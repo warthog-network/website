@@ -209,6 +209,15 @@ Astro.csp?.insertDirective(`font-src * data:`);
                       Filled (<span id="filledAmountToken">0</span>)
                     </p>
                   </td>
+                  <td
+                    class="px-4 py-2 transition-colors cursor-pointer bg-[gray] hover:bg-blue-gray-50 w-10"
+                  >
+                    <p
+                      class="items-center justify-between gap-2 text-white text-sm antialiased font-semibold leading-4 font-montserrat"
+                    >
+                      Delete
+                    </p>
+                  </td>
                 </tr>
               </thead>
               <tbody id="tbodySell" class="text-red-700"> </tbody>
@@ -306,6 +315,15 @@ Astro.csp?.insertDirective(`font-src * data:`);
                       class="items-center justify-between gap-2 text-white text-sm antialiased font-semibold leading-4 font-montserrat"
                     >
                       Filled (<span id="filledAmountWart">0</span>)
+                    </p>
+                  </td>
+                  <td
+                    class="px-4 py-2 transition-colors cursor-pointer bg-[orange] hover:bg-blue-gray-50 w-10"
+                  >
+                    <p
+                      class="items-center justify-between gap-2 text-white text-sm antialiased font-semibold leading-4 font-montserrat"
+                    >
+                      Delete
                     </p>
                   </td>
                 </tr>
@@ -804,8 +822,9 @@ Astro.csp?.insertDirective(`font-src * data:`);
       }
 
       // ── Row inserter (vanilla DOM, matches old behaviour) ──────────
-      // `titles` is optional and holds a tooltip per cell.
-      function insertRow(obj, rowarr, id, titles) {
+      // `titles` is optional and holds a tooltip per cell. `deleteIndex`,
+      // when given, appends the remove button carrying that row's index.
+      function insertRow(obj, rowarr, id, titles, deleteIndex) {
         const row = obj.insertRow(-1);
         row.className = "p-4 h-9";
         for (let i = 0; i < rowarr.length; ++i) {
@@ -815,6 +834,19 @@ Astro.csp?.insertDirective(`font-src * data:`);
           if (i === rowarr.length - 1) cell.className += " " + id;
           cell.innerHTML = `${rowarr[i]}`;
           if (titles && titles[i]) cell.title = titles[i];
+        }
+        if (deleteIndex !== undefined) {
+          const cell = row.insertCell(rowarr.length);
+          cell.className =
+            "px-4 border-b border-blue-gray-50 text-center w-10";
+          const button = document.createElement("button");
+          button.type = "button";
+          button.textContent = "×";
+          button.title = "Remove this order";
+          button.dataset.deleteIndex = String(deleteIndex);
+          button.className =
+            "px-2 py-0.5 rounded border border-gray-400 text-base leading-none hover:bg-gray-900 hover:text-white";
+          cell.appendChild(button);
         }
       }
 
@@ -845,13 +877,13 @@ Astro.csp?.insertDirective(`font-src * data:`);
       function renderOrderBooks() {
         const m = state.lastMatch;
         tbodyBuy.innerHTML = "";
-        for (const o of m.buys) {
-          insertRow(tbodyBuy, [fmtLimit(o.limit), o.amount, o.filled], "filledAmountWartItem", [o.limit]);
-        }
+        m.buys.forEach((o, i) => {
+          insertRow(tbodyBuy, [fmtLimit(o.limit), o.amount, o.filled], "filledAmountWartItem", [o.limit], i);
+        });
         tbodySell.innerHTML = "";
-        for (const o of m.sells) {
-          insertRow(tbodySell, [fmtLimit(o.limit), o.amount, o.filled], "filledAmountTokenItem", [o.limit]);
-        }
+        m.sells.forEach((o, i) => {
+          insertRow(tbodySell, [fmtLimit(o.limit), o.amount, o.filled], "filledAmountTokenItem", [o.limit], i);
+        });
         let sumToken = 0;
         for (const el of document.getElementsByClassName("filledAmountTokenItem")) {
           sumToken += parseFloat(el.innerHTML);
@@ -1022,6 +1054,26 @@ Astro.csp?.insertDirective(`font-src * data:`);
           tryMatch();
         } else {
           alert("Error: " + res.error);
+        }
+      });
+
+      // ── Delete order ───────────────────────────────────────────────
+      // Delegated, because the rows are rebuilt on every match and
+      // per-row listeners would be recreated with them. The index is the
+      // row's position in the last match result, which is the order that
+      // deleteBuyAt and deleteSellAt expect.
+      tbodyBuy.addEventListener("click", (e) => {
+        const button = e.target.closest("button[data-delete-index]");
+        if (!button) return;
+        if (engine.deleteBuyAt(Number(button.dataset.deleteIndex)) !== null) {
+          tryMatch();
+        }
+      });
+      tbodySell.addEventListener("click", (e) => {
+        const button = e.target.closest("button[data-delete-index]");
+        if (!button) return;
+        if (engine.deleteSellAt(Number(button.dataset.deleteIndex)) !== null) {
+          tryMatch();
         }
       });
 

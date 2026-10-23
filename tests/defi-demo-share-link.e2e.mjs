@@ -162,7 +162,51 @@ check("clipboard fallback offers a selectable field", clipboardFallback.present 
 check("fallback field holds the link", typeof clipboardFallback.value === "string" && clipboardFallback.value.includes("state="), String(clipboardFallback.value).slice(0, 60));
 check("fallback field is selected", clipboardFallback.selected === true);
 
-// ── 5. a malformed link falls back to the default ───────────────────────
+// ── 5. deleting orders from the table ──────────────────────────────────
+await navigate(PAGE_URL);
+await evaluate(`(() => {
+  const set = (id, v) => {
+    const el = document.getElementById(id);
+    el.value = v;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+  set('buyPrice', '1.9'); set('wartAmount', '11');
+  document.getElementById('buyButton').click();
+  set('buyPrice', '1.5'); set('wartAmount', '22');
+  document.getElementById('buyButton').click();
+  set('sellPrice', '2.1'); set('tokenAmount', '33');
+  document.getElementById('sellButton').click();
+  return true;
+})()`);
+await new Promise((r) => setTimeout(r, 600));
+let books = await evaluate(DUMP);
+check("three orders are listed", books.buy.length === 2 && books.sell.length === 1, JSON.stringify(books.buy));
+
+// Row 0 is the highest limit, which is the index the engine expects.
+await evaluate(`document.querySelector('#tbodyBuy tr button[data-delete-index]').click()`);
+await new Promise((r) => setTimeout(r, 600));
+books = await evaluate(DUMP);
+check("delete on the buy book removes the top row", books.buy.length === 1, JSON.stringify(books.buy));
+check(
+  "the surviving buy is the lower limit",
+  books.buy[0][0].startsWith("1.5") || books.buy[0][0].startsWith("1.49999"),
+  JSON.stringify(books.buy[0]),
+);
+
+await evaluate(`document.querySelector('#tbodySell tr button[data-delete-index]').click()`);
+await new Promise((r) => setTimeout(r, 600));
+books = await evaluate(DUMP);
+check("delete on the sell book empties it", books.sell.length === 0, JSON.stringify(books.sell));
+
+const afterDelete = new URL(books.url).searchParams.get("state");
+const afterDeletePayload = JSON.parse(Buffer.from(afterDelete, "base64url").toString("utf8"));
+check(
+  "the URL reflects the deletions",
+  afterDeletePayload.buys.length === 1 && afterDeletePayload.sells.length === 0,
+  JSON.stringify(afterDeletePayload),
+);
+
+// ── 6. a malformed link falls back to the default ───────────────────────
 await navigate(PAGE_URL + "?state=not-a-valid-state");
 const fallback = await evaluate(DUMP);
 check("malformed link falls back to the default book", fallback.buy.length === 0 && fallback.sell.length === 0);
