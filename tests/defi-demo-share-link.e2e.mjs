@@ -115,6 +115,19 @@ check("URL gained a state parameter", d.url.includes("state="), d.url.slice(0, 9
 const param = new URL(d.url).searchParams.get("state");
 check("state parameter is not empty", !!param && param.length > 0, `len=${param?.length}`);
 
+// The payload must carry only the exact form per order, not the decimal
+// rendering as well.
+const payload = JSON.parse(Buffer.from(param, "base64url").toString("utf8"));
+check(
+  "orders carry exactly [limitBits, amount]",
+  [...payload.buys, ...payload.sells].every((o) => Array.isArray(o) && o.length === 2),
+  JSON.stringify(payload.buys[0]),
+);
+check(
+  "orders carry integer bits",
+  [...payload.buys, ...payload.sells].every((o) => Number.isInteger(o[0]) && typeof o[1] === "string"),
+);
+
 // ── 3. open the shared link in a fresh page ─────────────────────────────
 await navigate(PAGE_URL + "?state=" + encodeURIComponent(param));
 const restored = await evaluate(DUMP);

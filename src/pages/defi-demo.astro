@@ -665,9 +665,8 @@ Astro.csp?.insertDirective(`font-src * data:`);
       // The engine is the source of truth, so the link is generated from
       // it rather than from a parallel JS model. Limits travel as their
       // raw price-grid bits (limitBits), so a restored book is identical
-      // to the shared one. The decimal limit string is only a rendering:
-      // re-parsing it snaps it back onto the price grid, which can move
-      // a price by a step.
+      // to the shared one. The decimal limit string is only a rendering,
+      // recomputed from the bits, and is never stored in the link.
       const STATE_PARAM = "state";
 
       function encodeState() {
@@ -676,10 +675,10 @@ Astro.csp?.insertDirective(`font-src * data:`);
 
       function encodeMatch(m, cfg) {
         if (!m) return "";
-        // [limitBits, amount, limit]: the raw bits are the exact form,
-        // the decimal limit is a fallback for an engine that does not
-        // know about limitBits yet.
-        const orders = (rows) => rows.map((o) => [o.limitBits, o.amount, o.limit]);
+        // [limitBits, amount]: the exact price-grid value and the swap
+        // amount. The decimal limit is not stored, it is derived from
+        // the bits plus baseDecimals for display.
+        const orders = (rows) => rows.map((o) => [o.limitBits, o.amount]);
         const payload = {
           v: 1,
           bd: cfg.baseDecimals,
@@ -710,7 +709,7 @@ Astro.csp?.insertDirective(`font-src * data:`);
           throw new Error("invalid pool");
         const isOrder = (o) =>
           Array.isArray(o) &&
-          o.length >= 2 &&
+          o.length === 2 &&
           Number.isInteger(o[0]) &&
           typeof o[1] === "string";
         for (const o of p.buys ?? []) if (!isOrder(o)) throw new Error("invalid buy");
@@ -1038,15 +1037,10 @@ Astro.csp?.insertDirective(`font-src * data:`);
         return value.includes(".") ? value.replace(/0+$/, "").replace(/\.$/, "") : value;
       }
 
-      // Adds one restored order. The raw price-grid bits are the exact
-      // form; the decimal limit is a fallback for an engine that does
-      // not know about limitBits yet.
+      // Adds one restored order from its exact price-grid bits.
       function addOrder(method, order) {
-        const [bits, amount, limit] = order;
-        let res = engine[method]({ limitBits: bits, amount });
-        if (!("ok" in res) && typeof limit === "string") {
-          res = engine[method]({ limit, amount });
-        }
+        const [limitBits, amount] = order;
+        const res = engine[method]({ limitBits, amount });
         if (!("ok" in res)) {
           console.warn("Could not restore an order:", res.error);
         }
