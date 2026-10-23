@@ -99,6 +99,17 @@ Astro.csp?.insertDirective(`font-src * data:`);
       >
     </h1>
 
+    <div class="flex justify-center items-center gap-3 mb-2">
+      <button
+        type="button"
+        id="copyLinkButton"
+        class="select-none justify-center items-center gap-2 rounded-lg bg-gray-900 py-2 px-4 text-sm border-white border font-montserrat align-middle font-medium text-white shadow-md shadow-gray-900/10 transition-all hover:shadow-lg hover:shadow-gray-900/20 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none"
+      >
+        Copy shareable link
+      </button>
+      <span id="copyLinkStatus" class="text-sm text-gray-600 inline-flex items-center gap-2"></span>
+    </div>
+
     <div
       class="flex md:flex-row md:p-6 p-3 flex-col gap-4 min-h-full justify-between overflow-auto"
     >
@@ -650,12 +661,113 @@ Astro.csp?.insertDirective(`font-src * data:`);
 
       const $ = (id) => document.getElementById(id);
 
+      // ── Shareable URL state ─────────────────────────────────────────
+      // The engine is the source of truth, so the link is generated from
+      // it rather than from a parallel JS model. Limits travel as their
+      // raw price-grid bits (limitBits), so a restored book is identical
+      // to the shared one. The decimal limit string is only a rendering:
+      // re-parsing it snaps it back onto the price grid, which can move
+      // a price by a step.
+      const STATE_PARAM = "state";
+
+      function encodeState() {
+        return encodeMatch(state.lastMatch, engine.getConfig());
+      }
+
+      function encodeMatch(m, cfg) {
+        if (!m) return "";
+        // [limitBits, amount, limit]: the raw bits are the exact form,
+        // the decimal limit is a fallback for an engine that does not
+        // know about limitBits yet.
+        const orders = (rows) => rows.map((o) => [o.limitBits, o.amount, o.limit]);
+        const payload = {
+          v: 1,
+          bd: cfg.baseDecimals,
+          fee: cfg.feeE4,
+          pool: [m.poolBefore.base, m.poolBefore.quote],
+          buys: orders(m.buys),
+          sells: orders(m.sells),
+        };
+        const bytes = new TextEncoder().encode(JSON.stringify(payload));
+        let bin = "";
+        for (const b of bytes) bin += String.fromCharCode(b);
+        return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+      }
+
+      function decodeState(raw) {
+        const b64 = raw.replace(/-/g, "+").replace(/_/g, "/");
+        const bin = atob(b64 + "=".repeat((4 - (b64.length % 4)) % 4));
+        const json = new TextDecoder().decode(
+          Uint8Array.from(bin, (c) => c.charCodeAt(0)),
+        );
+        const p = JSON.parse(json);
+        if (!p || p.v !== 1) throw new Error("unsupported state version");
+        if (!Number.isInteger(p.bd) || p.bd < 0 || p.bd > 18)
+          throw new Error("invalid baseDecimals");
+        if (!Number.isInteger(p.fee) || p.fee < 0 || p.fee > 9999)
+          throw new Error("invalid feeE4");
+        if (!Array.isArray(p.pool) || p.pool.length !== 2)
+          throw new Error("invalid pool");
+        const isOrder = (o) =>
+          Array.isArray(o) &&
+          o.length >= 2 &&
+          Number.isInteger(o[0]) &&
+          typeof o[1] === "string";
+        for (const o of p.buys ?? []) if (!isOrder(o)) throw new Error("invalid buy");
+        for (const o of p.sells ?? []) if (!isOrder(o)) throw new Error("invalid sell");
+        return p;
+      }
+
+      function readStateFromUrl() {
+        const raw = new URL(window.location.href).searchParams.get(STATE_PARAM);
+        if (!raw) return null;
+        try {
+          return decodeState(raw);
+        } catch (err) {
+          // A malformed link must not break the demo: fall back to the
+          // default state and say so in the console.
+          console.warn("Ignoring malformed ?state parameter:", err);
+          return null;
+        }
+      }
+
+      // Writes the current state into the address bar. replaceState (not
+      // pushState) keeps the browser history clean while the user types
+      // in the pool fields, and the write is debounced because browsers
+      // rate-limit history updates.
+      //
+      // The untouched default demo keeps a clean URL: the parameter is
+      // only added once the demo differs from the default state.
+      let urlSyncTimer = null;
+      let defaultState = null;
+      function scheduleUrlSync() {
+        if (urlSyncTimer) clearTimeout(urlSyncTimer);
+        urlSyncTimer = setTimeout(() => {
+          urlSyncTimer = null;
+          try {
+            const url = new URL(window.location.href);
+            const encoded = encodeState();
+            if (encoded && encoded !== defaultState) url.searchParams.set(STATE_PARAM, encoded);
+            else url.searchParams.delete(STATE_PARAM);
+            history.replaceState(null, "", url.toString());
+          } catch (err) {
+            console.warn("Could not update the URL:", err);
+          }
+        }, 150);
+      }
+
       // Engine is permissive; we own field validity on the JS side and
       // gate engine.match() on it.
       let engine = null;
+      let restored = null;
       try {
         await FbmEngine.init();
-        engine = new FbmEngine({ baseDecimals: 8, feeE4: 5 });
+        restored = readStateFromUrl();
+        engine = new FbmEngine(
+          restored
+            ? { baseDecimals: restored.bd, feeE4: restored.fee }
+            : { baseDecimals: 8, feeE4: 5 },
+        );
       } catch (err) {
         document.body.innerHTML = `<pre>Failed to load FBM engine: ${err.message}</pre>`;
         throw err;
@@ -693,7 +805,8 @@ Astro.csp?.insertDirective(`font-src * data:`);
       }
 
       // ── Row inserter (vanilla DOM, matches old behaviour) ──────────
-      function insertRow(obj, rowarr, id) {
+      // `titles` is optional and holds a tooltip per cell.
+      function insertRow(obj, rowarr, id, titles) {
         const row = obj.insertRow(-1);
         row.className = "p-4 h-9";
         for (let i = 0; i < rowarr.length; ++i) {
@@ -702,6 +815,7 @@ Astro.csp?.insertDirective(`font-src * data:`);
             "px-4 border-b border-blue-gray-50 font-sans text-sm antialiased font-normal leading-normal";
           if (i === rowarr.length - 1) cell.className += " " + id;
           cell.innerHTML = `${rowarr[i]}`;
+          if (titles && titles[i]) cell.title = titles[i];
         }
       }
 
@@ -714,17 +828,30 @@ Astro.csp?.insertDirective(`font-src * data:`);
         renderSummary();
         renderPool();
         drawArrows();
+        scheduleUrlSync();
+      }
+
+      // The engine reports limits at full precision (they are exact
+      // 16-bit-mantissa price-grid values, e.g. 1.732147216796875). The
+      // order book columns are narrow, so the table shows a rounded
+      // value and keeps the exact one in the tooltip.
+      function fmtLimit(value) {
+        const n = Number(value);
+        if (!isFinite(n)) return String(value);
+        let s = n.toPrecision(8);
+        if (s.includes(".")) s = s.replace(/0+$/, "").replace(/\.$/, "");
+        return s;
       }
 
       function renderOrderBooks() {
         const m = state.lastMatch;
         tbodyBuy.innerHTML = "";
         for (const o of m.buys) {
-          insertRow(tbodyBuy, [o.limit, o.amount, o.filled], "filledAmountWartItem");
+          insertRow(tbodyBuy, [fmtLimit(o.limit), o.amount, o.filled], "filledAmountWartItem", [o.limit]);
         }
         tbodySell.innerHTML = "";
         for (const o of m.sells) {
-          insertRow(tbodySell, [o.limit, o.amount, o.filled], "filledAmountTokenItem");
+          insertRow(tbodySell, [fmtLimit(o.limit), o.amount, o.filled], "filledAmountTokenItem", [o.limit]);
         }
         let sumToken = 0;
         for (const el of document.getElementsByClassName("filledAmountTokenItem")) {
@@ -824,26 +951,29 @@ Astro.csp?.insertDirective(`font-src * data:`);
       }
 
       // ── Input handlers ─────────────────────────────────────────────
-      beforeTokenEl.addEventListener("input", () => {
-        const res = engine.setPool({ base: beforeTokenEl.value });
-        state.poolBase.valid = "ok" in res;
-        state.poolBase.error = "error" in res ? res.error : "";
+      // One place that pushes the two pool inputs into the engine and
+      // updates their validity, so the typing path and the restore path
+      // cannot drift apart.
+      function applyPoolInputs() {
+        const resBase = engine.setPool({ base: beforeTokenEl.value });
+        state.poolBase.valid = "ok" in resBase;
+        state.poolBase.error = "error" in resBase ? resBase.error : "";
         beforeTokenEl.style.backgroundColor = state.poolBase.valid ? "transparent" : "red";
         renderField(beforeTokenEl, state.poolBase);
-        tryMatch();
-        updateBuyButton();
-        updateSellButton();
-      });
-      beforeWartEl.addEventListener("input", () => {
-        const res = engine.setPool({ quote: beforeWartEl.value });
-        state.poolQuote.valid = "ok" in res;
-        state.poolQuote.error = "error" in res ? res.error : "";
+
+        const resQuote = engine.setPool({ quote: beforeWartEl.value });
+        state.poolQuote.valid = "ok" in resQuote;
+        state.poolQuote.error = "error" in resQuote ? resQuote.error : "";
         beforeWartEl.style.backgroundColor = state.poolQuote.valid ? "transparent" : "red";
         renderField(beforeWartEl, state.poolQuote);
+
         tryMatch();
         updateBuyButton();
         updateSellButton();
-      });
+      }
+
+      beforeTokenEl.addEventListener("input", applyPoolInputs);
+      beforeWartEl.addEventListener("input", applyPoolInputs);
 
       buyPriceEl.addEventListener("input", () => {
         const res = engine.validateLimit(buyPriceEl.value);
@@ -897,9 +1027,61 @@ Astro.csp?.insertDirective(`font-src * data:`);
       });
 
       // ─── Initial state ────────────────────────────────────────────
-      // Push the HTML's default pool values (100 TOKEN, 200 WART) to
-      // the engine so the initial render reflects the visible inputs.
-      engine.setPool({ base: beforeTokenEl.value, quote: beforeWartEl.value });
+      // The pool the page starts with, captured before a restore can
+      // overwrite the inputs.
+      const htmlPool = { base: beforeTokenEl.value, quote: beforeWartEl.value };
+
+      // The engine reports the pool in its canonical 8-decimal form. Show
+      // it the way a person would have typed it; the value parses back
+      // to exactly the same integer either way.
+      function trimDecimals(value) {
+        return value.includes(".") ? value.replace(/0+$/, "").replace(/\.$/, "") : value;
+      }
+
+      // Adds one restored order. The raw price-grid bits are the exact
+      // form; the decimal limit is a fallback for an engine that does
+      // not know about limitBits yet.
+      function addOrder(method, order) {
+        const [bits, amount, limit] = order;
+        let res = engine[method]({ limitBits: bits, amount });
+        if (!("ok" in res) && typeof limit === "string") {
+          res = engine[method]({ limit, amount });
+        }
+        if (!("ok" in res)) {
+          console.warn("Could not restore an order:", res.error);
+        }
+      }
+
+      // A shared link restores the exact book and pool it was made from.
+      // Without one, the demo starts from the HTML defaults (100 TOKEN,
+      // 200 WART). The engine was already built with the restored
+      // configuration above.
+      if (restored) {
+        beforeTokenEl.value = trimDecimals(restored.pool[0]);
+        beforeWartEl.value = trimDecimals(restored.pool[1]);
+        const res = engine.setPool({ base: restored.pool[0], quote: restored.pool[1] });
+        if (!("ok" in res)) {
+          console.warn("Could not restore the pool from ?state:", res.error);
+        }
+        for (const order of restored.buys ?? []) {
+          addOrder("addBuy", order);
+        }
+        for (const order of restored.sells ?? []) {
+          addOrder("addSell", order);
+        }
+        // The pool fields come straight from the engine, so they are
+        // valid by construction.
+        state.poolBase.valid = true;
+        state.poolQuote.valid = true;
+        state.poolBase.error = "";
+        state.poolQuote.error = "";
+        renderField(beforeTokenEl, state.poolBase);
+        renderField(beforeWartEl, state.poolQuote);
+      } else {
+        // Push the HTML's default pool values (100 TOKEN, 200 WART) to
+        // the engine so the initial render reflects the visible inputs.
+        engine.setPool({ base: htmlPool.base, quote: htmlPool.quote });
+      }
       // Validate buy/sell fields with empty defaults (they stay invalid
       // until the user types). Arrow functions preserve the `engine`
       // binding — Embind exposes methods bound to the instance only at
@@ -919,7 +1101,63 @@ Astro.csp?.insertDirective(`font-src * data:`);
       }
       updateBuyButton();
       updateSellButton();
+
+      // The default demo state (no orders, the pool the page starts
+      // with) is what an untouched page shows, so the URL stays clean
+      // until the user changes something.
+      {
+        const scratch = new FbmEngine({ baseDecimals: 8, feeE4: 5 });
+        scratch.setPool({ base: htmlPool.base, quote: htmlPool.quote });
+        defaultState = encodeMatch(scratch.match(), scratch.getConfig());
+      }
       tryMatch();
+
+      // ── Copy shareable link ───────────────────────────────────────
+      const copyStatus = $("copyLinkStatus");
+      let copyStatusTimer = null;
+      function showCopyStatus(text) {
+        copyStatus.textContent = text;
+        if (copyStatusTimer) clearTimeout(copyStatusTimer);
+        copyStatusTimer = setTimeout(() => {
+          copyStatusTimer = null;
+          copyStatus.textContent = "";
+        }, 2500);
+      }
+      $("copyLinkButton").addEventListener("click", async () => {
+        // Make sure the address bar holds the current state before
+        // copying it.
+        try {
+          const url = new URL(window.location.href);
+          const encoded = encodeState();
+          if (encoded && encoded !== defaultState) url.searchParams.set(STATE_PARAM, encoded);
+          else url.searchParams.delete(STATE_PARAM);
+          history.replaceState(null, "", url.toString());
+        } catch (err) {
+          console.warn("Could not update the URL:", err);
+        }
+        const link = window.location.href;
+        try {
+          await navigator.clipboard.writeText(link);
+          showCopyStatus("Link copied");
+        } catch {
+          // Clipboard access needs a secure context; fall back to a
+          // selectable field so the link can still be copied by hand.
+          if (copyStatusTimer) {
+            clearTimeout(copyStatusTimer);
+            copyStatusTimer = null;
+          }
+          const field = document.createElement("input");
+          field.value = link;
+          field.readOnly = true;
+          field.className =
+            "w-96 rounded-md border border-gray-300 px-2 py-1 text-sm";
+          // Note: the field is a child of the status element, so the
+          // status text is appended rather than assigned.
+          copyStatus.replaceChildren("Copy the selected link: ", field);
+          field.focus();
+          field.select();
+        }
+      });
     </script>
   </div>
 </BaseLayout>
