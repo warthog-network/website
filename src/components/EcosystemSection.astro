@@ -232,26 +232,21 @@ const groups = [
     filter: brightness(0.3) saturate(1.5);
   }
 
-  /* Panels share one grid cell so switching tabs does not change the section height. */
+  /* Only the open tab is in the layout, so the author note sits under those cards. */
   .tab-stage {
-    display: grid;
     flex: 1 0 100%;
     width: 100%;
     margin-top: 1.5rem;
   }
 
   .tab-panel {
-    grid-area: 1 / 1;
-    visibility: hidden;
-    pointer-events: none;
+    display: none;
   }
 
   #eco-tab-explore:checked ~ .tab-stage #eco-panel-explore,
   #eco-tab-mining:checked ~ .tab-stage #eco-panel-mining,
   #eco-tab-pools:checked ~ .tab-stage #eco-panel-pools {
-    visibility: visible;
-    pointer-events: auto;
-    z-index: 1;
+    display: block;
   }
 
   .eco-grid {
