@@ -3,7 +3,6 @@ import Pickaxe from "../BalkyImages/getstartedimgs/pickaxe.svg";
 import Nodes from "../BalkyImages/getstartedimgs/blockchain_nodes.svg";
 import Pool from "../BalkyImages/getstartedimgs/pool.svg";
 import GPU from "../BalkyImages/getstartedimgs/gpu.svg";
-import Wallet from "../BalkyImages/getstartedimgs/wallet.svg";
 import MinerShot from "../BalkyImages/ecosystem/miner-simulator.webp";
 import WartNodeShot from "../BalkyImages/ecosystem/wartnode.webp";
 import WartscanShot from "../BalkyImages/ecosystem/wartscan.webp";
@@ -13,13 +12,11 @@ import BzMinerShot from "../BalkyImages/ecosystem/bzminer.webp";
 import CedricShot from "../BalkyImages/ecosystem/cedric-crispin.webp";
 import WoolyShot from "../BalkyImages/ecosystem/woolypooly.webp";
 import HeroShot from "../BalkyImages/ecosystem/herominers.webp";
-import WhereToBuy from "./WhereToBuy.astro";
-import GetStartedSection from "./GetStartedSection.astro";
 
 /**
- * Homepage block: exchanges, Getting Started, and community sites.
- * Community sites are not operated by the core Warthog project.
+ * Independent community sites. Not operated by the core Warthog project.
  * `shot` files are static captures of each href.
+ * Groups use their own radio name so they do not fight the Getting Started tabs.
  */
 const groups = [
   {
@@ -134,8 +131,6 @@ const groups = [
     ],
   },
 ];
-
-const projects = groups.flatMap((group) => group.projects);
 ---
 
 <style>
@@ -181,8 +176,7 @@ const projects = groups.flatMap((group) => group.projects);
     background: rgba(255, 255, 255, 0.04);
   }
 
-  .tab-label img,
-  .tab-label svg {
+  .tab-label img {
     width: 18px;
     height: 18px;
     opacity: 0.7;
@@ -190,8 +184,7 @@ const projects = groups.flatMap((group) => group.projects);
     transition: opacity 0.2s, filter 0.2s;
   }
 
-  .tab-label:hover img,
-  .tab-label:hover svg {
+  .tab-label:hover img {
     opacity: 1;
   }
 
@@ -201,8 +194,7 @@ const projects = groups.flatMap((group) => group.projects);
     box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35);
   }
 
-  .tabs input:checked + .tab-label img,
-  .tabs input:checked + .tab-label svg {
+  .tabs input:checked + .tab-label img {
     opacity: 1;
     filter: brightness(0.3) saturate(1.5);
   }
@@ -210,21 +202,13 @@ const projects = groups.flatMap((group) => group.projects);
   .tab-panel {
     display: none;
     flex-basis: 100%;
-    scroll-margin-top: 5rem;
+    margin-top: 1.5rem;
   }
 
-  #eco-tab-exchanges:checked ~ #wheretobuy,
-  #eco-tab-start:checked ~ #eco-panel-start,
-  #eco-tab-community:checked ~ #community {
+  #eco-tab-explore:checked ~ #eco-panel-explore,
+  #eco-tab-mining:checked ~ #eco-panel-mining,
+  #eco-tab-pools:checked ~ #eco-panel-pools {
     display: block;
-  }
-
-  .panel-note {
-    margin: 0 0 1.25rem;
-    max-width: 46rem;
-    color: var(--color-text-muted);
-    font-size: 1.05rem;
-    line-height: 1.6;
   }
 
   .eco-grid {
@@ -241,7 +225,7 @@ const projects = groups.flatMap((group) => group.projects);
 
   @media (min-width: 1100px) {
     .eco-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     }
   }
 
@@ -409,129 +393,75 @@ const projects = groups.flatMap((group) => group.projects);
 <section class="ecosystem-section" id="ecosystem" aria-labelledby="ecosystem-title">
   <div class="site-shell">
     <div class="section__header">
-      <p class="section__eyebrow">Ecosystem</p>
+      <p class="section__eyebrow">Community</p>
       <h2 class="section__title" id="ecosystem-title">Ecosystem</h2>
       <p class="section__lede">
-        Exchanges, getting started, and community sites.
+        Community sites for the chain, mining, and pools.
       </p>
     </div>
 
     <div class="tabs">
-      <input type="radio" name="eco-tabs" id="eco-tab-exchanges" />
-      <label for="eco-tab-exchanges" class="tab-label">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path fill="currentColor" d="M7 7h12.2l-2.6-2.6 1.4-1.4L23 8l-4.99 5-1.4-1.4L19.2 9H7V7zm10 10H4.8l2.6 2.6-1.4 1.4L1 16l5-5 1.4 1.4L4.8 15H17v2z" />
-        </svg>
-        <span>Exchanges</span>
-      </label>
-
-      <input type="radio" name="eco-tabs" id="eco-tab-start" checked />
-      <label for="eco-tab-start" class="tab-label">
-        <img src={Wallet.src} alt="" />
-        <span>Getting Started</span>
-      </label>
-
-      <input type="radio" name="eco-tabs" id="eco-tab-community" />
-      <label for="eco-tab-community" class="tab-label">
-        <img src={Nodes.src} alt="" />
-        <span>Community</span>
-      </label>
-
-      <div class="tab-panel" id="wheretobuy">
-        <p class="panel-note">
-          Trade WART/USDT on trusted platforms. Each listing is verified and actively monitored by the community.
-        </p>
-        <WhereToBuy embedded />
-      </div>
-
-      <div class="tab-panel" id="eco-panel-start">
-        <p class="panel-note">
-          Pick a wallet, run a node, start mining, or put Warthog on a Ledger.
-        </p>
-        <GetStartedSection embedded />
-      </div>
-
-      <div class="tab-panel" id="community">
-        <p class="panel-note">
-          Sites for the chain, mining, and pools, shown together. They are run by their authors, separate from the wallets, node, and docs in Getting Started.
-        </p>
-        <div class="eco-grid">
-          {projects.map((project) => (
-            <a
-              class="eco-card"
-              href={project.href}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <div class="eco-shot">
-                <img
-                  src={project.shot.src}
-                  alt=""
-                  width={project.shot.width}
-                  height={project.shot.height}
-                  loading="lazy"
-                  decoding="async"
-                />
-              </div>
-              <div class="eco-body">
-                <div class="eco-kicker">
-                  <div
-                    class="eco-card-icon"
-                    style={`--eco-icon: url("${project.icon.src}")`}
-                    aria-hidden="true"
-                  >
+      {groups.map((group, index) => (
+        <>
+          <input
+            type="radio"
+            name="eco-tabs"
+            id={`eco-tab-${group.id}`}
+            checked={index === 0}
+          />
+          <label for={`eco-tab-${group.id}`} class="tab-label">
+            <img src={group.icon.src} alt="" />
+            <span>{group.title}</span>
+          </label>
+        </>
+      ))}
+      {groups.map((group) => (
+        <div class="tab-panel" id={`eco-panel-${group.id}`}>
+          <div class="eco-grid">
+            {group.projects.map((project) => (
+              <a
+                class="eco-card"
+                href={project.href}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <div class="eco-shot">
+                  <img
+                    src={project.shot.src}
+                    alt=""
+                    width={project.shot.width}
+                    height={project.shot.height}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+                <div class="eco-body">
+                  <div class="eco-kicker">
+                    <div
+                      class="eco-card-icon"
+                      style={`--eco-icon: url("${project.icon.src}")`}
+                      aria-hidden="true"
+                    >
+                    </div>
+                    <p class="eco-kind">{project.kind}</p>
                   </div>
-                  <p class="eco-kind">{project.kind}</p>
+                  <h3>{project.title}</h3>
+                  <p>{project.description}</p>
+                  <div class="eco-card-foot">
+                    <span class="eco-host">{project.host}</span>
+                    <span class="eco-go">Open</span>
+                  </div>
                 </div>
-                <h3>{project.title}</h3>
-                <p>{project.description}</p>
-                <div class="eco-card-foot">
-                  <span class="eco-host">{project.host}</span>
-                  <span class="eco-go">Open</span>
-                </div>
-              </div>
-            </a>
-          ))}
+              </a>
+            ))}
+          </div>
         </div>
-      </div>
+      ))}
     </div>
+
+    <p class="eco-note">
+      These sites are run by their authors. They are separate from the wallets,
+      node, and docs in Getting Started.
+    </p>
   </div>
 </section>
-<script>
-  const tabForHash = {
-    "#wheretobuy": "eco-tab-exchanges",
-    "#get-started": "eco-tab-start",
-    "#community": "eco-tab-community",
-  };
-
-  function selectEcoTab(hash) {
-    const id = tabForHash[hash];
-    if (!id) return;
-    const input = document.getElementById(id);
-    if (input && !input.checked) input.checked = true;
-  }
-
-  function hashFromLink(link) {
-    try {
-      const url = new URL(link.href, location.href);
-      if (url.origin !== location.origin) return "";
-      const path = url.pathname.replace(/\/$/, "") || "/";
-      const here = location.pathname.replace(/\/$/, "") || "/";
-      if (path !== here) return "";
-      return url.hash;
-    } catch {
-      return "";
-    }
-  }
-
-  document.addEventListener("click", (event) => {
-    const target = event.target;
-    if (!(target instanceof Element)) return;
-    const link = target.closest("a[href]");
-    if (!link) return;
-    selectEcoTab(hashFromLink(link));
-  }, true);
-
-  selectEcoTab(location.hash);
-  window.addEventListener("hashchange", () => selectEcoTab(location.hash));
-</script>

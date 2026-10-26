@@ -24,13 +24,6 @@ const browserNodeExtensionZip = "/downloads/warthog_node_extension.zip";
 const browserNodeExtensionReleases =
   "https://github.com/warthog-network/browser-node/releases/latest";
 
-interface Props {
-  /** Inside the homepage Ecosystem section: smaller heading, no extra shell padding. */
-  embedded?: boolean;
-}
-
-const { embedded = false } = Astro.props;
-
 const wallets = [
   {
     title: "Wart DAPP (GUI)",
@@ -67,25 +60,6 @@ const wallets = [
   .get-started-section {
     padding-block: clamp(3rem, 6vw, 5.5rem);
     scroll-margin-top: 5rem;
-  }
-
-  .get-started-section.is-embedded {
-    padding-block: 0;
-  }
-
-  .get-started-section.is-embedded .site-shell {
-    width: 100%;
-    max-width: none;
-    margin-inline: 0;
-    padding-inline: 0;
-  }
-
-  .get-started-section.is-embedded .section__header {
-    margin-bottom: 1.25rem;
-  }
-
-  .get-started-section.is-embedded .section__title {
-    font-size: clamp(1.25rem, 2.2vw, 1.65rem);
   }
 
   .tabs {
@@ -412,17 +386,15 @@ const wallets = [
   }
 </style>
 
-<section class:list={["get-started-section", { "is-embedded": embedded }]} id="get-started">
+<section class="get-started-section" id="get-started">
   <div class="site-shell">
-    {!embedded && (
-      <div class="section__header">
-        <p class="section__eyebrow">First Steps</p>
-        <h1 class="section__title">Getting Started</h1>
-        <p class="section__lede">
-          Pick a wallet, run a node, start mining, or put Warthog on a Ledger.
-        </p>
-      </div>
-    )}
+    <div class="section__header">
+      <p class="section__eyebrow">First Steps</p>
+      <h1 class="section__title">Getting Started</h1>
+      <p class="section__lede">
+        Pick a wallet, run a node, start mining, or put Warthog on a Ledger.
+      </p>
+    </div>
 
     <div class="tabs">
       <input type="radio" name="tabs" id="tab-wallets" checked />
