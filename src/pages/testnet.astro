@@ -117,7 +117,7 @@ const walletCards = [
       <div class="cards-grid">
         {testnetCards.map((c) => (
           <div class="gs-card">
-            <div class="gs-card-icon"><img src={c.icon.src} alt="" /></div>
+            <div class="gs-card-icon" style={`--gs-icon: url("${c.icon.src}")`}></div>
             <h3>{c.title}</h3>
             <p>{c.desc}</p>
             <div class="gs-card-actions">
@@ -129,11 +129,11 @@ const walletCards = [
           </div>
         ))}
           <div class="gs-card">
-            <div class="gs-card-icon"><img src={Book.src} alt="" /></div>
+            <div class="gs-card-icon" style={`--gs-icon: url("${Book.src}")`}></div>
             <h3>SDKs</h3>
-            <p> For developers we have three SDKs covering Python, Elixir and JavaScript (works natively and within browser).</p>
+            <p> For developers we have three SDKs covering Python, Elixir and TypeScript (works natively and within browser).</p>
             <div class="gs-card-actions">
-              <a href="https://github.com/warthog-network/warthog-ts" target="_blank" rel="noreferrer noopener">JavaScript</a>
+              <a href="https://github.com/warthog-network/warthog-ts" target="_blank" rel="noreferrer noopener">TypeScript</a>
               <a href="https://github.com/warthog-network/warthog_py" target="_blank" rel="noreferrer noopener">Python</a>
               <a href="https://github.com/warthog-network/warthog_ex" target="_blank" rel="noreferrer noopener">Elixir</a>
             </div>
@@ -144,7 +144,7 @@ const walletCards = [
       <div class="cards-grid">
         {walletCards.map((w) => (
           <div class="gs-card">
-            <div class="gs-card-icon"><img src={w.icon.src} alt="" /></div>
+            <div class="gs-card-icon" style={`--gs-icon: url("${w.icon.src}")`}></div>
             <h3>{w.title}</h3>
             <p>{w.desc}</p>
             <div class="gs-card-actions">
@@ -161,7 +161,7 @@ const walletCards = [
       <div class="cards-grid">
         {fbmCards.map((w) => (
           <div class="gs-card">
-            <div class="gs-card-icon"><img src={w.icon.src} alt="" /></div>
+            <div class="gs-card-icon" style={`--gs-icon: url("${w.icon.src}")`}></div>
             <h3>{w.title}</h3>
             <p>{w.desc}</p>
             <div class="gs-card-actions">
@@ -218,20 +218,28 @@ const walletCards = [
   }
 
   .gs-card-icon {
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(56, 189, 248, 0.1);
-    border-radius: 0.75rem;
+    background:
+      radial-gradient(circle at 30% 25%, rgba(253, 185, 19, 0.42), rgba(253, 185, 19, 0.12) 70%);
+    border: 1px solid rgba(253, 185, 19, 0.72);
+    border-radius: 0.85rem;
+    box-shadow: 0 0 18px rgba(253, 185, 19, 0.22);
     margin-bottom: 0.25rem;
   }
 
-  .gs-card-icon img {
+  .gs-card-icon::before {
+    content: "";
     width: 28px;
     height: 28px;
-    filter: brightness(1.4);
+    background: #fdb913;
+    mask: var(--gs-icon) center / contain no-repeat;
+    -webkit-mask: var(--gs-icon) center / contain no-repeat;
+    mask-mode: alpha;
+    -webkit-mask-mode: alpha;
   }
 
   .gs-card h3 {

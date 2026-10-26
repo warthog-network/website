@@ -1,6 +1,13 @@
 ---
 import Safetrade from '../BalkyImages/wheretobuyimgs/safetrade.png'
 
+interface Props {
+  /** Inside the homepage Ecosystem section: smaller heading, no extra shell padding. */
+  embedded?: boolean;
+}
+
+const { embedded = false } = Astro.props;
+
 const icons = [
     {Visible: true, Name:"Safetrade exchange", ImgSrc: Safetrade.src, Url:"https://safetrade.com/exchange/WART-USDT?type=basic"},
 ];
@@ -10,6 +17,7 @@ const icons = [
 <style>
   .buy-section {
     padding-block: clamp(3rem, 5vw, 4rem);
+    scroll-margin-top: 5rem;
   }
 
   .buy-grid {
@@ -36,16 +44,34 @@ const icons = [
     max-height: 70px;
     margin-inline: auto;
   }
+
+  .buy-section.is-embedded {
+    padding-block: 0;
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+
+  .buy-section.is-embedded .section__header {
+    margin-bottom: 1.25rem;
+  }
+
+  .buy-section.is-embedded .section__title {
+    font-size: clamp(1.25rem, 2.2vw, 1.65rem);
+  }
 </style>
 
-<section id="wheretobuy" class="buy-section site-shell">
-  <div class="section__header">
-    <p class="section__eyebrow">Exchanges</p>
-    <h2 class="section__title">Where to buy WART</h2>
-    <p class="section__lede">
-      Trade WART/USDT on trusted platforms. Each listing is verified and actively monitored by the community.
-    </p>
-  </div>
+<section id={embedded ? undefined : "wheretobuy"} class:list={["buy-section", "site-shell", { "is-embedded": embedded }]}>
+  {!embedded && (
+    <div class="section__header">
+      <p class="section__eyebrow">Exchanges</p>
+      <h2 class="section__title">Where to buy WART</h2>
+      <p class="section__lede">
+        Trade WART/USDT on trusted platforms. Each listing is verified and actively monitored by the community.
+      </p>
+    </div>
+  )}
 
   <div class="buy-grid">
     {
