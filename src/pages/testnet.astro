@@ -61,22 +61,30 @@ const fbmCards = [
   },
 ]
 
-const EXTENSION_VERSION = "1.2.12";
-const MOBILE_WALLET_VERSION = "1.0.50";
+const EXTENSION_VERSION = "1.2.14";
+const MOBILE_WALLET_VERSION = "1.0.60";
+const extensionZip = `https://github.com/warthog-network/browser-wallet/releases/download/${EXTENSION_VERSION}/warthog_extension.zip`;
+const extensionFirefoxZip = `https://github.com/warthog-network/browser-wallet/releases/download/${EXTENSION_VERSION}/warthog_extension_firefox.zip`;
+const extensionRelease = `https://github.com/warthog-network/browser-wallet/releases/tag/${EXTENSION_VERSION}`;
+const mobileWalletApk = `https://github.com/warthog-network/mobile-wallet/releases/download/v${MOBILE_WALLET_VERSION}/warthog-wallet-${MOBILE_WALLET_VERSION}.apk`;
+const mobileWalletRelease = `https://github.com/warthog-network/mobile-wallet/releases/tag/v${MOBILE_WALLET_VERSION}`;
 
 const walletCards = [
   {
     icon: Wallet,
     title: "Browser extension",
-    desc: `Warthog wallet extension v${EXTENSION_VERSION} for Chrome and Firefox. Mainnet + DeFi testnet, assets, DEX, and activity. Unzip and Load unpacked.`,
+    desc: `Warthog wallet extension v${EXTENSION_VERSION} for Chrome and Firefox. Mainnet + DeFi testnet, assets, DEX, and activity. Unzip, then Load unpacked (Chrome) or load the Firefox zip.`,
     primary: {
-      label: `Download v${EXTENSION_VERSION}`,
-      href: `https://github.com/warthog-network/extension-update/releases/download/${EXTENSION_VERSION}/warthog_extension.zip`,
+      label: `Chrome v${EXTENSION_VERSION}`,
+      href: extensionZip,
     },
     secondary: {
-      label: "Release",
-      href: `https://github.com/warthog-network/extension-update/releases/tag/${EXTENSION_VERSION}`,
+      label: "Firefox",
+      href: extensionFirefoxZip,
     },
+    more: [
+      { label: "Release notes", href: extensionRelease },
+    ],
   },
   {
     icon: Wallet,
@@ -90,11 +98,11 @@ const walletCards = [
     desc: `Android wallet app v${MOBILE_WALLET_VERSION} for DeFi testnet and mainnet. Download the APK and install on your device.`,
     primary: {
       label: `Download APK v${MOBILE_WALLET_VERSION}`,
-      href: `https://github.com/warthog-network/mobile-wallet/releases/download/v${MOBILE_WALLET_VERSION}/warthog-wallet-${MOBILE_WALLET_VERSION}.apk`,
+      href: mobileWalletApk,
     },
     secondary: {
-      label: "Source",
-      href: "https://github.com/warthog-network/mobile-wallet",
+      label: "Release notes",
+      href: mobileWalletRelease,
     },
   },
 ];
@@ -117,7 +125,7 @@ const walletCards = [
       <div class="cards-grid">
         {testnetCards.map((c) => (
           <div class="gs-card">
-            <div class="gs-card-icon"><img src={c.icon.src} alt="" /></div>
+            <div class="gs-card-icon"><img class="wart-gold-icon" src={c.icon.src} alt="" /></div>
             <h3>{c.title}</h3>
             <p>{c.desc}</p>
             <div class="gs-card-actions">
@@ -129,11 +137,11 @@ const walletCards = [
           </div>
         ))}
           <div class="gs-card">
-            <div class="gs-card-icon"><img src={Book.src} alt="" /></div>
+            <div class="gs-card-icon"><img class="wart-gold-icon" src={Book.src} alt="" /></div>
             <h3>SDKs</h3>
-            <p> For developers we have three SDKs covering Python, Elixir and JavaScript (works natively and within browser).</p>
+            <p> For developers we have three SDKs covering Python, Elixir and TypeScript (works natively and within browser).</p>
             <div class="gs-card-actions">
-              <a href="https://github.com/warthog-network/warthog-ts" target="_blank" rel="noreferrer noopener">JavaScript</a>
+              <a href="https://github.com/warthog-network/warthog-ts" target="_blank" rel="noreferrer noopener">TypeScript</a>
               <a href="https://github.com/warthog-network/warthog_py" target="_blank" rel="noreferrer noopener">Python</a>
               <a href="https://github.com/warthog-network/warthog_ex" target="_blank" rel="noreferrer noopener">Elixir</a>
             </div>
@@ -144,7 +152,7 @@ const walletCards = [
       <div class="cards-grid">
         {walletCards.map((w) => (
           <div class="gs-card">
-            <div class="gs-card-icon"><img src={w.icon.src} alt="" /></div>
+            <div class="gs-card-icon"><img class="wart-gold-icon" src={w.icon.src} alt="" /></div>
             <h3>{w.title}</h3>
             <p>{w.desc}</p>
             <div class="gs-card-actions">
@@ -152,6 +160,9 @@ const walletCards = [
               {w.secondary && (
                 <a href={w.secondary.href} target="_blank" rel="noreferrer noopener">{w.secondary.label}</a>
               )}
+              {w.more?.map((link) => (
+                <a href={link.href} target="_blank" rel="noreferrer noopener">{link.label}</a>
+              ))}
             </div>
           </div>
         ))}
@@ -161,7 +172,7 @@ const walletCards = [
       <div class="cards-grid">
         {fbmCards.map((w) => (
           <div class="gs-card">
-            <div class="gs-card-icon"><img src={w.icon.src} alt="" /></div>
+            <div class="gs-card-icon"><img class="wart-gold-icon" src={w.icon.src} alt="" /></div>
             <h3>{w.title}</h3>
             <p>{w.desc}</p>
             <div class="gs-card-actions">
@@ -218,21 +229,25 @@ const walletCards = [
   }
 
   .gs-card-icon {
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(56, 189, 248, 0.1);
-    border-radius: 0.75rem;
+    background: rgba(253, 185, 19, 0.08);
+    border: 1px solid var(--color-brand);
+    border-radius: 0.85rem;
+    box-shadow: none;
     margin-bottom: 0.25rem;
   }
 
   .gs-card-icon img {
     width: 28px;
     height: 28px;
-    filter: brightness(1.4);
+    display: block;
   }
+
+
 
   .gs-card h3 {
     font-size: 1.125rem;

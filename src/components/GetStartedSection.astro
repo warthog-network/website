@@ -2,19 +2,21 @@
 import Wallet from "../BalkyImages/getstartedimgs/wallet.svg";
 import Nodes from "../BalkyImages/getstartedimgs/blockchain_nodes.svg";
 import GPU from "../BalkyImages/getstartedimgs/gpu.svg";
-import Pool from "../BalkyImages/getstartedimgs/pool.svg";
 import Pickaxe from "../BalkyImages/getstartedimgs/pickaxe.svg";
 import Book from "../BalkyImages/getstartedimgs/book.svg";
 import Ledger from "../BalkyImages/getstartedimgs/ledger.svg";
 
 const webWalletUrl = "/webwallet";
-/** Android APK ships via GitHub Releases (same pattern as warthog_extension). */
-const MOBILE_WALLET_VERSION = "1.0.50";
+/** Android APK ships via GitHub Releases on warthog-network/mobile-wallet. */
+const MOBILE_WALLET_VERSION = "1.0.60";
 const mobileWalletApk = `https://github.com/warthog-network/mobile-wallet/releases/download/v${MOBILE_WALLET_VERSION}/warthog-wallet-${MOBILE_WALLET_VERSION}.apk`;
 const mobileWalletRelease = `https://github.com/warthog-network/mobile-wallet/releases/tag/v${MOBILE_WALLET_VERSION}`;
 
-const EXTENSION_VERSION = "1.2.12";
-const extensionZip = `https://github.com/warthog-network/extension-update/releases/download/${EXTENSION_VERSION}/warthog_extension.zip`;
+/** Browser extension zip ships from warthog-network/browser-wallet. */
+const EXTENSION_VERSION = "1.2.14";
+const extensionZip = `https://github.com/warthog-network/browser-wallet/releases/download/${EXTENSION_VERSION}/warthog_extension.zip`;
+const extensionFirefoxZip = `https://github.com/warthog-network/browser-wallet/releases/download/${EXTENSION_VERSION}/warthog_extension_firefox.zip`;
+const extensionRelease = `https://github.com/warthog-network/browser-wallet/releases/tag/${EXTENSION_VERSION}`;
 
 /** In-browser full node (Netlify). */
 const browserNodeUrl = "https://browser-node.netlify.app/";
@@ -49,8 +51,10 @@ const wallets = [
   {
     title: "warthog_extension",
     description:
-      `Browser extension v${EXTENSION_VERSION} for Chrome and Firefox (warthog_extension.zip). Mainnet + DeFi testnet, assets, DEX, and activity. Unzip → Load unpacked.`,
+      `Browser extension v${EXTENSION_VERSION} for Chrome and Firefox. Mainnet + DeFi testnet, assets, DEX, and activity. Unzip, then Load unpacked (Chrome) or load the Firefox zip.`,
     download: extensionZip,
+    firefox: extensionFirefoxZip,
+    release: extensionRelease,
     guide: "https://docs.warthog.network/guides/wallet/browser-extension-wallet/",
   },
 ];
@@ -60,6 +64,17 @@ const wallets = [
   .get-started-section {
     padding-block: clamp(3rem, 6vw, 5.5rem);
     scroll-margin-top: 5rem;
+  }
+
+  .gs-switcher {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    width: 100%;
+  }
+
+  .gs-switcher > input {
+    display: none;
   }
 
   .tabs {
@@ -73,11 +88,6 @@ const wallets = [
     border-radius: 12px;
     padding: 0.35rem;
     gap: 0.35rem;
-    margin-bottom: 2rem;
-  }
-
-  .tabs input[type="radio"] {
-    display: none;
   }
 
   .tab-label {
@@ -111,33 +121,101 @@ const wallets = [
     opacity: 1;
   }
 
-  .tabs input:checked + .tab-label {
+  #tab-wallets:checked ~ .tabs label[for="tab-wallets"],
+  #tab-node:checked ~ .tabs label[for="tab-node"],
+  #tab-mining:checked ~ .tabs label[for="tab-mining"],
+  #tab-hardware:checked ~ .tabs label[for="tab-hardware"] {
     background: var(--color-accent);
     color: #0f172a;
     box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35);
   }
 
-  .tabs input:checked + .tab-label img {
+  #tab-wallets:checked ~ .tabs label[for="tab-wallets"] img,
+  #tab-node:checked ~ .tabs label[for="tab-node"] img,
+  #tab-mining:checked ~ .tabs label[for="tab-mining"] img,
+  #tab-hardware:checked ~ .tabs label[for="tab-hardware"] img {
     opacity: 1;
     filter: brightness(0.3) saturate(1.5);
   }
 
-  .tab-panel {
-    display: none;
-    flex-basis: 100%;
+  /* Every panel shares one grid cell, so the section stays as tall as the
+     tallest tab instead of jumping when the selection changes. */
+  .tab-stage {
+    display: grid;
+    flex: 1 0 100%;
+    width: 100%;
     margin-top: 1.5rem;
   }
 
-  #tab-wallets:checked ~ #panel-wallets,
-  #tab-node:checked ~ #panel-node,
-  #tab-mining:checked ~ #panel-mining,
-  #tab-hardware:checked ~ #panel-hardware {
-    display: block;
+  .tab-panel {
+    grid-area: 1 / 1;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  #tab-wallets:checked ~ .tab-stage #panel-wallets,
+  #tab-node:checked ~ .tab-stage #panel-node,
+  #tab-mining:checked ~ .tab-stage #panel-mining,
+  #tab-hardware:checked ~ .tab-stage #panel-hardware {
+    visibility: visible;
+    pointer-events: auto;
+    z-index: 1;
+  }
+
+  .ledger-intro {
+    margin: 0 0 1rem;
+    max-width: 42rem;
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .ledger-intro a {
+    color: var(--color-accent);
+  }
+
+  .ledger-picker {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+    margin: 0 0 1rem;
+  }
+
+  .ledger-picker label {
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .ledger-picker select {
+    font: inherit;
+    font-weight: 600;
+    color: var(--color-text);
+    background: rgba(8, 12, 24, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 0.55rem 2.2rem 0.55rem 0.9rem;
+    cursor: pointer;
+  }
+
+  .ledger-picker select:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+
+  .ledger-models {
+    display: grid;
+    grid-template-columns: minmax(260px, 22rem);
+  }
+
+  .ledger-model[hidden] {
+    display: none;
   }
 
   .cards-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    /* auto-fill keeps empty tracks, so a 2-card tab stays the same width as the other tabs. */
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: clamp(1rem, 2vw, 1.5rem);
   }
 
@@ -159,20 +237,22 @@ const wallets = [
   }
 
   .gs-card-icon {
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(56, 189, 248, 0.1);
-    border-radius: 0.75rem;
+    background: rgba(253, 185, 19, 0.08);
+    border: 1px solid var(--color-brand);
+    border-radius: 0.85rem;
+    box-shadow: none;
     margin-bottom: 0.25rem;
   }
 
   .gs-card-icon img {
     width: 28px;
     height: 28px;
-    filter: brightness(1.4);
+    display: block;
   }
 
   .gs-card h3 {
@@ -388,50 +468,49 @@ const wallets = [
       </p>
     </div>
 
-    <div class="tabs">
+    <div class="gs-switcher">
       <input type="radio" name="tabs" id="tab-wallets" checked />
-      <label for="tab-wallets" class="tab-label">
-        <img src={Wallet.src} alt="" />
-        <span>Wallets</span>
-      </label>
-
       <input type="radio" name="tabs" id="tab-node" />
-      <label for="tab-node" class="tab-label">
-        <img src={Nodes.src} alt="" />
-        <span>Node</span>
-      </label>
-
       <input type="radio" name="tabs" id="tab-mining" />
-      <label for="tab-mining" class="tab-label">
-        <img src={GPU.src} alt="" />
-        <span>Mining</span>
-      </label>
-
       <input type="radio" name="tabs" id="tab-hardware" />
-      <label for="tab-hardware" class="tab-label">
-        <img src={Ledger.src} alt="" />
-        <span>ledger-apps</span>
-      </label>
 
+      <div class="tabs">
+        <label for="tab-wallets" class="tab-label">
+          <img src={Wallet.src} alt="" />
+          <span>Wallets</span>
+        </label>
+        <label for="tab-node" class="tab-label">
+          <img src={Nodes.src} alt="" />
+          <span>Node</span>
+        </label>
+        <label for="tab-mining" class="tab-label">
+          <img src={GPU.src} alt="" />
+          <span>Mining</span>
+        </label>
+        <label for="tab-hardware" class="tab-label">
+          <img src={Ledger.src} alt="" />
+          <span>Ledger</span>
+        </label>
+      </div>
+
+      <div class="tab-stage">
       <div class="tab-panel" id="panel-wallets">
         <div class="cards-grid">
           {wallets.map((w) => (
             <div class="gs-card">
-              <div class="gs-card-icon">
-                <img src={Wallet.src} alt="" />
-              </div>
+              <div class="gs-card-icon"><img class="wart-gold-icon" src={Wallet.src} alt="" /></div>
               <h3>{w.title}</h3>
               <p>{w.description}</p>
               <div class="gs-card-actions">
-                <a href={w.download}>Download</a>
+                <a href={w.download}>{w.firefox ? "Chrome" : "Download"}</a>
+                {w.firefox && <a href={w.firefox}>Firefox</a>}
+                {w.release && <a href={w.release}>Release notes</a>}
                 <a href={w.guide}>Guide</a>
               </div>
             </div>
           ))}
           <div class="gs-card">
-            <div class="gs-card-icon">
-              <img src={Wallet.src} alt="" />
-            </div>
+            <div class="gs-card-icon"><img class="wart-gold-icon" src={Wallet.src} alt="" /></div>
             <h3>Web Wallet</h3>
             <p>
               Browser-based wallet for desktop and mobile. Access your WART
@@ -442,9 +521,7 @@ const wallets = [
             </div>
           </div>
           <div class="gs-card">
-            <div class="gs-card-icon">
-              <img src={Wallet.src} alt="" />
-            </div>
+            <div class="gs-card-icon"><img class="wart-gold-icon" src={Wallet.src} alt="" /></div>
             <h3>Mobile Wallet</h3>
             <p>
               Android wallet app v{MOBILE_WALLET_VERSION}. Download the APK from
@@ -461,9 +538,7 @@ const wallets = [
       <div class="tab-panel" id="panel-node">
         <div class="cards-grid">
           <div class="gs-card">
-            <div class="gs-card-icon">
-              <img src={Nodes.src} alt="" />
-            </div>
+            <div class="gs-card-icon"><img class="wart-gold-icon" src={Nodes.src} alt="" /></div>
             <h3>Run a Node</h3>
             <p>
               Install a node on your computer to support the blockchain
@@ -476,9 +551,7 @@ const wallets = [
             </div>
           </div>
           <div class="gs-card">
-            <div class="gs-card-icon">
-              <img src={Nodes.src} alt="" />
-            </div>
+            <div class="gs-card-icon"><img class="wart-gold-icon" src={Nodes.src} alt="" /></div>
             <h3>In-Browser Node</h3>
             <p>
               Run a full Warthog node directly in your browser — no install
@@ -495,9 +568,7 @@ const wallets = [
             </div>
           </div>
           <div class="gs-card">
-            <div class="gs-card-icon">
-              <img src={Nodes.src} alt="" />
-            </div>
+            <div class="gs-card-icon"><img class="wart-gold-icon" src={Nodes.src} alt="" /></div>
             <h3>Browser Node Extension</h3>
             <p>
               Same full WASM node as a Chrome / Brave / Edge extension. Side
@@ -527,9 +598,7 @@ const wallets = [
       <div class="tab-panel" id="panel-mining">
         <div class="cards-grid">
           <div class="gs-card">
-            <div class="gs-card-icon">
-              <img src={Book.src} alt="" />
-            </div>
+            <div class="gs-card-icon"><img class="wart-gold-icon" src={Book.src} alt="" /></div>
             <h3>Mining Guide</h3>
             <p>Start mining now. Janushash requires both CPU and GPU.</p>
             <div class="gs-card-actions">
@@ -538,20 +607,7 @@ const wallets = [
             </div>
           </div>
           <div class="gs-card">
-            <div class="gs-card-icon">
-              <img src={Pool.src} alt="" />
-            </div>
-            <h3>Mining Pools</h3>
-            <p>List of mining pools for Warthog.</p>
-            <div class="gs-card-actions">
-              <a href="https://miningpoolstats.stream/warthog">Miningpoolstats</a>
-              <a href="https://docs.warthog.network/links/#pools">Docs</a>
-            </div>
-          </div>
-          <div class="gs-card">
-            <div class="gs-card-icon">
-              <img src={Pickaxe.src} alt="" />
-            </div>
+            <div class="gs-card-icon"><img class="wart-gold-icon" src={Pickaxe.src} alt="" /></div>
             <h3>BzMiner</h3>
             <p>CPU/GPU Miner</p>
             <div class="gs-card-actions">
@@ -562,92 +618,70 @@ const wallets = [
       </div>
 
       <div class="tab-panel" id="panel-hardware">
-        <div class="cards-grid">
-          <div class="gs-card">
-            <div class="gs-card-icon">
-              <img src={Ledger.src} alt="" />
-            </div>
+        <p class="ledger-intro">
+          Sideload over USB from this page. Use a test seed. These apps are
+          not in Ledger Wallet yet. Install opens the checks for that device.
+          The files are in
+          <a href="https://github.com/warthog-network/ledger-warthog">ledger-warthog</a>.
+        </p>
+        <div class="ledger-picker">
+          <label for="ledger-model">Select your model</label>
+          <select id="ledger-model">
+            <option value="nanosplus" selected>Nano S+</option>
+            <option value="stax">Stax</option>
+            <option value="flex">Flex</option>
+            <option value="apex_p">Apex P</option>
+            <option value="nanos">Nano S</option>
+          </select>
+        </div>
+        <div class="ledger-models">
+          <div class="gs-card ledger-model" data-ledger-model="nanosplus">
+            <div class="gs-card-icon"><img class="wart-gold-icon" src={Ledger.src} alt="" /></div>
             <h3>Ledger Nano S+</h3>
-            <p>
-              Install Warthog 0.3.0 on a Nano S+ with OS 1.7.0. The page
-              checks the file hash, then loads that file over a USB cable.
-              The app is the Rust build in
-              <a href="https://github.com/warthog-network/ledger-warthog">ledger-warthog</a>.
-              Use a test seed. This sideload is not in Ledger Wallet yet.
-            </p>
+            <p>Warthog 0.3.0 for a Nano S+ on OS 1.7.0.</p>
             <div class="gs-card-actions">
               <button type="button" data-ledger="nanosplus">Install on Nano S+</button>
               <a href="https://github.com/warthog-network/ledger-warthog/releases/tag/v0.3.0">Release</a>
             </div>
           </div>
-          <div class="gs-card">
-            <div class="gs-card-icon">
-              <img src={Ledger.src} alt="" />
-            </div>
+          <div class="gs-card ledger-model" data-ledger-model="stax" hidden>
+            <div class="gs-card-icon"><img class="wart-gold-icon" src={Ledger.src} alt="" /></div>
             <h3>Ledger Stax</h3>
-            <p>
-              Install Warthog 0.3.0 on a Stax with OS 1.11.0. The page checks
-              this Stax file, then loads it over a USB cable. Approve the
-              prompt by tapping the screen. Use a test seed. This sideload is
-              not in Ledger Wallet yet.
-            </p>
+            <p>Warthog 0.3.0 for a Stax on OS 1.11.0. Approve it on the screen.</p>
             <div class="gs-card-actions">
               <button type="button" data-ledger="stax">Install on Stax</button>
               <a href="https://github.com/warthog-network/ledger-warthog/releases/tag/v0.3.0">Release</a>
             </div>
           </div>
-          <div class="gs-card">
-            <div class="gs-card-icon">
-              <img src={Ledger.src} alt="" />
-            </div>
+          <div class="gs-card ledger-model" data-ledger-model="flex" hidden>
+            <div class="gs-card-icon"><img class="wart-gold-icon" src={Ledger.src} alt="" /></div>
             <h3>Ledger Flex</h3>
-            <p>
-              Install Warthog 0.3.0 on a Flex with OS 1.7.0. The page checks
-              this Flex file, then loads it over a USB cable. Approve the
-              prompt by tapping the screen. Use a test seed. This sideload is
-              not in Ledger Wallet yet.
-            </p>
+            <p>Warthog 0.3.0 for a Flex on OS 1.7.0. Approve it on the screen.</p>
             <div class="gs-card-actions">
               <button type="button" data-ledger="flex">Install on Flex</button>
               <a href="https://github.com/warthog-network/ledger-warthog/releases/tag/v0.3.0">Release</a>
             </div>
           </div>
-          <div class="gs-card">
-            <div class="gs-card-icon">
-              <img src={Ledger.src} alt="" />
-            </div>
+          <div class="gs-card ledger-model" data-ledger-model="apex_p" hidden>
+            <div class="gs-card-icon"><img class="wart-gold-icon" src={Ledger.src} alt="" /></div>
             <h3>Ledger Apex P</h3>
-            <p>
-              Install Warthog 0.3.0 on an Apex P with OS 1.2.0. The page
-              checks this Apex P file, then loads it over a USB cable. Approve
-              the prompt by tapping the screen. Use a test seed. This sideload
-              is not in Ledger Wallet yet.
-            </p>
+            <p>Warthog 0.3.0 for an Apex P on OS 1.2.0. Approve it on the screen.</p>
             <div class="gs-card-actions">
               <button type="button" data-ledger="apex_p">Install on Apex P</button>
               <a href="https://github.com/warthog-network/ledger-warthog/releases/tag/v0.3.0">Release</a>
             </div>
           </div>
-          <div class="gs-card">
-            <div class="gs-card-icon">
-              <img src={Ledger.src} alt="" />
-            </div>
+          <div class="gs-card ledger-model" data-ledger-model="nanos" hidden>
+            <div class="gs-card-icon"><img class="wart-gold-icon" src={Ledger.src} alt="" /></div>
             <h3>Ledger Nano S</h3>
-            <p>
-              Install Warthog 0.2.0 on an original Nano S with OS 2.1.0. The
-              0.3.0 Rust app has no Nano S build, so this page still serves
-              the 0.2.0 file from the same
-              <a href="https://github.com/warthog-network/ledger-warthog">ledger-warthog</a>
-              repo. The eight review rows are paged with the two buttons on
-              the 128×32 screen. Use a test seed. This sideload is not in
-              Ledger Wallet yet.
-            </p>
+            <p>Warthog 0.2.0 for an original Nano S on OS 2.1.0. There is no 0.3.0 build for this model.</p>
             <div class="gs-card-actions">
               <button type="button" data-ledger="nanos">Install on Nano S</button>
               <a href="https://github.com/warthog-network/ledger-warthog/releases/tag/v0.2.0">Release</a>
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   </div>
@@ -709,6 +743,18 @@ const wallets = [
 </section>
 
 <script>
+  const ledgerModel = document.getElementById("ledger-model");
+  const ledgerCards = document.querySelectorAll("[data-ledger-model]");
+  const showLedgerModel = (id) => {
+    ledgerCards.forEach((card) => {
+      card.hidden = card.dataset.ledgerModel !== id;
+    });
+  };
+  if (ledgerModel) {
+    showLedgerModel(ledgerModel.value);
+    ledgerModel.addEventListener("change", () => showLedgerModel(ledgerModel.value));
+  }
+
   document.querySelectorAll("[data-ledger]").forEach((button) => {
     button.addEventListener("click", async () => {
       try {

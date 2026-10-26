@@ -23,6 +23,11 @@ import Footer from "../components/FooterTailwind.astro";
   <body class={`site-body${bodyClass ? ` ${bodyClass}` : ""}`}>
     <a href="#main-content" class="skip-link">Skip to content</a>
     <BaseHead class="navbarclass" />
+    <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+      <filter id="wart-gold-icon" color-interpolation-filters="sRGB">
+        <feColorMatrix type="matrix" values="0 0 0 0.99216 0  0 0 0 0.72549 0  0 0 0 0.07451 0  0 0 0 1 0" />
+      </filter>
+    </svg>
     <main id="main-content" class="site-main">
       <slot />
     </main>
