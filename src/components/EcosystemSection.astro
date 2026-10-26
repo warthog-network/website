@@ -12,6 +12,8 @@ import BzMinerShot from "../BalkyImages/ecosystem/bzminer.webp";
 import CedricShot from "../BalkyImages/ecosystem/cedric-crispin.webp";
 import WoolyShot from "../BalkyImages/ecosystem/woolypooly.webp";
 import HeroShot from "../BalkyImages/ecosystem/herominers.webp";
+import PoolsCompareShot from "../BalkyImages/ecosystem/miningpoolstats.webp";
+import EpochShot from "../BalkyImages/ecosystem/epoch-tracker.webp";
 
 /**
  * Independent community sites. Not operated by the core Warthog project.
@@ -72,6 +74,17 @@ const groups = [
         shot: EstimatorShot,
       },
       {
+        title: "Epoch Tracker",
+        kind: "Community extension",
+        description:
+          "A community Chrome and Brave window for epoch progress, difficulty, network hashrate, and a WART estimate from your Janusscore. Unzip it, then Load unpacked.",
+        href: "/downloads/warthog-epoch-extension-1.5.6.zip",
+        host: "v1.5.6",
+        icon: GPU,
+        shot: EpochShot,
+        cta: "Download",
+      },
+      {
         title: "Miner simulator",
         kind: "Game",
         description:
@@ -88,6 +101,16 @@ const groups = [
     title: "Pools",
     icon: Pool,
     projects: [
+      {
+        title: "Miningpoolstats",
+        kind: "Compare pools",
+        description:
+          "Live list of Warthog pools with hashrate, miners, and how recently each one found a block.",
+        href: "https://miningpoolstats.stream/warthog",
+        host: "miningpoolstats.stream",
+        icon: Pool,
+        shot: PoolsCompareShot,
+      },
       {
         title: "Warthog pool",
         kind: "TxBit Mining",
@@ -139,6 +162,17 @@ const groups = [
     scroll-margin-top: 5rem;
   }
 
+  .eco-switcher {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    width: 100%;
+  }
+
+  .eco-switcher > input {
+    display: none;
+  }
+
   .tabs {
     display: flex;
     flex-wrap: wrap;
@@ -150,11 +184,6 @@ const groups = [
     border-radius: 12px;
     padding: 0.35rem;
     gap: 0.35rem;
-    margin-bottom: 2rem;
-  }
-
-  .tabs input[type="radio"] {
-    display: none;
   }
 
   .tab-label {
@@ -188,27 +217,41 @@ const groups = [
     opacity: 1;
   }
 
-  .tabs input:checked + .tab-label {
+  #eco-tab-explore:checked ~ .tabs label[for="eco-tab-explore"],
+  #eco-tab-mining:checked ~ .tabs label[for="eco-tab-mining"],
+  #eco-tab-pools:checked ~ .tabs label[for="eco-tab-pools"] {
     background: var(--color-accent);
     color: #0f172a;
     box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35);
   }
 
-  .tabs input:checked + .tab-label img {
+  #eco-tab-explore:checked ~ .tabs label[for="eco-tab-explore"] img,
+  #eco-tab-mining:checked ~ .tabs label[for="eco-tab-mining"] img,
+  #eco-tab-pools:checked ~ .tabs label[for="eco-tab-pools"] img {
     opacity: 1;
     filter: brightness(0.3) saturate(1.5);
   }
 
-  .tab-panel {
-    display: none;
-    flex-basis: 100%;
+  /* Panels share one grid cell so switching tabs does not change the section height. */
+  .tab-stage {
+    display: grid;
+    flex: 1 0 100%;
+    width: 100%;
     margin-top: 1.5rem;
   }
 
-  #eco-tab-explore:checked ~ #eco-panel-explore,
-  #eco-tab-mining:checked ~ #eco-panel-mining,
-  #eco-tab-pools:checked ~ #eco-panel-pools {
-    display: block;
+  .tab-panel {
+    grid-area: 1 / 1;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  #eco-tab-explore:checked ~ .tab-stage #eco-panel-explore,
+  #eco-tab-mining:checked ~ .tab-stage #eco-panel-mining,
+  #eco-tab-pools:checked ~ .tab-stage #eco-panel-pools {
+    visibility: visible;
+    pointer-events: auto;
+    z-index: 1;
   }
 
   .eco-grid {
@@ -219,13 +262,14 @@ const groups = [
 
   @media (min-width: 700px) {
     .eco-grid {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
   @media (min-width: 1100px) {
     .eco-grid {
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      /* Fixed columns so a 2-card tab does not stretch its screenshots wider than a 3-card tab. */
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
 
@@ -299,18 +343,16 @@ const groups = [
     display: flex;
     align-items: center;
     justify-content: center;
-    background:
-      radial-gradient(circle at 30% 25%, rgba(253, 185, 19, 0.42), rgba(253, 185, 19, 0.12) 70%);
-    border: 1px solid rgba(253, 185, 19, 0.72);
+    background: rgba(253, 185, 19, 0.08);
+    border: 1px solid var(--color-brand);
     border-radius: 0.5rem;
-    box-shadow: 0 0 18px rgba(253, 185, 19, 0.22);
+    box-shadow: none;
   }
 
   .eco-card-icon img {
     width: 16px;
     height: 16px;
     display: block;
-    filter: brightness(0) saturate(100%) invert(76%) sepia(61%) saturate(547%) hue-rotate(359deg) brightness(103%) contrast(101%);
   }
 
   .eco-kind {
@@ -396,21 +438,24 @@ const groups = [
       </p>
     </div>
 
-    <div class="tabs">
+    <div class="eco-switcher">
       {groups.map((group, index) => (
-        <>
-          <input
-            type="radio"
-            name="eco-tabs"
-            id={`eco-tab-${group.id}`}
-            checked={index === 0}
-          />
+        <input
+          type="radio"
+          name="eco-tabs"
+          id={`eco-tab-${group.id}`}
+          checked={index === 0}
+        />
+      ))}
+      <div class="tabs">
+        {groups.map((group) => (
           <label for={`eco-tab-${group.id}`} class="tab-label">
             <img src={group.icon.src} alt="" />
             <span>{group.title}</span>
           </label>
-        </>
-      ))}
+        ))}
+      </div>
+      <div class="tab-stage">
       {groups.map((group) => (
         <div class="tab-panel" id={`eco-panel-${group.id}`}>
           <div class="eco-grid">
@@ -434,7 +479,7 @@ const groups = [
                 <div class="eco-body">
                   <div class="eco-kicker">
                     <div class="eco-card-icon" aria-hidden="true">
-                      <img src={project.icon.src} alt="" />
+                      <img class="wart-gold-icon" src={project.icon.src} alt="" />
                     </div>
                     <p class="eco-kind">{project.kind}</p>
                   </div>
@@ -442,7 +487,7 @@ const groups = [
                   <p>{project.description}</p>
                   <div class="eco-card-foot">
                     <span class="eco-host">{project.host}</span>
-                    <span class="eco-go">Open</span>
+                    <span class="eco-go">{project.cta ?? "Open"}</span>
                   </div>
                 </div>
               </a>
@@ -450,10 +495,11 @@ const groups = [
           </div>
         </div>
       ))}
+      </div>
     </div>
 
     <p class="eco-note">
-      These sites are run by their authors. They are separate from the wallets,
+      These are run by their authors. They are separate from the wallets,
       node, and docs in Getting Started.
     </p>
   </div>
