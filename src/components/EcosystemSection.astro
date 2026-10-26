@@ -99,8 +99,8 @@ const groups = [
         shot: PoolShot,
       },
       {
-        title: "Cédric Crispin",
-        kind: "Pool",
+        title: "Warthog pool",
+        kind: "Cédric Crispin",
         description:
           "Cédric Crispin's Warthog pool. Point a miner at the stratum server and payouts go to your WART address.",
         href: "https://warthog.cedric-crispin.com/",
@@ -109,8 +109,8 @@ const groups = [
         shot: CedricShot,
       },
       {
-        title: "WoolyPooly",
-        kind: "Pool",
+        title: "Warthog pool",
+        kind: "WoolyPooly",
         description:
           "WoolyPooly's Warthog pool. Point a miner at the stratum endpoint and payouts go to your WART address.",
         href: "https://woolypooly.com/en/coin/wart",
@@ -119,8 +119,8 @@ const groups = [
         shot: WoolyShot,
       },
       {
-        title: "HeroMiners",
-        kind: "Pool",
+        title: "Warthog pool",
+        kind: "HeroMiners",
         description:
           "HeroMiners' Warthog pool, with pool and solo mining. Payouts go to your WART address.",
         href: "https://warthog.herominers.com/",
@@ -306,15 +306,11 @@ const groups = [
     box-shadow: 0 0 18px rgba(253, 185, 19, 0.22);
   }
 
-  .eco-card-icon::before {
-    content: "";
+  .eco-card-icon img {
     width: 16px;
     height: 16px;
-    background: #fdb913;
-    mask: var(--eco-icon) center / contain no-repeat;
-    -webkit-mask: var(--eco-icon) center / contain no-repeat;
-    mask-mode: alpha;
-    -webkit-mask-mode: alpha;
+    display: block;
+    filter: brightness(0) saturate(100%) invert(76%) sepia(61%) saturate(547%) hue-rotate(359deg) brightness(103%) contrast(101%);
   }
 
   .eco-kind {
@@ -437,11 +433,8 @@ const groups = [
                 </div>
                 <div class="eco-body">
                   <div class="eco-kicker">
-                    <div
-                      class="eco-card-icon"
-                      style={`--eco-icon: url("${project.icon.src}")`}
-                      aria-hidden="true"
-                    >
+                    <div class="eco-card-icon" aria-hidden="true">
+                      <img src={project.icon.src} alt="" />
                     </div>
                     <p class="eco-kind">{project.kind}</p>
                   </div>

@@ -125,7 +125,7 @@ const walletCards = [
       <div class="cards-grid">
         {testnetCards.map((c) => (
           <div class="gs-card">
-            <div class="gs-card-icon" style={`--gs-icon: url("${c.icon.src}")`}></div>
+            <div class="gs-card-icon"><img src={c.icon.src} alt="" /></div>
             <h3>{c.title}</h3>
             <p>{c.desc}</p>
             <div class="gs-card-actions">
@@ -137,7 +137,7 @@ const walletCards = [
           </div>
         ))}
           <div class="gs-card">
-            <div class="gs-card-icon" style={`--gs-icon: url("${Book.src}")`}></div>
+            <div class="gs-card-icon"><img src={Book.src} alt="" /></div>
             <h3>SDKs</h3>
             <p> For developers we have three SDKs covering Python, Elixir and TypeScript (works natively and within browser).</p>
             <div class="gs-card-actions">
@@ -152,7 +152,7 @@ const walletCards = [
       <div class="cards-grid">
         {walletCards.map((w) => (
           <div class="gs-card">
-            <div class="gs-card-icon" style={`--gs-icon: url("${w.icon.src}")`}></div>
+            <div class="gs-card-icon"><img src={w.icon.src} alt="" /></div>
             <h3>{w.title}</h3>
             <p>{w.desc}</p>
             <div class="gs-card-actions">
@@ -172,7 +172,7 @@ const walletCards = [
       <div class="cards-grid">
         {fbmCards.map((w) => (
           <div class="gs-card">
-            <div class="gs-card-icon" style={`--gs-icon: url("${w.icon.src}")`}></div>
+            <div class="gs-card-icon"><img src={w.icon.src} alt="" /></div>
             <h3>{w.title}</h3>
             <p>{w.desc}</p>
             <div class="gs-card-actions">
@@ -242,15 +242,11 @@ const walletCards = [
     margin-bottom: 0.25rem;
   }
 
-  .gs-card-icon::before {
-    content: "";
+  .gs-card-icon img {
     width: 28px;
     height: 28px;
-    background: #fdb913;
-    mask: var(--gs-icon) center / contain no-repeat;
-    -webkit-mask: var(--gs-icon) center / contain no-repeat;
-    mask-mode: alpha;
-    -webkit-mask-mode: alpha;
+    display: block;
+    filter: brightness(0) saturate(100%) invert(76%) sepia(61%) saturate(547%) hue-rotate(359deg) brightness(103%) contrast(101%);
   }
 
   .gs-card h3 {

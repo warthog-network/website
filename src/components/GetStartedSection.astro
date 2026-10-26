@@ -177,15 +177,12 @@ const wallets = [
     margin-bottom: 0.25rem;
   }
 
-  .gs-card-icon::before {
-    content: "";
+  .gs-card-icon img {
     width: 28px;
     height: 28px;
-    background: #fdb913;
-    mask: var(--gs-icon) center / contain no-repeat;
-    -webkit-mask: var(--gs-icon) center / contain no-repeat;
-    mask-mode: alpha;
-    -webkit-mask-mode: alpha;
+    display: block;
+    /* Black SVG artwork, tinted brand gold. An <img> still draws on phones; a CSS mask of the same file does not. */
+    filter: brightness(0) saturate(100%) invert(76%) sepia(61%) saturate(547%) hue-rotate(359deg) brightness(103%) contrast(101%);
   }
 
   .gs-card h3 {
@@ -430,7 +427,7 @@ const wallets = [
         <div class="cards-grid">
           {wallets.map((w) => (
             <div class="gs-card">
-              <div class="gs-card-icon" style={`--gs-icon: url("${Wallet.src}")`}></div>
+              <div class="gs-card-icon"><img src={Wallet.src} alt="" /></div>
               <h3>{w.title}</h3>
               <p>{w.description}</p>
               <div class="gs-card-actions">
@@ -442,7 +439,7 @@ const wallets = [
             </div>
           ))}
           <div class="gs-card">
-            <div class="gs-card-icon" style={`--gs-icon: url("${Wallet.src}")`}></div>
+            <div class="gs-card-icon"><img src={Wallet.src} alt="" /></div>
             <h3>Web Wallet</h3>
             <p>
               Browser-based wallet for desktop and mobile. Access your WART
@@ -453,7 +450,7 @@ const wallets = [
             </div>
           </div>
           <div class="gs-card">
-            <div class="gs-card-icon" style={`--gs-icon: url("${Wallet.src}")`}></div>
+            <div class="gs-card-icon"><img src={Wallet.src} alt="" /></div>
             <h3>Mobile Wallet</h3>
             <p>
               Android wallet app v{MOBILE_WALLET_VERSION}. Download the APK from
@@ -470,7 +467,7 @@ const wallets = [
       <div class="tab-panel" id="panel-node">
         <div class="cards-grid">
           <div class="gs-card">
-            <div class="gs-card-icon" style={`--gs-icon: url("${Nodes.src}")`}></div>
+            <div class="gs-card-icon"><img src={Nodes.src} alt="" /></div>
             <h3>Run a Node</h3>
             <p>
               Install a node on your computer to support the blockchain
@@ -483,7 +480,7 @@ const wallets = [
             </div>
           </div>
           <div class="gs-card">
-            <div class="gs-card-icon" style={`--gs-icon: url("${Nodes.src}")`}></div>
+            <div class="gs-card-icon"><img src={Nodes.src} alt="" /></div>
             <h3>In-Browser Node</h3>
             <p>
               Run a full Warthog node directly in your browser — no install
@@ -500,7 +497,7 @@ const wallets = [
             </div>
           </div>
           <div class="gs-card">
-            <div class="gs-card-icon" style={`--gs-icon: url("${Nodes.src}")`}></div>
+            <div class="gs-card-icon"><img src={Nodes.src} alt="" /></div>
             <h3>Browser Node Extension</h3>
             <p>
               Same full WASM node as a Chrome / Brave / Edge extension. Side
@@ -530,7 +527,7 @@ const wallets = [
       <div class="tab-panel" id="panel-mining">
         <div class="cards-grid">
           <div class="gs-card">
-            <div class="gs-card-icon" style={`--gs-icon: url("${Book.src}")`}></div>
+            <div class="gs-card-icon"><img src={Book.src} alt="" /></div>
             <h3>Mining Guide</h3>
             <p>Start mining now. Janushash requires both CPU and GPU.</p>
             <div class="gs-card-actions">
@@ -539,7 +536,7 @@ const wallets = [
             </div>
           </div>
           <div class="gs-card">
-            <div class="gs-card-icon" style={`--gs-icon: url("${Pool.src}")`}></div>
+            <div class="gs-card-icon"><img src={Pool.src} alt="" /></div>
             <h3>Mining Pools</h3>
             <p>List of mining pools for Warthog.</p>
             <div class="gs-card-actions">
@@ -548,7 +545,7 @@ const wallets = [
             </div>
           </div>
           <div class="gs-card">
-            <div class="gs-card-icon" style={`--gs-icon: url("${Pickaxe.src}")`}></div>
+            <div class="gs-card-icon"><img src={Pickaxe.src} alt="" /></div>
             <h3>BzMiner</h3>
             <p>CPU/GPU Miner</p>
             <div class="gs-card-actions">
@@ -561,7 +558,7 @@ const wallets = [
       <div class="tab-panel" id="panel-hardware">
         <div class="cards-grid">
           <div class="gs-card">
-            <div class="gs-card-icon" style={`--gs-icon: url("${Ledger.src}")`}></div>
+            <div class="gs-card-icon"><img src={Ledger.src} alt="" /></div>
             <h3>Ledger Nano S+</h3>
             <p>
               Install Warthog 0.3.0 on a Nano S+ with OS 1.7.0. The page
@@ -576,7 +573,7 @@ const wallets = [
             </div>
           </div>
           <div class="gs-card">
-            <div class="gs-card-icon" style={`--gs-icon: url("${Ledger.src}")`}></div>
+            <div class="gs-card-icon"><img src={Ledger.src} alt="" /></div>
             <h3>Ledger Stax</h3>
             <p>
               Install Warthog 0.3.0 on a Stax with OS 1.11.0. The page checks
@@ -590,7 +587,7 @@ const wallets = [
             </div>
           </div>
           <div class="gs-card">
-            <div class="gs-card-icon" style={`--gs-icon: url("${Ledger.src}")`}></div>
+            <div class="gs-card-icon"><img src={Ledger.src} alt="" /></div>
             <h3>Ledger Flex</h3>
             <p>
               Install Warthog 0.3.0 on a Flex with OS 1.7.0. The page checks
@@ -604,7 +601,7 @@ const wallets = [
             </div>
           </div>
           <div class="gs-card">
-            <div class="gs-card-icon" style={`--gs-icon: url("${Ledger.src}")`}></div>
+            <div class="gs-card-icon"><img src={Ledger.src} alt="" /></div>
             <h3>Ledger Apex P</h3>
             <p>
               Install Warthog 0.3.0 on an Apex P with OS 1.2.0. The page
@@ -618,7 +615,7 @@ const wallets = [
             </div>
           </div>
           <div class="gs-card">
-            <div class="gs-card-icon" style={`--gs-icon: url("${Ledger.src}")`}></div>
+            <div class="gs-card-icon"><img src={Ledger.src} alt="" /></div>
             <h3>Ledger Nano S</h3>
             <p>
               Install Warthog 0.2.0 on an original Nano S with OS 2.1.0. The
