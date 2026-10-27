@@ -78,6 +78,63 @@ Astro.csp?.insertDirective(`font-src * data:`);
     }
     .invalid { border-color: red; background: #fff5f5; }
   </style>
+  <!-- The order book rows and the caption markers are created by
+       JavaScript, so they carry no scoped style attribute. These rules
+       have to be global to reach them. -->
+  <style is:global>
+    /* A price level row carries the totals of the level, the order rows
+       below it are the individual orders. The cells carry Tailwind's
+       font-normal, so the level row's weight is set on the cells. */
+    .level-row td { font-weight: 600; }
+    .order-row { color: #4b5563; font-size: 0.9em; }
+    .order-row td:first-child { padding-left: 2.25rem; }
+
+    /* The caption of an order is metadata, so it is not given a column of
+       its own. A small "i" marks the orders that have one, and the
+       caption shows in a tooltip on hover. */
+    .caption-hint {
+      position: relative;
+      display: inline-block;
+      margin-left: 0.35rem;
+      padding: 0 0.25rem;
+      border: 1px solid currentColor;
+      border-radius: 999px;
+      font-size: 0.75em;
+      font-style: italic;
+      line-height: 1.2;
+      cursor: help;
+    }
+    .caption-hint::after {
+      content: attr(data-caption);
+      position: absolute;
+      left: 50%;
+      bottom: 130%;
+      transform: translateX(-50%);
+      z-index: 20;
+      width: max-content;
+      max-width: 16rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      background: #111827;
+      color: #f9fafb;
+      font-size: 0.85em;
+      font-style: normal;
+      font-weight: normal;
+      line-height: 1.3;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      text-align: left;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.12s ease-in-out;
+      pointer-events: none;
+    }
+    .caption-hint:hover::after,
+    .caption-hint:focus-visible::after {
+      opacity: 1;
+      visibility: visible;
+    }
+  </style>
   <Joyride
   client:only="react"
   steps={steps}
@@ -121,6 +178,15 @@ Astro.csp?.insertDirective(`font-src * data:`);
       <div
         class="flex flex-col gap-4 md:w-[40%] md:max-w-[450px] my-first-step step-1"
       >
+        <!-- Order book view toggle -->
+        <label
+          class="flex items-center gap-2 text-sm text-gray-700 select-none"
+          title="The matching runs on price levels. Switch this on to list the individual orders inside each level."
+        >
+          <input type="checkbox" id="showOrders" />
+          <span>Show individual orders</span>
+        </label>
+
         <!-- Sell Order Book -->
         <div
           class="relative flex flex-col w-[100%] h-auto rounded-xl border border-[#F9B13C] text-gray-700 bg-white"
@@ -170,6 +236,16 @@ Astro.csp?.insertDirective(`font-src * data:`);
                       Amount (TOKEN)
                     </label>
                   </div>
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs text-gray-500" for="sellCaption">Label (optional)</label>
+                  <input
+                    id="sellCaption"
+                    type="text"
+                    maxlength="64"
+                    title="A free-form label for this order. It is metadata only: it never influences the matching, and several orders may share the same one."
+                    class="w-full rounded-[7px] border border-blue-gray-200 bg-transparent px-3 py-1.5 font-sans text-sm font-normal text-blue-gray-700 outline outline-0 transition-all focus:border-2 focus:border-gray-900"
+                  />
                 </div>
                 <button
                   class="flex select-none justify-center items-center gap-3 rounded-lg bg-gray-900 py-3 px-4 text-center text-base border-white border font-montserrat align-middle font-medium text-white shadow-md shadow-gray-900/10 transition-all hover:shadow-lg hover:shadow-gray-900/20 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
@@ -278,6 +354,16 @@ Astro.csp?.insertDirective(`font-src * data:`);
                       Amount (WART)
                     </label>
                   </div>
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs text-gray-500" for="buyCaption">Label (optional)</label>
+                  <input
+                    id="buyCaption"
+                    type="text"
+                    maxlength="64"
+                    title="A free-form label for this order. It is metadata only: it never influences the matching, and several orders may share the same one."
+                    class="w-full rounded-[7px] border border-blue-gray-200 bg-transparent px-3 py-1.5 font-sans text-sm font-normal text-blue-gray-700 outline outline-0 transition-all focus:border-2 focus:border-gray-900"
+                  />
                 </div>
                 <button
                   class="flex select-none justify-center items-center gap-3 rounded-lg bg-gray-900 py-3 px-4 text-center text-base border-white border font-montserrat align-middle font-medium text-white shadow-md shadow-gray-900/10 transition-all hover:shadow-lg hover:shadow-gray-900/20 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
@@ -394,12 +480,12 @@ Astro.csp?.insertDirective(`font-src * data:`);
               <label
                 for="feePercent"
                 class="text-gray-600"
-                title="The pool fee in percent. The engine counts it in 1/10000 units, so 0.05% is 5."
+                title="The pool fee in percent. The engine counts it in 1/10000 units, so 0.5% is 50. This is the fee the Warthog node applies to pool swaps."
                 >Fee</label
               >
               <input
                 id="feePercent"
-                value="0.05"
+                value="0.5"
                 inputmode="decimal"
                 aria-label="Pool fee in percent"
                 class="border-2 border-gray-600 rounded-md outline-none px-2 py-1 text-center text-sm leading-4 w-16"
@@ -698,6 +784,31 @@ Astro.csp?.insertDirective(`font-src * data:`);
         set a limit price that crosses the pool price enough to make the other
         side prefer your order.
       </FAQ>
+      <FAQ question="Why do I see several orders at the same price, and which one fills first?">
+        Every order is kept separately, the way the Warthog node keeps them.
+        The matching itself runs on price levels: the orders of a level are
+        merged into one entry, the Fair Batch Matching runs on those entries,
+        and the filled amounts are then distributed back to the individual
+        orders. So the table shows one row per price level, and the
+        &quot;Show individual orders&quot; switch lists the orders inside each
+        level.
+        <br />
+        When a level is only partially filled, the oldest order in it is
+        filled first, so the most recently added order at that level has the
+        least priority there. The node does the same: it loads the orders of
+        a level in the order they were added and fills them in that order.
+        Since all buyers and all sellers get the same price, the priority
+        only decides <em>whether</em> an order is filled at all, never at
+        which price.
+      </FAQ>
+      <FAQ question="What is the label on an order?">
+        A free-form label you can give an order so you can recognise it.
+        It is metadata only: it never influences the matching, several
+        orders may carry the same one, and it is not part of the price or
+        the amount. Hover the small <em>i</em> next to an order in the book
+        to read it. The label travels with a shared link, so whoever opens
+        the link sees your labels too.
+      </FAQ>
     <script>
       import FbmEngine from "warthog-fbm";
       import LeaderLine from "leader-line-new";
@@ -712,21 +823,44 @@ Astro.csp?.insertDirective(`font-src * data:`);
       // recomputed from the bits, and is never stored in the link.
       const STATE_PARAM = "state";
 
+      // A caption is capped in the link. The engine allows 256 bytes, but a
+      // label that long costs about 340 characters in the URL, which would
+      // eat the link's budget for a single order. The order keeps its full
+      // caption, only the link's copy is trimmed.
+      const CAPTION_IN_LINK_MAX = 64;
+
+      // Trims a caption to the link's budget without cutting a surrogate
+      // pair in half, which would leave a broken character in the URL.
+      function trimCaption(caption) {
+        if (!caption) return "";
+        const cut = caption.slice(0, CAPTION_IN_LINK_MAX);
+        return /[\uD800-\uDBFF]$/.test(cut) ? cut.slice(0, -1) : cut;
+      }
+
       function encodeState() {
         return encodeMatch(state.lastMatch, engine.getConfig());
       }
 
       function encodeMatch(m, cfg) {
         if (!m) return "";
-        // [limitBits, amount]: the exact price-grid value and the swap
-        // amount. The decimal limit is not stored, it is derived from
-        // the bits plus baseDecimals for display.
-        const orders = (rows) => rows.map((o) => [o.limitBits, o.amount]);
+        // [limitBits, amount, caption]: the exact price-grid value, the swap
+        // amount and the optional label. The decimal limit is not stored, it
+        // is derived from the bits plus baseDecimals for display.
+        //
+        // The book comes as price levels, each holding its own orders, so
+        // the levels are flattened into one entry per order. The same limit
+        // can therefore appear several times in the array, and the order
+        // of the entries is the order of the book, which is what preserves
+        // the fill priority when the link is restored.
+        const orders = (levels) =>
+          levels.flatMap((l) =>
+            l.orders.map((o) => [l.limitBits, o.amount, trimCaption(o.caption)]),
+          );
         const payload = {
-          v: 1,
+          v: 2,
           bd: cfg.baseDecimals,
           fee: cfg.feeE4,
-          pool: [m.poolBefore.base, m.poolBefore.quote],
+          pool: [m.pool.before.base, m.pool.before.quote],
           buys: orders(m.buys),
           sells: orders(m.sells),
         };
@@ -743,18 +877,20 @@ Astro.csp?.insertDirective(`font-src * data:`);
           Uint8Array.from(bin, (c) => c.charCodeAt(0)),
         );
         const p = JSON.parse(json);
-        if (!p || p.v !== 1) throw new Error("unsupported state version");
+        if (!p || (p.v !== 1 && p.v !== 2)) throw new Error("unsupported state version");
         if (!Number.isInteger(p.bd) || p.bd < 0 || p.bd > 18)
           throw new Error("invalid baseDecimals");
         if (!Number.isInteger(p.fee) || p.fee < 0 || p.fee > 9999)
           throw new Error("invalid feeE4");
         if (!Array.isArray(p.pool) || p.pool.length !== 2)
           throw new Error("invalid pool");
+        // v1 entries are [limitBits, amount], v2 entries add the caption.
         const isOrder = (o) =>
           Array.isArray(o) &&
-          o.length === 2 &&
+          (o.length === 2 || o.length === 3) &&
           Number.isInteger(o[0]) &&
-          typeof o[1] === "string";
+          typeof o[1] === "string" &&
+          (o.length === 2 || typeof o[2] === "string");
         for (const o of p.buys ?? []) if (!isOrder(o)) throw new Error("invalid buy");
         for (const o of p.sells ?? []) if (!isOrder(o)) throw new Error("invalid sell");
         return p;
@@ -808,7 +944,7 @@ Astro.csp?.insertDirective(`font-src * data:`);
         engine = new FbmEngine(
           restored
             ? { baseDecimals: restored.bd, feeE4: restored.fee }
-            : { baseDecimals: 8, feeE4: 5 },
+            : { baseDecimals: 8, feeE4: 50 },
         );
       } catch (err) {
         document.body.innerHTML = `<pre>Failed to load FBM engine: ${err.message}</pre>`;
@@ -819,19 +955,25 @@ Astro.csp?.insertDirective(`font-src * data:`);
       const state = {
         poolBase:   { valid: true,  error: "" },  // HTML defaults 100, 200
         poolQuote:  { valid: true,  error: "" },
-        fee:        { valid: true,  error: "" },  // HTML default 0.05%
+        fee:        { valid: true,  error: "" },  // HTML default 0.5%
         buyLimit:   { valid: false, error: "" },
         buyAmount:  { valid: false, error: "" },
         sellLimit:  { valid: false, error: "" },
         sellAmount: { valid: false, error: "" },
+        // Show the individual orders of every price level, not just the
+        // levels themselves. This only changes the view.
+        showOrders: false,
         lastMatch: null,
       };
 
       // ── DOM refs ───────────────────────────────────────────────────
       const buyPriceEl    = $("buyPrice");
       const wartAmountEl  = $("wartAmount");
+      const buyCaptionEl  = $("buyCaption");
       const sellPriceEl   = $("sellPrice");
       const tokenAmountEl = $("tokenAmount");
+      const sellCaptionEl = $("sellCaption");
+      const showOrdersEl  = $("showOrders");
       const beforeTokenEl = $("beforeToken");
       const beforeWartEl  = $("beforeWart");
       const feePercentEl  = $("feePercent");
@@ -849,9 +991,11 @@ Astro.csp?.insertDirective(`font-src * data:`);
       }
 
       // ── Row inserter (vanilla DOM, matches old behaviour) ──────────
-      // `titles` is optional and holds a tooltip per cell. `deleteIndex`,
-      // when given, appends the remove button carrying that row's index.
-      function insertRow(obj, rowarr, id, titles, deleteIndex) {
+      // `titles` is optional and holds a tooltip per cell. `deleteAttr`,
+      // when given, appends the remove button and sets that data attribute
+      // on it: "deleteIndex" for a single order, "deletePrice" for every
+      // order at a price level.
+      function insertRow(obj, rowarr, id, titles, deleteAttr) {
         const row = obj.insertRow(-1);
         row.className = "p-4 h-9";
         for (let i = 0; i < rowarr.length; ++i) {
@@ -862,19 +1006,104 @@ Astro.csp?.insertDirective(`font-src * data:`);
           cell.innerHTML = `${rowarr[i]}`;
           if (titles && titles[i]) cell.title = titles[i];
         }
-        if (deleteIndex !== undefined) {
+        if (deleteAttr) {
           const cell = row.insertCell(rowarr.length);
           cell.className =
             "px-4 border-b border-blue-gray-50 text-center w-10";
           const button = document.createElement("button");
           button.type = "button";
           button.textContent = "×";
-          button.title = "Remove this order";
-          button.dataset.deleteIndex = String(deleteIndex);
+          button.title = deleteAttr.title;
+          button.dataset[deleteAttr.name] = String(deleteAttr.value);
           button.className =
             "px-2 py-0.5 rounded border border-gray-400 text-base leading-none hover:bg-gray-900 hover:text-white";
           cell.appendChild(button);
         }
+        return row;
+      }
+
+      // ── One order inside a price level ────────────────────────────
+      // The price is not repeated per order, the level carries it, so the
+      // order row shows the level's limit.
+      //
+      // A caption is metadata, so it gets no column of its own. A small
+      // "i" marks the orders that have one, and the caption shows in a
+      // tooltip on hover. The caption is set as a data attribute, never
+      // as markup, so a caption that arrives through a shared link cannot
+      // inject anything into the page.
+      function insertOrderRow(tbody, level, order, flatIndex) {
+        const row = tbody.insertRow(-1);
+        row.className = "p-4 h-9 order-row";
+
+        const limitCell = row.insertCell(0);
+        limitCell.className =
+          "px-4 border-b border-blue-gray-50 font-sans text-sm antialiased font-normal leading-normal";
+        limitCell.textContent = fmtLimit(level.limit);
+        if (order.caption) {
+          const hint = document.createElement("span");
+          hint.className = "caption-hint";
+          hint.textContent = "i";
+          hint.tabIndex = 0;
+          hint.setAttribute("data-caption", order.caption);
+          limitCell.appendChild(hint);
+        }
+
+        const amountCell = row.insertCell(1);
+        amountCell.className =
+          "px-4 border-b border-blue-gray-50 font-sans text-sm antialiased font-normal leading-normal";
+        amountCell.textContent = order.amount;
+
+        const filledCell = row.insertCell(2);
+        filledCell.className =
+          "px-4 border-b border-blue-gray-50 font-sans text-sm antialiased font-normal leading-normal";
+        filledCell.textContent = order.filled;
+
+        const deleteCell = row.insertCell(3);
+        deleteCell.className =
+          "px-4 border-b border-blue-gray-50 text-center w-10";
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = "×";
+        button.title = "Remove this order";
+        button.dataset.deleteIndex = String(flatIndex);
+        button.className =
+          "px-2 py-0.5 rounded border border-gray-400 text-base leading-none hover:bg-gray-900 hover:text-white";
+        deleteCell.appendChild(button);
+      }
+
+      // ── Order book rendering ───────────────────────────────────────
+      // The book comes as price levels, the units the matching runs on, so
+      // the level row shows the totals of the level. With the individual
+      // orders switched on, each level is followed by its own orders.
+      //
+      // The index an order row's delete button takes is the flat index
+      // into the engine's book: the orders of the preceding levels plus
+      // the order's position within its level.
+      function renderSide(tbody, levels, filledClass) {
+        let flatIndex = 0;
+        levels.forEach((level) => {
+          const levelRow = insertRow(
+            tbody,
+            [fmtLimit(level.limit), level.amount, level.filled],
+            filledClass,
+            [level.limit],
+            {
+              name: "deletePrice",
+              value: level.limitBits,
+              title: "Remove every order at this price",
+            },
+          );
+          levelRow.className += " level-row";
+
+          if (state.showOrders) {
+            level.orders.forEach((order) => {
+              insertOrderRow(tbody, level, order, flatIndex);
+              flatIndex += 1;
+            });
+          } else {
+            flatIndex += level.orders.length;
+          }
+        });
       }
 
       // ── Single source of match() calls ─────────────────────────────
@@ -904,13 +1133,12 @@ Astro.csp?.insertDirective(`font-src * data:`);
       function renderOrderBooks() {
         const m = state.lastMatch;
         tbodyBuy.innerHTML = "";
-        m.buys.forEach((o, i) => {
-          insertRow(tbodyBuy, [fmtLimit(o.limit), o.amount, o.filled], "filledAmountWartItem", [o.limit], i);
-        });
         tbodySell.innerHTML = "";
-        m.sells.forEach((o, i) => {
-          insertRow(tbodySell, [fmtLimit(o.limit), o.amount, o.filled], "filledAmountTokenItem", [o.limit], i);
-        });
+        renderSide(tbodyBuy, m.buys, "filledAmountWartItem");
+        renderSide(tbodySell, m.sells, "filledAmountTokenItem");
+        // The totals are summed over the level rows, which carry the
+        // level's filled amount. The order rows below them are not counted,
+        // they would double the sum.
         let sumToken = 0;
         for (const el of document.getElementsByClassName("filledAmountTokenItem")) {
           sumToken += parseFloat(el.innerHTML);
@@ -923,28 +1151,144 @@ Astro.csp?.insertDirective(`font-src * data:`);
         $("filledAmountWart").innerHTML  = sumWart.toString();
       }
 
+      // ── Decimal helpers ────────────────────────────────────────────
+      // The amounts are plain decimals. The arithmetic below runs on
+      // integer minor units, so the displayed numbers stay exact instead
+      // of picking up floating point noise.
+      function decimalScale(text) {
+        const s = String(text).trim();
+        const dot = s.indexOf(".");
+        return dot < 0 ? 0 : s.length - dot - 1;
+      }
+
+      function toMinorUnits(text, scale) {
+        const s = String(text).trim();
+        const negative = s.startsWith("-");
+        const body = negative ? s.slice(1) : s;
+        const dot = body.indexOf(".");
+        const whole = dot < 0 ? body : body.slice(0, dot);
+        const frac = dot < 0 ? "" : body.slice(dot + 1);
+        const padded = (frac + "0".repeat(scale)).slice(0, scale);
+        const units = BigInt((whole || "0") + padded);
+        return negative ? -units : units;
+      }
+
+      function fromMinorUnits(units, scale) {
+        const negative = units < 0n;
+        const abs = negative ? -units : units;
+        const s = abs.toString().padStart(scale + 1, "0");
+        const whole = s.slice(0, s.length - scale);
+        const frac = scale > 0 ? "." + s.slice(s.length - scale) : "";
+        return (negative ? "-" : "") + whole + frac;
+      }
+
+      // Subtracts two amounts of the same currency. They always carry the
+      // same number of decimals, so the scale of the first one is used.
+      function subtractAmounts(a, b) {
+        const scale = decimalScale(a);
+        return fromMinorUnits(
+          toMinorUnits(a, scale) - toMinorUnits(b, scale),
+          scale,
+        );
+      }
+
+      // ── The pool's share of the match ──────────────────────────────
+      // The pool is on one side of the trade, never both: either the quote
+      // went into the reserves and the base came out, or the other way
+      // round. So the buyers or the sellers traded with the pool, and the
+      // other side traded with the orders only.
+      function poolSplit(m) {
+        const s = m.pool.swap;
+        if (!s) {
+          return {
+            buyPoolFrom: "0", buyPoolTo: "0",
+            sellPoolFrom: "0", sellPoolTo: "0",
+          };
+        }
+        const isQuote = s.isQuote;
+        return {
+          // WART into the reserves and TOKEN out of them: the buyers.
+          buyPoolFrom: isQuote ? s.in : "0",
+          buyPoolTo: isQuote ? s.out : "0",
+          // TOKEN into the reserves and WART out of them: the sellers.
+          sellPoolFrom: isQuote ? "0" : s.in,
+          sellPoolTo: isQuote ? "0" : s.out,
+        };
+      }
+
+      // ── Summary tables ─────────────────────────────────────────────
+      // The engine's `matched` is the node's exchangeBetweenOrders: the
+      // amounts that changed hands between the orders, counting what the
+      // pool contributed. That is not what the buyers paid, so the split
+      // into "orders" and "via pool" is computed from the filled totals
+      // and the pool swap, and the two rows always add up to the total.
       function renderSummary() {
         const m = state.lastMatch;
+        const split = poolSplit(m);
+        const swap = m.pool.swap;
+
+        // Buyers: FROM is the WART they paid, TO is the TOKEN they got.
+        const buyTotalFrom = m.filled.outQuoteBuyer;
+        const buyTotalTo = m.filled.inBaseBuyer;
+        const buyOrdersFrom = subtractAmounts(buyTotalFrom, split.buyPoolFrom);
+        const buyOrdersTo = subtractAmounts(buyTotalTo, split.buyPoolTo);
+
         tbodyBuyers.innerHTML = "";
-        insertRow(tbodyBuyers, ["orders", m.matched.quote, m.matched.base, m.matched.price], "");
-        if (m.toPool && m.toPool.isQuote) {
-          insertRow(tbodyBuyers, ["via pool", m.toPool.quote, m.toPool.base, m.toPool.price], "");
+        insertRow(tbodyBuyers, [
+          "orders",
+          buyOrdersFrom,
+          buyOrdersTo,
+          ordersPrice(buyOrdersFrom, buyOrdersTo, m.filled.priceBuyer, split),
+        ], "");
+        if (swap && swap.isQuote) {
+          insertRow(tbodyBuyers, ["via pool", split.buyPoolFrom, split.buyPoolTo, swap.price], "");
         }
-        insertRow(tbodyBuyers, ["total", m.filled.outQuoteBuyer, m.filled.inBaseBuyer, m.filled.priceBuyer], "");
+        insertRow(tbodyBuyers, ["total", buyTotalFrom, buyTotalTo, m.filled.priceBuyer], "");
+
+        // Sellers: FROM is the TOKEN they gave, TO is the WART they got.
+        const sellTotalFrom = m.filled.outBaseSeller;
+        const sellTotalTo = m.filled.inQuoteSeller;
+        const sellOrdersFrom = subtractAmounts(sellTotalFrom, split.sellPoolFrom);
+        const sellOrdersTo = subtractAmounts(sellTotalTo, split.sellPoolTo);
+
         tbodySellers.innerHTML = "";
-        insertRow(tbodySellers, ["orders", m.matched.base, m.matched.quote, m.matched.price], "");
-        if (m.toPool && !m.toPool.isQuote) {
-          insertRow(tbodySellers, ["via pool", m.toPool.base, m.toPool.quote, m.toPool.price], "");
+        insertRow(tbodySellers, [
+          "orders",
+          sellOrdersFrom,
+          sellOrdersTo,
+          sellersPrice(sellOrdersFrom, sellOrdersTo, m.filled.priceSeller, split),
+        ], "");
+        if (swap && !swap.isQuote) {
+          insertRow(tbodySellers, ["via pool", split.sellPoolFrom, split.sellPoolTo, swap.price], "");
         }
-        insertRow(tbodySellers, ["total", m.filled.outBaseSeller, m.filled.inQuoteSeller, m.filled.priceSeller], "");
+        insertRow(tbodySellers, ["total", sellTotalFrom, sellTotalTo, m.filled.priceSeller], "");
+      }
+
+      // The price column is always quote per base. When a side does not
+      // touch the pool, its orders row is its total row, so the engine's
+      // own price is used and the two rows agree exactly.
+      function ordersPrice(from, to, enginePrice, split) {
+        if (split.buyPoolFrom !== "0" || split.buyPoolTo !== "0") {
+          const t = Number(to);
+          return t === 0 ? 0 : Number(from) / t;
+        }
+        return enginePrice;
+      }
+
+      function sellersPrice(from, to, enginePrice, split) {
+        if (split.sellPoolFrom !== "0" || split.sellPoolTo !== "0") {
+          const f = Number(from);
+          return f === 0 ? 0 : Number(to) / f;
+        }
+        return enginePrice;
       }
 
       function renderPool() {
         const m = state.lastMatch;
-        $("beforePrice").innerHTML = m.poolBefore.price;
-        $("afterToken").innerHTML  = m.poolAfter.base;
-        $("afterWart").innerHTML   = m.poolAfter.quote;
-        $("afterPrice").innerHTML  = m.poolAfter.price;
+        $("beforePrice").innerHTML = m.pool.before.price;
+        $("afterToken").innerHTML  = m.pool.after.base;
+        $("afterWart").innerHTML   = m.pool.after.quote;
+        $("afterPrice").innerHTML  = m.pool.after.price;
       }
 
       // ── LeaderLine arrows ──────────────────────────────────────────
@@ -963,38 +1307,45 @@ Astro.csp?.insertDirective(`font-src * data:`);
 
       function drawArrows() {
         const m = state.lastMatch;
+        const split = poolSplit(m);
+        const swap = m.pool.swap;
         for (const a of allArrows) { a.hide(); a.position(); }
         $("sellToken").innerHTML = m.filled.outBaseSeller;
         $("buyWart").innerHTML   = m.filled.inQuoteSeller;
         $("sellWart").innerHTML  = m.filled.outQuoteBuyer;
         $("buyToken").innerHTML  = m.filled.inBaseBuyer;
-        if (m.toPool) {
-          $("poolInteractedPrice").innerHTML = m.toPool.price;
-          if (m.toPool.isQuote) {
-            $("poolInteractedToken").innerHTML = "-" + m.toPool.base;
-            $("poolInteractedWart").innerHTML  = "+" + m.toPool.quote;
+        // The arrows between the two sides carry what changed hands
+        // between the orders. The pool's part is drawn on its own arrows,
+        // so it must not be counted twice.
+        const tokenFromSeller = subtractAmounts(m.filled.outBaseSeller, split.sellPoolFrom);
+        const wartFromBuyer = subtractAmounts(m.filled.outQuoteBuyer, split.buyPoolFrom);
+        if (swap) {
+          $("poolInteractedPrice").innerHTML = swap.price;
+          if (swap.isQuote) {
+            $("poolInteractedToken").innerHTML = "-" + swap.out;
+            $("poolInteractedWart").innerHTML  = "+" + swap.in;
           } else {
-            $("poolInteractedToken").innerHTML = "+" + m.toPool.base;
-            $("poolInteractedWart").innerHTML  = "-" + m.toPool.quote;
+            $("poolInteractedToken").innerHTML = "+" + swap.in;
+            $("poolInteractedWart").innerHTML  = "-" + swap.out;
           }
         }
-        if (m.matched && m.matched.base !== "0") {
-          arrowTokenFromSeller.middleLabel = LeaderLine.pathLabel(m.matched.base);
+        if (Number(tokenFromSeller) !== 0) {
+          arrowTokenFromSeller.middleLabel = LeaderLine.pathLabel(tokenFromSeller);
           arrowTokenFromSeller.show();
         }
-        if (m.matched && m.matched.quote !== "0") {
-          arrowWartFromBuyer.middleLabel = LeaderLine.pathLabel(m.matched.quote);
+        if (Number(wartFromBuyer) !== 0) {
+          arrowWartFromBuyer.middleLabel = LeaderLine.pathLabel(wartFromBuyer);
           arrowWartFromBuyer.show();
         }
-        if (m.toPool && m.toPool.isQuote) {
-          arrowTokenFromPool.middleLabel = LeaderLine.pathLabel(m.toPool.base);
-          arrowWartToPool.middleLabel    = LeaderLine.pathLabel(m.toPool.quote);
+        if (swap && swap.isQuote) {
+          arrowTokenFromPool.middleLabel = LeaderLine.pathLabel(swap.out);
+          arrowWartToPool.middleLabel    = LeaderLine.pathLabel(swap.in);
           arrowTokenFromPool.show();
           arrowWartToPool.show();
         }
-        if (m.toPool && !m.toPool.isQuote) {
-          arrowTokenToPool.middleLabel  = LeaderLine.pathLabel(m.toPool.base);
-          arrowWartFromPool.middleLabel = LeaderLine.pathLabel(m.toPool.quote);
+        if (swap && !swap.isQuote) {
+          arrowTokenToPool.middleLabel  = LeaderLine.pathLabel(swap.in);
+          arrowWartFromPool.middleLabel = LeaderLine.pathLabel(swap.out);
           arrowTokenToPool.show();
           arrowWartFromPool.show();
         }
@@ -1102,38 +1453,73 @@ Astro.csp?.insertDirective(`font-src * data:`);
 
       // ── Button handlers ────────────────────────────────────────────
       buyButton.addEventListener("click", () => {
-        const res = engine.addBuy({ limit: buyPriceEl.value, amount: wartAmountEl.value });
+        const res = engine.addBuy({
+          limit: buyPriceEl.value,
+          amount: wartAmountEl.value,
+          ...(buyCaptionEl.value ? { caption: buyCaptionEl.value } : {}),
+        });
         if ("ok" in res) {
+          // The label is cleared, so a label meant for one order is not
+          // silently carried over to the next one.
+          buyCaptionEl.value = "";
           tryMatch();
         } else {
           alert("Error: " + res.error);
         }
       });
       sellButton.addEventListener("click", () => {
-        const res = engine.addSell({ limit: sellPriceEl.value, amount: tokenAmountEl.value });
+        const res = engine.addSell({
+          limit: sellPriceEl.value,
+          amount: tokenAmountEl.value,
+          ...(sellCaptionEl.value ? { caption: sellCaptionEl.value } : {}),
+        });
         if ("ok" in res) {
+          sellCaptionEl.value = "";
           tryMatch();
         } else {
           alert("Error: " + res.error);
         }
       });
 
+      // ── Order book view ────────────────────────────────────────────
+      // The switch only changes the view, it never touches the engine or
+      // the matching.
+      showOrdersEl.addEventListener("change", () => {
+        state.showOrders = showOrdersEl.checked;
+        renderOrderBooks();
+      });
+
       // ── Delete order ───────────────────────────────────────────────
       // Delegated, because the rows are rebuilt on every match and
-      // per-row listeners would be recreated with them. The index is the
-      // row's position in the last match result, which is the order that
-      // deleteBuyAt and deleteSellAt expect.
+      // per-row listeners would be recreated with them.
+      //
+      // A level row removes every order at that price, an order row
+      // removes that single order. The order row's index is its flat index
+      // in the last match result, which is the index deleteBuyAt and
+      // deleteSellAt expect.
       tbodyBuy.addEventListener("click", (e) => {
-        const button = e.target.closest("button[data-delete-index]");
-        if (!button) return;
-        if (engine.deleteBuyAt(Number(button.dataset.deleteIndex)) !== null) {
+        const levelButton = e.target.closest("button[data-delete-price]");
+        if (levelButton) {
+          const res = engine.deleteBuysAtPrice(Number(levelButton.dataset.deletePrice));
+          if ("ok" in res) tryMatch();
+          return;
+        }
+        const orderButton = e.target.closest("button[data-delete-index]");
+        if (!orderButton) return;
+        if (engine.deleteBuyAt(Number(orderButton.dataset.deleteIndex)) !== null) {
           tryMatch();
         }
       });
       tbodySell.addEventListener("click", (e) => {
-        const button = e.target.closest("button[data-delete-index]");
-        if (!button) return;
-        if (engine.deleteSellAt(Number(button.dataset.deleteIndex)) !== null) {
+        const levelButton = e.target.closest("button[data-delete-price]");
+        if (levelButton) {
+          const res = engine.deleteSellsAtPrice(Number(levelButton.dataset.deletePrice));
+          if ("ok" in res) tryMatch();
+          return;
+        }
+        const orderButton = e.target.closest("button[data-delete-index]");
+        if (!orderButton) return;
+        if (engine.deleteSellAt(Number(orderButton.dataset.deleteIndex)) !== null) {
           tryMatch();
         }
       });
@@ -1150,10 +1536,15 @@ Astro.csp?.insertDirective(`font-src * data:`);
         return value.includes(".") ? value.replace(/0+$/, "").replace(/\.$/, "") : value;
       }
 
-      // Adds one restored order from its exact price-grid bits.
+      // Adds one restored order from its exact price-grid bits. The
+      // caption is optional: a v1 link carries none.
       function addOrder(method, order) {
-        const [limitBits, amount] = order;
-        const res = engine[method]({ limitBits, amount });
+        const [limitBits, amount, caption] = order;
+        const res = engine[method]({
+          limitBits,
+          amount,
+          ...(caption ? { caption } : {}),
+        });
         if (!("ok" in res)) {
           console.warn("Could not restore an order:", res.error);
         }
@@ -1223,7 +1614,7 @@ Astro.csp?.insertDirective(`font-src * data:`);
       // with) is what an untouched page shows, so the URL stays clean
       // until the user changes something.
       {
-        const scratch = new FbmEngine({ baseDecimals: 8, feeE4: 5 });
+        const scratch = new FbmEngine({ baseDecimals: 8, feeE4: 50 });
         scratch.setPool({ base: htmlPool.base, quote: htmlPool.quote });
         defaultState = encodeMatch(scratch.match(), scratch.getConfig());
       }

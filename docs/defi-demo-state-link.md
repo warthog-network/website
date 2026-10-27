@@ -29,32 +29,34 @@ The parameter is a base64url encoding of a UTF-8 JSON object:
 
 | field   | type                 | meaning                                                        |
 | ------- | -------------------- | -------------------------------------------------------------- |
-| `v`     | integer              | payload version, must be `1`                                    |
+| `v`     | integer              | payload version, `1` or `2`                                    |
 | `bd`    | integer              | `baseDecimals` of the token, `0..18`, fixed at engine creation  |
 | `fee`   | integer              | pool fee in 1/10000 units, `0..9999` (5 = 0.05%, 50 = 0.50%)     |
 | `pool`  | `[string, string]`   | pool reserves before the match, `[base, quote]`, decimal strings |
-| `buys`  | `[[int, string]]`    | buy orders, `[limitBits, amount]`, amount in WART                |
-| `sells` | `[[int, string]]`    | sell orders, `[limitBits, amount]`, amount in the base token     |
+| `buys`  | `[[int, string, string?]]` | buy orders, `[limitBits, amount, caption]`, amount in WART  |
+| `sells` | `[[int, string, string?]]` | sell orders, `[limitBits, amount, caption]`, amount in the base token |
 
 `buys` and `sells` may be omitted or empty. Extra fields are ignored.
+The caption is optional: a v1 entry has two elements, a v2 entry has
+three. The same limit can appear in several entries, one per order.
 
 Example payload:
 
 ```json
 {
-  "v": 1,
+  "v": 2,
   "bd": 8,
-  "fee": 5,
+  "fee": 50,
   "pool": ["100.00000000", "200.00000000"],
-  "buys": [[4251063, "20.00000000"]],
-  "sells": [[4181197, "20.00000000"]]
+  "buys": [[4251063, "20.00000000", ""]],
+  "sells": [[4181197, "20.00000000", "my order"]]
 }
 ```
 
 which encodes to:
 
 ```
-https://warthog.network/defi-demo?state=eyJ2IjoxLCJiZCI6OCwiZmVlIjo1LCJwb29sIjpbIjEwMC4wMDAwMDAwMCIsIjIwMC4wMDAwMDAwMCJdLCJidXlzIjpbWzQyNTEwNjMsIjIwLjAwMDAwMDAwIl1dLCJzZWxscyI6W1s0MTgxMTk3LCIyMC4wMDAwMDAwMCJdXX0
+https://warthog.network/defi-demo?state=eyJ2IjoyLCJiZCI6OCwiZmVlIjo1MCwicG9vbCI6WyIxMDAuMDAwMDAwMDAiLCIyMDAuMDAwMDAwMDAiXSwiYnV5cyI6W1s0MjUxMDYzLCIyMC4wMDAwMDAwMCIsIiJdXSwic2VsbHMiOltbNDE4MTE5NywiMjAuMDAwMDAwMDAiLCJteSBvcmRlciJdXX0
 ```
 
 ### Encoding
@@ -108,7 +110,7 @@ The reliable way to get `bits` is to ask the engine, which also validates
 the input:
 
 ```js
-const e = new FbmEngine({ baseDecimals: 8, feeE4: 5 });
+const e = new FbmEngine({ baseDecimals: 8, feeE4: 50 });
 e.setPool({ base: "100", quote: "200" });
 e.addBuy({ limit: "1.732153", amount: "20" });
 e.match().buys[0].limitBits;   // 4251063
@@ -134,39 +136,45 @@ decimal string is accepted on restore and means the same thing.
 
 `pool` holds the reserves the demo had configured, before matching. The
 engine's `match()` is a pure calculation and does not consume the pool, so
-`poolBefore` in a match result is exactly these reserves.
+`pool.before` in a match result is exactly these reserves.
 
 ## The fee
 
 `fee` is the pool fee in 1/10000 units and is applied only to the part of
 the match that goes through the pool. The demo displays it in percent next
 to the Pool heading and allows editing it: `feeE4 = percent * 100`, so
-`0.05` is `5`.
+`0.5` is `50`.
 
-Defaults differ. The demo starts at `5` (0.05%). The node settles its
-matches with `50` (0.50%), hardcoded in `block_applier.cpp` as
-`pool.buy(pa, 50)` and `pool.sell(pa, 50)` in node v0.10.30. The
-`feeE4 = 10` default on `PoolLiquidity_uint64::sell/buy` is not what the
-node uses in the match path, so do not rely on it. A link must carry the
-fee the scenario was matched with, otherwise the pool-side amounts differ:
-the same book and pool give a pool-side amount of `15.27964751` WART at
-fee 5 but `15.21085470` WART at fee 50.
+The demo starts at `50` (0.50%), which is the fee the node settles its
+matches with, hardcoded in `block_applier.cpp` as `pool.buy(pa, 50)` and
+`pool.sell(pa, 50)` in node v0.10.30. The `feeE4 = 10` default on
+`PoolLiquidity_uint64::sell/buy` is not what the node uses in the match
+path, so do not rely on it. A link must carry the fee the scenario was
+matched with, otherwise the pool-side amounts differ: the same book and
+pool give a pool-side amount of `15.27964751` WART at fee 5 but
+`15.21085470` WART at fee 50.
 
 ## What the demo does with a link
 
 On load it decodes the parameter, constructs the engine with `bd` and
-`fee`, sets the pool, re-adds every order with its `limitBits` and
-`amount`, and then runs the match. Validation:
+`fee`, sets the pool, re-adds every order with its `limitBits`, `amount`
+and `caption`, and then runs the match. Validation:
 
-- `v` must be `1`, otherwise the link is ignored
+- `v` must be `1` or `2`, otherwise the link is ignored
 - `bd` must be an integer in 0..18
 - `fee` must be an integer in 0..9999
 - `pool` must be an array of exactly two entries
-- every order must be a two-entry array, `[integer, string]`
+- every order must be a two-entry array `[integer, string]` (v1) or a
+  three-entry array `[integer, string, string]` (v2, the caption)
+
+A v1 link has no caption, so it restores without one. It also has one
+entry per price level rather than per order, so a v1 link made from a book
+with several orders at the same limit restores as a single order with the
+summed amount.
 
 A malformed link never breaks the page: the demo logs a warning and falls
 back to its default state (pool 100 TOKEN / 200 WART, no orders,
-`baseDecimals` 8, fee 5). A payload that differs from that default state
+`baseDecimals` 8, fee 50). A payload that differs from that default state
 is written back to the address bar while the user works; an untouched
 default demo keeps a clean URL.
 
@@ -190,7 +198,7 @@ import FbmEngine from "warthog-fbm";
 
 await FbmEngine.init();
 
-const engine = new FbmEngine({ baseDecimals: 8, feeE4: 5 });
+const engine = new FbmEngine({ baseDecimals: 8, feeE4: 50 });
 engine.setPool({ base: "100", quote: "200" });
 engine.addBuy({ limit: "1.732153", amount: "20" });    // 20 WART for TOKEN
 engine.addSell({ limit: "0.8000049", amount: "20" });  // 20 TOKEN for WART
@@ -198,14 +206,19 @@ engine.addSell({ limit: "0.8000049", amount: "20" });  // 20 TOKEN for WART
 const m = engine.match();
 const cfg = engine.getConfig();
 
-// The same payload the page builds in encodeMatch().
+// The same payload the page builds in encodeMatch(). The book comes as
+// price levels, each holding its own orders, so the levels are flattened
+// into one entry per order.
+const orders = (levels) =>
+  levels.flatMap((l) => l.orders.map((o) => [l.limitBits, o.amount, o.caption]));
+
 const payload = {
-  v: 1,
+  v: 2,
   bd: cfg.baseDecimals,
   fee: cfg.feeE4,
-  pool: [m.poolBefore.base, m.poolBefore.quote],
-  buys: m.buys.map((o) => [o.limitBits, o.amount]),
-  sells: m.sells.map((o) => [o.limitBits, o.amount]),
+  pool: [m.pool.before.base, m.pool.before.quote],
+  buys: orders(m.buys),
+  sells: orders(m.sells),
 };
 
 const state = Buffer.from(JSON.stringify(payload), "utf8")
@@ -279,9 +292,10 @@ mapping from the defi node to this payload is:
 | demo payload      | node source                                                                 |
 | ----------------- | --------------------------------------------------------------------------- |
 | `pool`            | the market's pool reserves before the block                                 |
-| `buys` / `sells`  | the block's `limitSwap` transactions for that market, per price level       |
+| `buys` / `sells`  | the block's `limitSwap` transactions for that market, one entry per order  |
 | `limitBits`       | `LimitPriceEl`, a `Price_uint64`: use its grid value directly               |
 | `amount`          | the swap's input amount, in WART for buys and in the base token for sells   |
+| `caption`         | nothing: the node has no equivalent, the label is a demo-side nicety       |
 | `fee`             | the settlement fee in 1/10000 units: `50` as of node v0.10.30               |
 | `bd`              | the base token's decimals                                                   |
 
@@ -293,9 +307,10 @@ Notes that matter for that work:
   rendering.
 - The node aggregates orders by price level before running FBM and
   distributes fills back to individual orders by order id. The demo engine
-  also aggregates orders added at the same limit, so the mapping is per
-  price level, not per transaction: many node transactions at one limit
-  become one demo order with the summed amount.
+  does the same, and it keeps the individual orders, so the mapping is one
+  demo order per node transaction, not per price level. The order of the
+  entries is the order of the book, which is what preserves the fill
+  priority when the link is restored.
 - The node's settlement fee is not the demo default: it is the literal
   `50` in `block_applier.cpp` (node v0.10.30). Put it in `fee`, or the
   pool-side amounts will not match. Re-check that literal when the node
@@ -318,7 +333,7 @@ console.log(JSON.stringify(JSON.parse(Buffer.from(s, "base64url").toString("utf8
    scenario.
 2. Restore it in Node and compare: build the source engine, then a second
    engine from the payload, and require that `match().buys`,
-   `match().sells` and `match().poolBefore` are equal.
+   `match().sells` and `match().pool.before` are equal.
 3. Open the link and check the order books, the pool row, the fee field and
    the filled totals.
 4. `tests/defi-demo-share-link.e2e.mjs` drives a real share and restore
@@ -327,12 +342,16 @@ console.log(JSON.stringify(JSON.parse(Buffer.from(s, "base64url").toString("utf8
 
 ## Limits and caveats
 
-- Two orders at the same limit become one order with the summed amount, in
-  the engine and therefore in the link. Use distinct limits to keep the
-  book one-to-one.
-- Each order costs roughly 30 characters in the final link. Keep books
-  short; very long links can exceed URL length limits in browsers and
-  proxies.
+- Every order is its own entry, so two orders at the same limit stay two
+  entries with the same `limitBits`. The order of the entries is the order
+  of the book, which is what preserves the fill priority on restore.
+- Each order costs roughly 32 characters in the final link, and a caption
+  adds about 4 more for a short one. Keep books short; very long links can
+  exceed URL length limits in browsers and proxies. The demo's live site
+  serves a URL of about 16 KB, and the edge rejects anything longer, so a
+  link that does not open is almost always too long rather than broken.
+- A caption is capped at 64 characters in the link, so a long label is
+  trimmed there. The order keeps its full caption.
 - `bd` is fixed when the engine is constructed, so a link cannot change
   the token's decimals, only the scenario that uses them.
 - The demo's fee field rejects percentages finer than 0.01, because the
