@@ -43,6 +43,10 @@ import { getContainerRenderer } from "@astrojs/react";
       target: ".step-6",
       content: "This is pool input field specifying the WART amount of pool liquidity.",
     },
+    {
+      target: ".step-7",
+      content: "This is the pool fee, the share the pool keeps from swaps that go through it.",
+    },
   ];
   // === CSP OVERRIDE FOR THIS PAGE ONLY (fixes WebAssembly error) ===
 Astro.csp?.insertDirective(`script-src 'self' * data: blob: 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'`);
@@ -380,11 +384,29 @@ Astro.csp?.insertDirective(`font-src * data:`);
       >
         <!-- pool table -->
         <div>
-          <h5
-            class="block font-sans text-lg antialiased font-semibold leading-snug tracking-normal"
-          >
-            Pool
-          </h5>
+          <div class="flex items-center justify-between gap-2 pr-2">
+            <h5
+              class="block font-sans text-lg antialiased font-semibold leading-snug tracking-normal"
+            >
+              Pool
+            </h5>
+            <div class="flex items-center gap-1 text-sm step-7">
+              <label
+                for="feePercent"
+                class="text-gray-600"
+                title="The pool fee in percent. The engine counts it in 1/10000 units, so 0.05% is 5."
+                >Fee</label
+              >
+              <input
+                id="feePercent"
+                value="0.05"
+                inputmode="decimal"
+                aria-label="Pool fee in percent"
+                class="border-2 border-gray-600 rounded-md outline-none px-2 py-1 text-center text-sm leading-4 w-16"
+              />
+              <span class="text-gray-600">%</span>
+            </div>
+          </div>
           <div
             class="flex md:flex-col w-full mt-1 border border-gray-600 rounded-md overflow-hidden"
           >
@@ -648,6 +670,9 @@ Astro.csp?.insertDirective(`font-src * data:`);
           <li>Yellow: Price</li>
         </ul>
       </FAQ>
+      <FAQ question="What is the pool fee?">
+        It is the share that the liquidity pool keeps from a swap that goes through the pool instead of matching another order directly.
+      </FAQ>
       <FAQ question="Why is the buy order amount measured in WART but not in TOKEN despite I am buying TOKEN?">
         In DeFi trades are specified as swaps, i.e. the input amount is specified for both trade directions 
         <ul>
@@ -794,6 +819,7 @@ Astro.csp?.insertDirective(`font-src * data:`);
       const state = {
         poolBase:   { valid: true,  error: "" },  // HTML defaults 100, 200
         poolQuote:  { valid: true,  error: "" },
+        fee:        { valid: true,  error: "" },  // HTML default 0.05%
         buyLimit:   { valid: false, error: "" },
         buyAmount:  { valid: false, error: "" },
         sellLimit:  { valid: false, error: "" },
@@ -808,6 +834,7 @@ Astro.csp?.insertDirective(`font-src * data:`);
       const tokenAmountEl = $("tokenAmount");
       const beforeTokenEl = $("beforeToken");
       const beforeWartEl  = $("beforeWart");
+      const feePercentEl  = $("feePercent");
       const buyButton     = $("buyButton");
       const sellButton    = $("sellButton");
       const tbodyBuy      = $("tbodyBuy");
@@ -1006,6 +1033,40 @@ Astro.csp?.insertDirective(`font-src * data:`);
       beforeTokenEl.addEventListener("input", applyPoolInputs);
       beforeWartEl.addEventListener("input", applyPoolInputs);
 
+      // ── Pool fee ───────────────────────────────────────────────────
+      // The engine counts the fee in 1/10000 units, the input shows it
+      // in percent. A percent that cannot be expressed in those units
+      // (anything finer than 0.01) is rejected rather than rounded.
+      function feeE4FromPercent(value) {
+        const n = Number(value);
+        if (!isFinite(n) || n < 0 || n > 99.99) return null;
+        const scaled = n * 100;
+        const rounded = Math.round(scaled);
+        if (Math.abs(scaled - rounded) > 1e-9) return null;
+        return rounded;
+      }
+
+      function percentFromFeeE4(feeE4) {
+        return String(feeE4 / 100);
+      }
+
+      feePercentEl.addEventListener("input", () => {
+        const feeE4 = feeE4FromPercent(feePercentEl.value);
+        if (feeE4 === null) {
+          // Leave the engine on its last valid fee; only the field is
+          // marked so the user sees what needs fixing.
+          state.fee.valid = false;
+          state.fee.error = "The fee must be a percent in 0..99.99, in steps of 0.01";
+        } else {
+          const res = engine.setFeeE4(feeE4);
+          state.fee.valid = "ok" in res;
+          state.fee.error = "error" in res ? res.error : "";
+          if (state.fee.valid) tryMatch();
+        }
+        feePercentEl.style.backgroundColor = state.fee.valid ? "transparent" : "red";
+        renderField(feePercentEl, state.fee);
+      });
+
       buyPriceEl.addEventListener("input", () => {
         const res = engine.validateLimit(buyPriceEl.value);
         state.buyLimit.valid = "ok" in res;
@@ -1128,6 +1189,16 @@ Astro.csp?.insertDirective(`font-src * data:`);
         // the engine so the initial render reflects the visible inputs.
         engine.setPool({ base: htmlPool.base, quote: htmlPool.quote });
       }
+
+      // The fee field always mirrors the engine: on a restored link the
+      // engine was built with the payload's fee, otherwise it has the
+      // demo default. Writing it from getConfig keeps both in sync.
+      feePercentEl.value = percentFromFeeE4(engine.getConfig().feeE4);
+      state.fee.valid = true;
+      state.fee.error = "";
+      feePercentEl.style.backgroundColor = "transparent";
+      renderField(feePercentEl, state.fee);
+
       // Validate buy/sell fields with empty defaults (they stay invalid
       // until the user types). Arrow functions preserve the `engine`
       // binding — Embind exposes methods bound to the instance only at

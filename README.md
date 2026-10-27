@@ -3,6 +3,9 @@ This is the repository for the Warthog Network website:
  - `prod` branch is live on https://warthog.network/
 - `dev` branch is live on  https://astohogdev.netlify.app/
 
+## Developer docs
+- [DeFi demo: generating a `?state=` link](docs/defi-demo-state-link.md): how to build a link that opens `/defi-demo` with a specific order book, pool and fee.
+
 # Astro Starter Kit: Minimal
 
 ```sh
