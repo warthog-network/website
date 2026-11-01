@@ -24,7 +24,7 @@ export default function WalletOverviewCard({
   onCopyAddress,
   onSend,
   onReceive,
-  /** Compact security status: '2fa' | 'passkey' | 'password' | 'session' | null */
+  /** Compact security status: 'ledger' | '2fa' | 'passkey' | 'password' | 'session' | null */
   authBadge = null,
   authBadgeLabel = null,
 }) {
@@ -34,6 +34,12 @@ export default function WalletOverviewCard({
   const shownBalance = balanceDisplay != null ? balanceDisplay : balance;
 
   const badgeStyles = {
+    ledger: {
+      border: 'rgba(253, 185, 19, 0.5)',
+      bg: 'rgba(120, 80, 0, 0.22)',
+      text: 'text-[#FDB913]',
+      label: authBadgeLabel || 'Ledger',
+    },
     '2fa': {
       border: 'rgba(56, 189, 248, 0.45)',
       bg: 'rgba(12, 74, 110, 0.25)',

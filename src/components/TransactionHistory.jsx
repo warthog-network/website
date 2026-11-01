@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { resolveNodeUrl } from '../lib/nodesCache';
-
-const API_URL = '/api/proxy';
+import { nodeHttpUrl } from '../lib/nodeAccess.js';
+import { nodeHasIndexer } from '../lib/explorerNodes.js';
+import { fetchIndexerAccountTransactions } from './explorer/explorerIndexerClient.js';
 const PAGE_SIZE = 15;
 /** Confirmed block timestamps never change. Reuse them across Refresh clicks. */
 const blockTimestampCache = new Map();
@@ -129,6 +130,27 @@ function resolveTxDirection(tx, accountAddress) {
   return 'unknown';
 }
 
+/** Indexer rows already include a timestamp, so the wallet does not look up each block. */
+function mapIndexerHistoryItem(tx) {
+  const type = String(tx?.type || '').toLowerCase();
+  const isReward = type === 'reward' || tx?.isReward || !(tx?.sender || tx?.fromAddress);
+  const amount = tx?.amount != null && tx.amount !== '' ? Number(tx.amount) : NaN;
+  const fee = tx?.fee != null && tx.fee !== '' ? Number(tx.fee) : NaN;
+  return {
+    ...tx,
+    isReward,
+    type: isReward ? 'reward' : (tx?.type || 'wart_transfer'),
+    fromAddress: tx?.fromAddress || tx?.sender || '',
+    toAddress: tx?.toAddress || tx?.recipient || '',
+    txid: tx?.txid || tx?.txHash || tx?.hash,
+    timestamp: tx?.timestamp,
+    height: tx?.height,
+    confirmations: tx?.confirmations,
+    amount: Number.isFinite(amount) ? amount.toFixed(8) : 'N/A',
+    fee: Number.isFinite(fee) ? fee.toFixed(8) : '0',
+  };
+}
+
 const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refreshTrigger }) => {
   const [allHistory, setAllHistory] = useState([]);
   const [error, setError] = useState(null);
@@ -148,6 +170,8 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
   const autoFetchCountRef = useRef(0);
   /** Prevent concurrent page loads. */
   const fetchMoreInFlightRef = useRef(false);
+  /** 'indexer' for official 1 history, 'node' for a custom node. */
+  const historyModeRef = useRef('node');
 
   const abbreviate = (str) => {
     if (!str) return 'N/A';
@@ -202,7 +226,7 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
     }
   }, [allHistory, onCountsUpdate]);
 
-  const parseHistoryBlocks = async (rawData, nodeBaseParam, accountAddress) => {
+  const parseHistoryBlocks = async (rawData, accountAddress) => {
     const timestampMap = {};
     rawData.perBlock.forEach((block) => {
       const ts = blockTimestamp(block, null)
@@ -217,7 +241,9 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
     if (blocksNeedingFetch.length > 0) {
       const blockResponses = await Promise.allSettled(
         blocksNeedingFetch.map((block) =>
-          axios.get(`${API_URL}?nodePath=chain/block/${block.height}&${nodeBaseParam}`)
+          axios.get(nodeHttpUrl(nodeUrl, `chain/block/${block.height}`), {
+            headers: { Accept: 'application/json' },
+          })
         )
       );
       blockResponses.forEach((res, idx) => {
@@ -274,14 +300,23 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
     setError(null);
     autoFetchCountRef.current = 0;
     try {
-      const nodeBaseParam = `nodeBase=${encodeURIComponent(nodeUrl)}`;
+      if (nodeHasIndexer(nodeUrl)) {
+        historyModeRef.current = 'indexer';
+        const page = await fetchIndexerAccountTransactions(address, 1, PAGE_SIZE);
+        setAllHistory(page.items.map(mapIndexerHistoryItem));
+        setNextCursor(page.nextPage);
+        setHasMore(Boolean(page.hasMore));
+        setCurrentPage(1);
+        return;
+      }
+      historyModeRef.current = 'node';
       const path = `account/${address}/history/4294967295`;
-      const response = await axios.get(`${API_URL}?nodePath=${path}&${nodeBaseParam}`, {
-        headers: { 'Content-Type': 'application/json' },
+      const response = await axios.get(nodeHttpUrl(nodeUrl, path), {
+        headers: { Accept: 'application/json' },
       });
       const rawData = response.data.data || response.data;
       if (rawData.perBlock && Array.isArray(rawData.perBlock)) {
-        const newItems = await parseHistoryBlocks(rawData, nodeBaseParam, address);
+        const newItems = await parseHistoryBlocks(rawData, address);
         setAllHistory(newItems);
         setNextCursor(rawData.fromId > 0 ? rawData.fromId : null);
         setHasMore(newItems.length > 0 && rawData.fromId > 0);
@@ -301,14 +336,20 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
     fetchMoreInFlightRef.current = true;
     setLoading(true);
     try {
-      const nodeBaseParam = `nodeBase=${encodeURIComponent(nodeUrl)}`;
+      if (historyModeRef.current === 'indexer') {
+        const page = await fetchIndexerAccountTransactions(address, nextCursor, PAGE_SIZE);
+        setAllHistory((prev) => [...prev, ...page.items.map(mapIndexerHistoryItem)]);
+        setHasMore(Boolean(page.hasMore));
+        setNextCursor(page.nextPage);
+        return;
+      }
       const path = `account/${address}/history/${nextCursor}`;
-      const response = await axios.get(`${API_URL}?nodePath=${path}&${nodeBaseParam}`, {
-        headers: { 'Content-Type': 'application/json' },
+      const response = await axios.get(nodeHttpUrl(nodeUrl, path), {
+        headers: { Accept: 'application/json' },
       });
       const rawData = response.data.data || response.data;
       if (rawData.perBlock && Array.isArray(rawData.perBlock)) {
-        const newItems = await parseHistoryBlocks(rawData, nodeBaseParam, address);
+        const newItems = await parseHistoryBlocks(rawData, address);
         setAllHistory((prev) => [...prev, ...newItems]);
         setHasMore(newItems.length > 0 && rawData.fromId > 0);
         setNextCursor(rawData.fromId > 0 ? rawData.fromId : null);

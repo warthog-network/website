@@ -1,4 +1,4 @@
-const PROXY_URL = '/api/proxy';
+import { nodeHttpUrl } from './nodeAccess.js';
 
 function parseNodeResponse(text, { httpStatus } = {}) {
   const trimmed = String(text ?? '').trim();
@@ -15,21 +15,20 @@ function parseNodeResponse(text, { httpStatus } = {}) {
   } catch {
     const preview = trimmed.slice(0, 120).replace(/\s+/g, ' ');
     const hint = preview.startsWith('<') || preview.startsWith('<!')
-      ? 'Node returned HTML instead of JSON. Check the node URL and port (API paths like /chain/head should return JSON). HTTP nodes on the live HTTPS site are reached via the server proxy.'
+      ? 'Node returned HTML instead of JSON. Check the node URL and port (API paths like /chain/head should return JSON).'
       : `Node returned non-JSON: ${preview}`;
     throw new Error(hint);
   }
 }
 
 /**
- * Browser WarthogApi: direct fetch for loopback nodes on HTTP pages; JSON POST proxy otherwise.
- * Avoids putting http:// node URLs in query strings (WAF/HTML issues on some hosts).
+ * Browser WarthogApi. Calls the node URL directly.
+ * An HTTPS page cannot call a plain HTTP node.
  */
-export function createBrowserWarthogApi(WarthogApi, baseUrl, { useProxy = false } = {}) {
+export function createBrowserWarthogApi(WarthogApi, baseUrl) {
   class BrowserWarthogApi extends WarthogApi {
-    constructor(normalizedBase, proxy) {
+    constructor(normalizedBase) {
       super(normalizedBase, { proxyUrl: null });
-      this._useProxy = proxy;
     }
 
     async request(path, options = {}) {
@@ -48,30 +47,13 @@ export function createBrowserWarthogApi(WarthogApi, baseUrl, { useProxy = false 
 
       const replacer = (_key, value) => (typeof value === 'bigint' ? Number(value) : value);
 
-      let response;
-      if (this._useProxy) {
-        const envelope = {
-          nodeBase: this.baseUrl,
-          nodePath,
-          method: options.method || 'GET',
-        };
-        if (options.body) {
-          envelope.body = JSON.parse(JSON.stringify(options.body, replacer));
-        }
-        response = await fetch(PROXY_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify(envelope),
-        });
-      } else {
-        const url = nodePath ? `${this.baseUrl}/${nodePath}` : `${this.baseUrl}/`;
-        const body = options.body ? JSON.stringify(options.body, replacer) : undefined;
-        response = await fetch(url, {
-          method: options.method || 'GET',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body,
-        });
-      }
+      const url = nodeHttpUrl(this.baseUrl, nodePath);
+      const body = options.body ? JSON.stringify(options.body, replacer) : undefined;
+      const response = await fetch(url, {
+        method: options.method || 'GET',
+        headers: { Accept: 'application/json', ...(body ? { 'Content-Type': 'application/json' } : {}) },
+        body,
+      });
 
       const text = await response.text();
       let json;
@@ -133,5 +115,5 @@ export function createBrowserWarthogApi(WarthogApi, baseUrl, { useProxy = false 
   }
 
   const normalized = baseUrl.replace(/\/+$/, '');
-  return new BrowserWarthogApi(normalized, useProxy);
+  return new BrowserWarthogApi(normalized);
 }

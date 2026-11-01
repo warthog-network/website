@@ -1,1 +1,4 @@
 # Browser Node extension zip is public/downloads/warthog_node_extension.zip (updated on this repo).
+# Force these ahead of the SSR catch-all. A live /api/* route still invokes the function.
+/api     /api-disabled.json  410!
+/api/*   /api-disabled.json  410!
