@@ -4,6 +4,8 @@ import { resolveNodeUrl } from '../lib/nodesCache';
 
 const API_URL = '/api/proxy';
 const PAGE_SIZE = 15;
+/** Confirmed block timestamps never change. Reuse them across Refresh clicks. */
+const blockTimestampCache = new Map();
 /** Safety cap so a stuck hasMore flag cannot spin forever while hunting a filter. */
 const MAX_AUTO_HISTORY_PAGES = 100;
 
@@ -34,6 +36,8 @@ const blockTimestamp = (block, blockData) =>
   || block?.header?.time?.timestamp
   || block?.timestamp
   || null;
+
+const blockCacheKey = (nodeUrl, height) => `${nodeUrl}|${height}`;
 
 const TX_THEME = {
   sectionColor: '#FFECB3',
@@ -201,8 +205,12 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
   const parseHistoryBlocks = async (rawData, nodeBaseParam, accountAddress) => {
     const timestampMap = {};
     rawData.perBlock.forEach((block) => {
-      const ts = blockTimestamp(block, null);
-      if (ts) timestampMap[block.height] = ts;
+      const ts = blockTimestamp(block, null)
+        || blockTimestampCache.get(blockCacheKey(nodeUrl, block.height));
+      if (ts) {
+        timestampMap[block.height] = ts;
+        blockTimestampCache.set(blockCacheKey(nodeUrl, block.height), ts);
+      }
     });
 
     const blocksNeedingFetch = rawData.perBlock.filter((block) => !timestampMap[block.height]);
@@ -216,7 +224,11 @@ const TransactionHistory = ({ address, node, onCountsUpdate, blockCounts, refres
         if (res.status === 'fulfilled') {
           const blockData = res.value.data.data || res.value.data;
           const h = blocksNeedingFetch[idx].height;
-          timestampMap[h] = blockTimestamp(blocksNeedingFetch[idx], blockData);
+          const ts = blockTimestamp(blocksNeedingFetch[idx], blockData);
+          if (ts) {
+            timestampMap[h] = ts;
+            blockTimestampCache.set(blockCacheKey(nodeUrl, h), ts);
+          }
         }
       });
     }
