@@ -266,21 +266,7 @@ const Wallet = () => {
     if (selectedNode === ADD_CUSTOM_KEY) return;
     const nodeUrl = resolveNodeUrl(selectedNode);
     if (wallet?.address && nodeUrl) {
-      console.log('Fetching balance for address:', wallet.address);
       fetchBalanceAndNonce(wallet.address);
-      const balanceInterval = setInterval(() => fetchBalanceAndNonce(wallet.address), 30000);
-      return () => clearInterval(balanceInterval);
-    }
-  }, [wallet, selectedNode]);
-
-  // Poll for transaction history update every 30 seconds
-  useEffect(() => {
-    if (selectedNode === ADD_CUSTOM_KEY) return;
-    if (wallet?.address) {
-      const historyInterval = setInterval(() => {
-        setRefreshHistory(prev => !prev);
-      }, 30000);
-      return () => clearInterval(historyInterval);
     }
   }, [wallet, selectedNode]);
 
@@ -289,16 +275,6 @@ const Wallet = () => {
       window.alert("If you haven't backed up the information elsewhere, do not close the next window without saving or downloading your private key.");
     }
   }, [showModal]);
-
-  // Poll for pending tx status every 30 seconds if there are pending txs
-  useEffect(() => {
-    if (sentTransactions.length > 0 && wallet?.address) {
-      const interval = setInterval(() => {
-        updateTxStatuses();
-      }, 30000); // 30 seconds
-      return () => clearInterval(interval);
-    }
-  }, [sentTransactions, wallet, selectedNode]);
 
   // PWA update logic — WalletLayout registers /webwallet/sw.js; attach listeners here
   useEffect(() => {
@@ -449,10 +425,7 @@ const Wallet = () => {
     );
     const hadConfirmation = updatedTxs.some((tx, idx) => tx.status === 'confirmed' && sentTransactions[idx].status !== 'confirmed');
     setSentTransactions(updatedTxs);
-    if (hadConfirmation) {
-      fetchBalanceAndNonce(wallet.address);
-      setRefreshHistory(prev => !prev);
-    }
+    return hadConfirmation;
   };
 
   const refreshSavedWalletList = () => {
@@ -1308,6 +1281,7 @@ const Wallet = () => {
                     setBalanceRefreshing(true);
                     try {
                       await fetchBalanceAndNonce(wallet.address);
+                      await updateTxStatuses();
                       setRefreshHistory((prev) => !prev);
                     } finally {
                       setBalanceRefreshing(false);
@@ -1632,8 +1606,14 @@ const Wallet = () => {
       <h2 className="bunker-heading">Sent Transactions Log</h2>
       
       <div className="flex gap-3">
-        <button 
-          onClick={updateTxStatuses} 
+        <button
+          onClick={async () => {
+            const confirmed = await updateTxStatuses();
+            if (confirmed && wallet?.address) {
+              fetchBalanceAndNonce(wallet.address);
+              setRefreshHistory((prev) => !prev);
+            }
+          }}
           className="bunker-btn"
         >
           Refresh Status
