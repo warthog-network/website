@@ -24,10 +24,11 @@ import {
   unlockEnvelopeWith2fa,
 } from '../utils/passkeyWallet';
 import { clearPasskeyWaiting, paintPasskeyWaiting } from '../utils/passkeyUi';
+import { connectLedgerAccount } from '../lib/ledgerWarthog.js';
 
 setPasskeyProductName('Warthog Web Wallet');
 
-/** @typedef {'hub'|'login'|'create'|'have'|'derive'|'import'|'load'|'secure'} AccessPath */
+/** @typedef {'hub'|'login'|'create'|'have'|'derive'|'import'|'load'|'ledger'|'secure'} AccessPath */
 /** @typedef {'save'|'backup'} SecureStep */
 
 function PathButton({ primary, label, meta, onClick, disabled }) {
@@ -124,6 +125,8 @@ export default function WalletAccessHub({ onActivate }) {
   const [pathType, setPathType] = useState('hardened');
   const [mnemonic, setMnemonic] = useState('');
   const [privateKey, setPrivateKey] = useState('');
+  const [ledgerIndex, setLedgerIndex] = useState('0');
+  const [ledgerFrom, setLedgerFrom] = useState('hub');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -165,6 +168,7 @@ export default function WalletAccessHub({ onActivate }) {
     derive: 'Seed phrase',
     import: 'Private key',
     load: 'Wallet file',
+    ledger: 'Connect Ledger',
     secure: secureStep === 'save' ? 'Unlock options' : 'Backup seed',
   };
 
@@ -178,6 +182,8 @@ export default function WalletAccessHub({ onActivate }) {
     derive: 'Enter your 12 or 24-word seed phrase.',
     import: 'Paste the 64-character private key.',
     load: 'Upload warthog_wallet.txt and enter its password.',
+    ledger:
+      'Unlock the Nano and open the Warthog app. This browser stores the address, not the key. Each send is approved on the device.',
     secure:
       secureStep === 'save'
         ? 'Enable passkey and/or set a password for next login.'
@@ -188,7 +194,9 @@ export default function WalletAccessHub({ onActivate }) {
   const backTarget =
     path === 'secure'
       ? 'hub'
-      : ['derive', 'import', 'load'].includes(path)
+      : path === 'ledger'
+        ? ledgerFrom
+        : ['derive', 'import', 'load'].includes(path)
         ? 'have'
         : path === 'login' || path === 'create' || path === 'have'
           ? 'hub'
@@ -233,6 +241,35 @@ export default function WalletAccessHub({ onActivate }) {
       beginSecure(data, 'restore', walletName.trim() || 'restored');
     } catch (e) {
       setError(e?.message || 'Invalid seed phrase');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleLedger = async () => {
+    setError(null);
+    const index = Number(ledgerIndex);
+    if (!Number.isInteger(index) || index < 0 || index > 1000) {
+      setError('Account index must be a whole number from 0 up');
+      return;
+    }
+    setBusy(true);
+    try {
+      const session = await connectLedgerAccount(pathType, index);
+      const name = walletName.trim() || 'Ledger';
+      onActivate(
+        {
+          ledger: true,
+          address: session.address,
+          publicKey: session.publicKey,
+          pathType: session.pathType,
+          index: session.index,
+          name,
+        },
+        name,
+      );
+    } catch (e) {
+      setError(e?.message || 'Ledger login failed');
     } finally {
       setBusy(false);
     }
@@ -491,8 +528,16 @@ export default function WalletAccessHub({ onActivate }) {
             onClick={() => goPath('create')}
           />
           <PathButton
+            label="Connect Ledger"
+            meta="Warthog app on a Nano. Chrome, Edge, or Brave."
+            onClick={() => {
+              setLedgerFrom('hub');
+              goPath('ledger');
+            }}
+          />
+          <PathButton
             label={hasSaved ? 'Other restore options' : 'I already have a wallet'}
-            meta="Seed, key, or file"
+            meta="Seed, key, file, or Ledger"
             onClick={() => goPath('have')}
           />
         </div>
@@ -510,6 +555,64 @@ export default function WalletAccessHub({ onActivate }) {
           <PathButton label="Seed phrase" meta="12 or 24 words" onClick={() => goPath('derive')} />
           <PathButton label="Private key" meta="64-character hex" onClick={() => goPath('import')} />
           <PathButton label="Encrypted file" meta="warthog_wallet.txt" onClick={() => goPath('load')} />
+          <PathButton
+            label="Ledger"
+            meta="Warthog app on a Nano"
+            onClick={() => {
+              setLedgerFrom('have');
+              goPath('ledger');
+            }}
+          />
+        </div>
+      )}
+
+      {path === 'ledger' && (
+        <div className="flex flex-col gap-3">
+          <p className="text-xs bunker-muted">
+            Open the Warthog app on the Nano. The browser lists the device, then the Nano shows the address.
+          </p>
+          <div>
+            <label className="bunker-label">Name</label>
+            <input
+              type="text"
+              value={walletName}
+              onChange={(e) => setWalletName(e.target.value)}
+              placeholder="Ledger"
+              autoComplete="off"
+              className="bunker-input"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="bunker-label">Path</label>
+              <select
+                value={pathType}
+                onChange={(e) => setPathType(e.target.value)}
+                className="bunker-input"
+              >
+                <option value="hardened">Hardened BIP44</option>
+                <option value="non-hardened">Legacy / non-hardened</option>
+              </select>
+            </div>
+            <div>
+              <label className="bunker-label">Account index</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={ledgerIndex}
+                onChange={(e) => setLedgerIndex(e.target.value.replace(/[^\d]/g, ''))}
+                className="bunker-input"
+              />
+            </div>
+          </div>
+          <button
+            type="button"
+            className="bunker-btn bunker-btn--primary"
+            disabled={busy}
+            onClick={() => void handleLedger()}
+          >
+            {busy ? 'Waiting for the Ledger…' : 'Connect Ledger'}
+          </button>
         </div>
       )}
 
@@ -558,6 +661,17 @@ export default function WalletAccessHub({ onActivate }) {
             onClick={() => void handleCreate()}
           >
             {busy ? 'Generating…' : 'Continue — unlock options'}
+          </button>
+          <button
+            type="button"
+            className="bunker-btn"
+            disabled={busy}
+            onClick={() => {
+              setLedgerFrom('create');
+              goPath('ledger');
+            }}
+          >
+            Connect Ledger
           </button>
         </div>
       )}

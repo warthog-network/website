@@ -107,6 +107,19 @@ export function persistSavedCustomNodes(nodes) {
  * Save (or update) a custom node and return the normalized URL.
  * Dedupes by URL.
  */
+/** Save a node the wallet already normalized to a full URL. */
+export function saveCustomNodeUrl(url) {
+  const clean = String(url || '').trim().replace(/\/$/, '');
+  if (!/^https?:\/\//i.test(clean)) {
+    throw new Error('Enter a node address');
+  }
+  const existing = loadSavedCustomNodes();
+  const label = labelForNodeUrl(clean);
+  const withoutDup = existing.filter((n) => n.url !== clean);
+  persistSavedCustomNodes([{ url: clean, label }, ...withoutDup]);
+  return clean;
+}
+
 export function saveCustomNode(host, port) {
   const url = buildCustomNodeUrl(host, port);
   if (!url) {

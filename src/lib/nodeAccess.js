@@ -32,6 +32,43 @@ export const browserCanReachNode = (node) => {
   return isLoopbackNode(node);
 };
 
+/**
+ * Node address typed into the web wallet.
+ * HTTPS is kept. A bare host is treated as HTTPS. Localhost stays HTTP.
+ * Any other plain HTTP address is rejected: this site no longer relays it.
+ */
+export function parseWalletNodeInput(raw) {
+  let value = String(raw || '').trim().replace(/\/+$/, '');
+  if (!value) throw new Error('Enter a node address');
+
+  const hasScheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(value);
+  if (!hasScheme) {
+    const hostPort = value.split('/')[0];
+    const bracket = hostPort.startsWith('[') ? hostPort.indexOf(']') : -1;
+    const host = (bracket > 1 ? hostPort.slice(1, bracket) : hostPort.split(':')[0]).toLowerCase();
+    const loopback = host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '0.0.0.0';
+    const hasPort = bracket > 1 ? hostPort.slice(bracket + 1).startsWith(':') : hostPort.includes(':');
+    if (loopback) value = `http://${hasPort ? hostPort : `${hostPort}:3000`}`;
+    else value = `https://${hostPort}`;
+  }
+
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error('Enter https://your-node.example or http://localhost:3000');
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    throw new Error('Enter https://your-node.example or http://localhost:3000');
+  }
+  if (url.protocol === 'http:' && !isLoopbackNode(url.href)) {
+    throw new Error(
+      'This page can reach an HTTPS node, or a node on this computer at http://localhost. A plain HTTP address on another machine cannot be used.',
+    );
+  }
+  return `${url.protocol}//${url.host}`;
+}
+
 /** Absolute URL for a node API path. Throws when the browser cannot reach it. */
 export function nodeHttpUrl(nodeBase, nodePath) {
   const base = String(nodeBase || '').trim().replace(/\/+$/, '');

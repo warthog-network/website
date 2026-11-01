@@ -5,14 +5,15 @@ import TransactionHistory from './TransactionHistory';
 import WalletOverviewCard from './WalletOverviewCard.jsx';
 import WalletQrExportModal from './WalletQrExportModal.jsx';
 import { buildNodeList, resolveNodeUrl } from '../lib/nodesCache';
-import { nodeHttpUrl } from '../lib/nodeAccess.js';
+import { nodeHttpUrl, parseWalletNodeInput } from '../lib/nodeAccess.js';
 import {
   ADD_CUSTOM_KEY,
   OFFICIAL1_KEY,
   loadSavedCustomNodes,
   normalizeSelectedNode,
-  saveCustomNode,
+  saveCustomNodeUrl,
 } from '../lib/explorerNodes.js';
+import { signWartTransferOnLedger } from '../lib/ledgerWarthog.js';
 import {
   encryptWallet,
   decryptWallet,
@@ -79,6 +80,7 @@ const Wallet = () => {
   const [selectedNode, setSelectedNode] = useState(OFFICIAL1_KEY);
   const [customIP, setCustomIP] = useState('localhost');
   const [customPort, setCustomPort] = useState('3000');
+  const [customNodeUrl, setCustomNodeUrl] = useState('');
   const [balanceRefreshing, setBalanceRefreshing] = useState(false);
   const [showDownloadPrompt, setShowDownloadPrompt] = useState(false);
   const [sending, setSending] = useState(false); // New: to disable button during send
@@ -203,10 +205,12 @@ const Wallet = () => {
 
   const handleSaveCustomNode = () => {
     try {
-      const url = saveCustomNode(customIP, customPort);
+      const url = saveCustomNodeUrl(parseWalletNodeInput(customNodeUrl));
+      setNodesError(null);
       setNodeList(buildNodeList());
       setSelectedNode(url);
       localStorage.setItem('selectedNode', url);
+      setCustomNodeUrl('');
     } catch (err) {
       setNodesError(err?.message || 'Could not save custom node');
     }
@@ -247,6 +251,18 @@ const Wallet = () => {
   }, []);
 
   useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('warthogLedgerSession');
+      if (raw) {
+        const session = JSON.parse(raw);
+        if (session?.ledger && session.address) {
+          activateWalletSession(session, session.name || 'Ledger');
+          return;
+        }
+      }
+    } catch {
+      sessionStorage.removeItem('warthogLedgerSession');
+    }
     const encryptedWallet = localStorage.getItem('warthogWallet');
     if (encryptedWallet) {
       setShowPasswordPrompt(true);
@@ -451,6 +467,21 @@ const Wallet = () => {
   };
 
   const activateWalletSession = (decryptedWallet, name = null) => {
+    if (decryptedWallet?.ledger) {
+      const session = {
+        ledger: true,
+        address: decryptedWallet.address,
+        publicKey: decryptedWallet.publicKey,
+        pathType: decryptedWallet.pathType === 'non-hardened' ? 'non-hardened' : 'hardened',
+        index: Number.isFinite(decryptedWallet.index) ? decryptedWallet.index : 0,
+        name: name || decryptedWallet.name || 'Ledger',
+      };
+      sessionStorage.setItem('warthogLedgerSession', JSON.stringify(session));
+      decryptedWallet = session;
+      name = session.name;
+    } else {
+      sessionStorage.removeItem('warthogLedgerSession');
+    }
     setWallet(decryptedWallet);
     setCurrentWalletName(name);
     setNonceInput('');
@@ -733,6 +764,7 @@ const Wallet = () => {
   };
 
   const clearWallet = () => {
+    sessionStorage.removeItem('warthogLedgerSession');
     if (!currentWalletName) {
       localStorage.removeItem('warthogWallet');
     }
@@ -984,7 +1016,7 @@ const Wallet = () => {
       return;
     }
     const txPrivateKey = wallet?.privateKey;
-    if (!txPrivateKey) {
+    if (!wallet?.ledger && !txPrivateKey) {
       setError('No wallet saved. Please create, derive, or log in with a wallet first.');
       setSending(false);
       return;
@@ -1025,36 +1057,47 @@ const Wallet = () => {
       timestamp: new Date().toISOString(),
     };
     try {
-      // Use freshly resolved pin values (not stale React state)
-      const pinHashBytes = ethers.getBytes('0x' + usePinHash);
-      const heightBytes = new Uint8Array(4);
-      new DataView(heightBytes.buffer).setUint32(0, usePinHeight, false);
-      const nonceBytes = new Uint8Array(4);
-      new DataView(nonceBytes.buffer).setUint32(0, txNonce, false); // Use txNonce
-      const reserved = new Uint8Array(3);
-      const feeBytes = new Uint8Array(8);
-      new DataView(feeBytes.buffer).setBigUint64(0, BigInt(feeE8), false);
-      const toRawBytes = ethers.getBytes('0x' + toAddr.slice(0, 40));
-      const amountBytes = new Uint8Array(8);
-      new DataView(amountBytes.buffer).setBigUint64(0, BigInt(amountE8), false);
-      const messageBytes = ethers.concat([
-        pinHashBytes,
-        heightBytes,
-        nonceBytes,
-        reserved,
-        feeBytes,
-        toRawBytes,
-        amountBytes,
-      ]);
-      const txHash = ethers.sha256(messageBytes);
-      const txHashBytes = ethers.getBytes(txHash);
-      const signer = new ethers.Wallet('0x' + txPrivateKey);
-      const sig = signer.signingKey.sign(txHashBytes);
-      const rHex = sig.r.slice(2);
-      const sHex = sig.s.slice(2);
-      const recid = sig.v - 27;
-      const recidHex = recid.toString(16).padStart(2, '0');
-      const signature65 = rHex + sHex + recidHex;
+      let signature65;
+      if (wallet?.ledger) {
+        signature65 = await signWartTransferOnLedger(wallet, {
+          pinHash: usePinHash,
+          pinHeight: usePinHeight,
+          nonceId: txNonce,
+          feeE8: BigInt(feeE8),
+          toAddress: toAddr,
+          amountE8: BigInt(amountE8),
+        });
+      } else {
+        const pinHashBytes = ethers.getBytes('0x' + usePinHash);
+        const heightBytes = new Uint8Array(4);
+        new DataView(heightBytes.buffer).setUint32(0, usePinHeight, false);
+        const nonceBytes = new Uint8Array(4);
+        new DataView(nonceBytes.buffer).setUint32(0, txNonce, false);
+        const reserved = new Uint8Array(3);
+        const feeBytes = new Uint8Array(8);
+        new DataView(feeBytes.buffer).setBigUint64(0, BigInt(feeE8), false);
+        const toRawBytes = ethers.getBytes('0x' + toAddr.slice(0, 40));
+        const amountBytes = new Uint8Array(8);
+        new DataView(amountBytes.buffer).setBigUint64(0, BigInt(amountE8), false);
+        const messageBytes = ethers.concat([
+          pinHashBytes,
+          heightBytes,
+          nonceBytes,
+          reserved,
+          feeBytes,
+          toRawBytes,
+          amountBytes,
+        ]);
+        const txHash = ethers.sha256(messageBytes);
+        const txHashBytes = ethers.getBytes(txHash);
+        const signer = new ethers.Wallet('0x' + txPrivateKey);
+        const sig = signer.signingKey.sign(txHashBytes);
+        const rHex = sig.r.slice(2);
+        const sHex = sig.s.slice(2);
+        const recid = sig.v - 27;
+        const recidHex = recid.toString(16).padStart(2, '0');
+        signature65 = rHex + sHex + recidHex;
+      }
       const nodeUrl = resolveNodeUrl(selectedNode);
       if (!nodeUrl) {
         setError('Select a valid node before sending');
@@ -1246,7 +1289,9 @@ const Wallet = () => {
                   walletName={currentWalletName}
                   refreshing={balanceRefreshing}
                   authBadge={
-                    sessionRequire2fa
+                    wallet?.ledger
+                      ? 'ledger'
+                      : sessionRequire2fa
                       ? '2fa'
                       : sessionHasPasskey
                         ? 'passkey'
@@ -1255,7 +1300,9 @@ const Wallet = () => {
                           : 'session'
                   }
                   authBadgeLabel={
-                    sessionRequire2fa
+                    wallet?.ledger
+                      ? 'Ledger'
+                      : sessionRequire2fa
                       ? '2FA'
                       : sessionHasPasskey
                         ? fpLabel
@@ -1405,8 +1452,15 @@ const Wallet = () => {
                           className="bunker-input"
                         />
                       </div>
+                      {wallet?.ledger && (
+                        <p className="text-xs text-zinc-400 mb-3 m-0">
+                          Approve this send on the Ledger. The Warthog app must stay open.
+                        </p>
+                      )}
                       <button onClick={handleSendTransaction} disabled={sending} className="bunker-btn bunker-btn--primary">
-                        {sending ? 'Sending...' : 'Send Transaction'}
+                        {sending
+                          ? (wallet?.ledger ? 'Waiting for the Ledger…' : 'Sending...')
+                          : 'Send Transaction'}
                       </button>
                     </div>
                   </div>
@@ -1470,17 +1524,17 @@ const Wallet = () => {
                     onNumberPrefsChange={setNumberPrefs}
                     nodeList={nodeList}
                     selectedNode={selectedNode}
-                    customIP={customIP}
-                    customPort={customPort}
+                    customNodeUrl={customNodeUrl}
                     nodesLoading={nodesLoading}
                     nodesError={nodesError}
                     onNodeChange={(key) => {
                       setSelectedNode(key);
                       localStorage.setItem('selectedNode', key);
+                      setNodesError(null);
                     }}
-                    onCustomIPChange={setCustomIP}
-                    onCustomPortChange={setCustomPort}
+                    onCustomNodeUrlChange={setCustomNodeUrl}
                     onSaveCustomNode={handleSaveCustomNode}
+                    isLedger={Boolean(wallet?.ledger)}
                     validateInput={address}
                     onValidateInputChange={(value) => setAddress(value.trim())}
                     onValidate={handleValidateAddress}

@@ -302,14 +302,13 @@ export default function WalletSettingsPanel({
   // network
   nodeList = [],
   selectedNode = '',
-  customIP = '',
-  customPort = '',
+  customNodeUrl = '',
   nodesLoading = false,
   nodesError = null,
   onNodeChange,
-  onCustomIPChange,
-  onCustomPortChange,
+  onCustomNodeUrlChange,
   onSaveCustomNode,
+  isLedger = false,
   // validate
   validateInput = '',
   onValidateInputChange,
@@ -466,7 +465,16 @@ export default function WalletSettingsPanel({
         </div>
 
         {/* Single active card */}
-        {resolvedTool === 'security' && passkeysSupported && (
+        {resolvedTool === 'security' && isLedger && (
+          <div className="rounded-2xl border border-zinc-700/70 bg-zinc-950/80 p-4 sm:p-5">
+            <h3 className="text-base font-semibold text-white m-0 mb-1">Ledger</h3>
+            <p className="text-sm text-zinc-400 m-0">
+              This session is the Warthog account on the Nano. The key stays on the device. Each send is approved there.
+            </p>
+          </div>
+        )}
+
+        {resolvedTool === 'security' && !isLedger && passkeysSupported && (
           <div
             className="rounded-2xl border p-4 sm:p-5"
             style={{
@@ -583,7 +591,19 @@ export default function WalletSettingsPanel({
           </div>
         )}
 
-        {resolvedTool === 'backup' && (
+        {resolvedTool === 'backup' && isLedger && (
+          <div className="rounded-2xl border border-zinc-700/70 bg-zinc-950/80 p-4 sm:p-5">
+            <h3 className="text-base font-semibold text-white m-0 mb-1">Backup &amp; export</h3>
+            <p className="text-sm text-zinc-400 mb-4 m-0">
+              The key stays on the Ledger. This browser only keeps the address for this session.
+            </p>
+            <button type="button" className="bunker-btn" onClick={onContacts}>
+              Contacts
+            </button>
+          </div>
+        )}
+
+        {resolvedTool === 'backup' && !isLedger && (
           <div className="rounded-2xl border border-zinc-700/70 bg-zinc-950/80 p-4 sm:p-5">
             <h3 className="text-base font-semibold text-white m-0 mb-1">Backup &amp; export</h3>
             <p className="text-sm text-zinc-400 mb-4 m-0">
@@ -621,7 +641,10 @@ export default function WalletSettingsPanel({
         {resolvedTool === 'network' && (
           <div className="rounded-2xl border border-zinc-700/70 bg-zinc-950/80 p-4 sm:p-5">
             <h3 className="text-base font-semibold text-white m-0 mb-1">Network node</h3>
-            <p className="text-sm text-zinc-400 mb-4 m-0">RPC peer for balance and sends.</p>
+            <p className="text-sm text-zinc-400 mb-4 m-0">
+              Official 1, an HTTPS node, or a node on this computer at http://localhost:3000.
+              A plain HTTP address on another machine cannot be used from this site.
+            </p>
             {nodesLoading ? (
               <p className="text-xs text-zinc-500">Loading nodes…</p>
             ) : nodesError ? (
@@ -647,22 +670,17 @@ export default function WalletSettingsPanel({
               <div className="mt-3 flex flex-wrap gap-2 items-center">
                 <input
                   type="text"
-                  value={customIP}
-                  onChange={(e) => onCustomIPChange?.(e.target.value)}
-                  placeholder="Host"
-                  className="bunker-input"
-                />
-                <input
-                  type="text"
-                  value={customPort}
-                  onChange={(e) => onCustomPortChange?.(e.target.value)}
-                  placeholder="Port"
-                  className="bunker-input !max-w-[6rem]"
+                  value={customNodeUrl}
+                  onChange={(e) => onCustomNodeUrlChange?.(e.target.value)}
+                  placeholder="https://your-node.example or http://localhost:3000"
+                  className="bunker-input flex-1 min-w-[16rem]"
+                  spellCheck={false}
+                  autoCapitalize="off"
                 />
                 <button
                   type="button"
                   onClick={onSaveCustomNode}
-                  disabled={!String(customIP || '').trim() || !String(customPort || '').trim()}
+                  disabled={!String(customNodeUrl || '').trim()}
                   className="bunker-btn"
                 >
                   Save node
