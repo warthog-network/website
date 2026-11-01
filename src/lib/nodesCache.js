@@ -4,8 +4,6 @@ import {
   loadSavedCustomNodes,
   normalizeSelectedNode,
   resolveNodeBaseFromSelection,
-  OFFICIAL1_KEY,
-  OFFICIAL1_URL,
   ADD_CUSTOM_KEY,
 } from './explorerNodes.js';
 
@@ -16,11 +14,7 @@ export function buildNodeList() {
   return getNodeSelectOptions(loadSavedCustomNodes()).map((opt) => ({
     id: opt.value,
     name: opt.label,
-    url: opt.value === ADD_CUSTOM_KEY
-      ? ''
-      : opt.value === OFFICIAL1_KEY
-        ? OFFICIAL1_URL
-        : opt.value,
+    url: opt.value === ADD_CUSTOM_KEY ? '' : (getExplorerHost(opt.value) || opt.value),
   }));
 }
 

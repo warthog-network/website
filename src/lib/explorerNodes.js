@@ -1,20 +1,21 @@
 /**
  * Shared node selection for explorer + wallet.
  *
- * - Official 1 (indexed) is the only built-in public node.
+ * - Official 1 (indexed) and official 2 are the built-in public nodes.
  * - Users can save custom host:port entries; those appear in the dropdown.
  * - Selecting "Custom…" shows host/port inputs + Save (then collapses).
  */
 
 export const OFFICIAL1_URL = 'https://warthognode.duckdns.org';
 export const OFFICIAL1_KEY = 'losthymns';
+export const OFFICIAL2_URL = 'https://mainnet.wartnode.com';
+export const OFFICIAL2_KEY = 'official2';
 export const ADD_CUSTOM_KEY = 'custom';
 
 const SAVED_NODES_STORAGE_KEY = 'savedCustomNodes';
 
-/** Legacy keys/URLs that used to be official 2 — map back to official 1. */
+/** Retired official 2 hosts. The name official 2 now means mainnet.wartnode.com. */
 const LEGACY_OFFICIAL2 = new Set([
-  'official2',
   'polaire',
   'http://65.87.7.86:3001',
 ]);
@@ -136,6 +137,7 @@ export function saveCustomNode(host, port) {
 /**
  * Map any stored selection to a stable select value:
  * - `losthymns` for official 1
+ * - `official2` for https://mainnet.wartnode.com
  * - full URL for a saved custom node
  * - `custom` only while the add form is open
  */
@@ -144,6 +146,9 @@ export function normalizeSelectedNode(node) {
   const trimmed = String(node).trim();
   const bareUrl = trimmed.replace(/\/$/, '');
 
+  if (trimmed === OFFICIAL2_KEY || bareUrl === OFFICIAL2_URL) {
+    return OFFICIAL2_KEY;
+  }
   if (LEGACY_OFFICIAL2.has(trimmed) || LEGACY_OFFICIAL2.has(bareUrl)) {
     return OFFICIAL1_KEY;
   }
@@ -169,6 +174,7 @@ export function normalizeSelectedNode(node) {
 /** Built-in + "Custom…" row (saved nodes are merged at runtime). */
 export const BUILTIN_NODE_OPTIONS = [
   { value: OFFICIAL1_KEY, label: 'official 1' },
+  { value: OFFICIAL2_KEY, label: 'official 2' },
   { value: ADD_CUSTOM_KEY, label: 'Custom…' },
 ];
 
@@ -177,7 +183,7 @@ export const NODE_SELECT_OPTIONS = BUILTIN_NODE_OPTIONS;
 export const EXPLORER_NODE_OPTIONS = BUILTIN_NODE_OPTIONS;
 
 /**
- * Full dropdown options: official 1, saved customs, Custom…
+ * Full dropdown options: official 1, official 2, saved customs, Custom…
  */
 export function getNodeSelectOptions(savedNodes = loadSavedCustomNodes()) {
   const customs = (savedNodes || []).map((n) => ({
@@ -186,6 +192,7 @@ export function getNodeSelectOptions(savedNodes = loadSavedCustomNodes()) {
   }));
   return [
     { value: OFFICIAL1_KEY, label: 'official 1' },
+    { value: OFFICIAL2_KEY, label: 'official 2' },
     ...customs,
     { value: ADD_CUSTOM_KEY, label: 'Custom…' },
   ];
@@ -194,6 +201,7 @@ export function getNodeSelectOptions(savedNodes = loadSavedCustomNodes()) {
 export function getExplorerHost(node) {
   const key = normalizeSelectedNode(node);
   if (key === OFFICIAL1_KEY) return OFFICIAL1_URL;
+  if (key === OFFICIAL2_KEY) return OFFICIAL2_URL;
   if (key === ADD_CUSTOM_KEY) return null;
   if (/^https?:\/\//i.test(key)) return key;
   return OFFICIAL1_URL;
@@ -250,6 +258,7 @@ export function resolveExplorerHostFromStorage(defaultNode = OFFICIAL1_KEY) {
 /** @deprecated kept for older imports */
 export const NODE_HOSTS = {
   [OFFICIAL1_KEY]: OFFICIAL1_URL,
+  [OFFICIAL2_KEY]: OFFICIAL2_URL,
   local: 'http://localhost:3000',
 };
 
@@ -258,5 +267,10 @@ export const NODE_CONFIG = {
     url: OFFICIAL1_URL,
     label: 'official 1',
     hasIndexer: true,
+  },
+  [OFFICIAL2_KEY]: {
+    url: OFFICIAL2_URL,
+    label: 'official 2',
+    hasIndexer: false,
   },
 };
