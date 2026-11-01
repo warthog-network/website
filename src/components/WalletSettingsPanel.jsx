@@ -19,6 +19,7 @@ import {
   prefsForNumberDisplayMode,
   saveNumberDisplayPrefs,
 } from '../utils/numberDisplay.js';
+import { AUTO_LOCK_CHOICES } from '../utils/ledgerSession.js';
 
 const PREVIEW_SAMPLES = [
   { label: 'Large amount', value: 1000000 },
@@ -335,9 +336,20 @@ export default function WalletSettingsPanel({
   onExportQr,
   onContacts,
   onClear,
+  autoLockMinutes = 5,
+  onAutoLockChange,
+  onSaveLedger,
+  ledgerSaveMsg = '',
+  ledgerSaved = false,
 }) {
   const [activeTool, setActiveTool] = useState('security');
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [ledgerName, setLedgerName] = useState(currentWalletName || '');
+  const [ledgerSaveError, setLedgerSaveError] = useState('');
+
+  useEffect(() => {
+    setLedgerName(currentWalletName || '');
+  }, [currentWalletName]);
 
   const [localPrefs, setLocalPrefs] = useState(
     () => numberPrefs || loadNumberDisplayPrefs(),
@@ -595,7 +607,7 @@ export default function WalletSettingsPanel({
           <div className="rounded-2xl border border-zinc-700/70 bg-zinc-950/80 p-4 sm:p-5">
             <h3 className="text-base font-semibold text-white m-0 mb-1">Backup &amp; export</h3>
             <p className="text-sm text-zinc-400 mb-4 m-0">
-              The key stays on the Ledger. This browser only keeps the address for this session.
+              The key stays on the Ledger. Save the account under Account to open it from saved wallets. Each send is still approved on the device.
             </p>
             <button type="button" className="bunker-btn" onClick={onContacts}>
               Contacts
@@ -727,8 +739,68 @@ export default function WalletSettingsPanel({
           <div className="rounded-2xl border border-zinc-700/70 bg-zinc-950/80 p-4 sm:p-5">
             <h3 className="text-base font-semibold text-white m-0 mb-1">Account</h3>
             <p className="text-sm text-zinc-400 mb-4 m-0">
-              Lock this session. Keys stay in browser storage if the wallet was saved.
+              Locks after you leave this page for the time below. Staying on the page keeps the Ledger account open.
             </p>
+            <label className="bunker-label" htmlFor="ledger-auto-lock">Ledger auto lock</label>
+            <select
+              id="ledger-auto-lock"
+              className="bunker-input mb-4"
+              value={AUTO_LOCK_CHOICES.includes(Number(autoLockMinutes)) ? Number(autoLockMinutes) : 5}
+              onChange={(e) => onAutoLockChange?.(Number(e.target.value))}
+            >
+              {AUTO_LOCK_CHOICES.map((minutes) => (
+                <option key={minutes} value={minutes}>
+                  {minutes === 60 ? '1 hour' : `${minutes} minute${minutes === 1 ? '' : 's'}`}
+                </option>
+              ))}
+            </select>
+            {isLedger && (
+              <div className="mb-4">
+                {ledgerSaved ? (
+                  <p className="text-sm text-zinc-300 m-0">
+                    Saved in this browser as “{currentWalletName}”. After it locks, open it from saved wallets.
+                  </p>
+                ) : (
+                  <>
+                    <label className="bunker-label" htmlFor="ledger-save-name">Save this Ledger account</label>
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <input
+                        id="ledger-save-name"
+                        type="text"
+                        value={ledgerName}
+                        onChange={(e) => {
+                          setLedgerName(e.target.value);
+                          setLedgerSaveError('');
+                        }}
+                        placeholder="Ledger"
+                        className="bunker-input flex-1 min-w-[12rem]"
+                        autoComplete="off"
+                      />
+                      <button
+                        type="button"
+                        className="bunker-btn"
+                        onClick={() => {
+                          try {
+                            onSaveLedger?.(ledgerName.trim() || 'Ledger');
+                            setLedgerSaveError('');
+                          } catch (err) {
+                            setLedgerSaveError(err?.message || 'Could not save this Ledger account');
+                          }
+                        }}
+                      >
+                        Save Ledger account
+                      </button>
+                    </div>
+                    {ledgerSaveError && (
+                      <p className="text-sm text-red-400 mt-2 mb-0">{ledgerSaveError}</p>
+                    )}
+                    {ledgerSaveMsg && !ledgerSaveError && (
+                      <p className="text-sm text-emerald-400/90 mt-2 mb-0">{ledgerSaveMsg}</p>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
             <button type="button" className="bunker-btn bunker-btn--ghost text-red-400" onClick={onClear}>
               Clear wallet (lock session)
             </button>

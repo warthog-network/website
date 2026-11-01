@@ -10,6 +10,11 @@ import {
   tryParseEnvelope,
   setPasskeyProductName,
 } from './passkeyWallet.js';
+import {
+  parseLedgerRecord,
+  sameWartAddress,
+  serializeLedgerRecord,
+} from './ledgerSession.js';
 
 setPasskeyProductName('Warthog Web Wallet');
 
@@ -80,6 +85,7 @@ export function getSavedWalletEntries() {
         require2fa: info.require2fa,
         badge: authBadgeForBlob(raw),
         addressHint: info.addressHint || '',
+        ledger: Boolean(info.ledger),
       });
     }
     return entries.sort((a, b) => a.name.localeCompare(b.name));
@@ -93,6 +99,26 @@ export function loadNamedWalletEncrypted(name) {
   const trimmed = String(name || '').trim();
   if (!trimmed) return null;
   return localStorage.getItem(`${NAMED_PREFIX}${trimmed}`);
+}
+
+/** Save a Ledger account under a wallet name. The record has no private key. */
+export function saveLedgerNamedWallet(name, data) {
+  const trimmed = String(name || '').trim();
+  if (!trimmed) throw new Error('Enter a wallet name');
+  const existing = loadNamedWalletEncrypted(trimmed);
+  if (existing) {
+    const prev = parseLedgerRecord(existing);
+    if (!prev) throw new Error('That name is already used by another wallet');
+    if (!sameWartAddress(prev.address, data?.address)) {
+      throw new Error('That name is already a different Ledger account');
+    }
+  }
+  saveNamedWalletBlob(trimmed, serializeLedgerRecord(data));
+  return trimmed;
+}
+
+export function ledgerRecordForName(name) {
+  return parseLedgerRecord(loadNamedWalletEncrypted(name));
 }
 
 export function saveNamedWalletBlob(name, encrypted) {
