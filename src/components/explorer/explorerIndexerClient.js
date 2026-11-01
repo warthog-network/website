@@ -1,8 +1,12 @@
 import { Block, normalizeTx } from './assets/block.js';
-import { nodeHasIndexer, normalizeSelectedNode } from '../../lib/explorerNodes.js';
+import { OFFICIAL1_URL, nodeHasIndexer, normalizeSelectedNode } from '../../lib/explorerNodes.js';
 
-async function fetchSiteExplorerJson(path, { searchParams } = {}) {
-  const url = new URL(path, window.location.origin);
+/**
+ * The indexer lives on the official node and sends CORS headers, so the
+ * browser calls it directly. Paths are the node's `/api/explorer/...` routes.
+ */
+async function fetchIndexerJson(path, { searchParams } = {}) {
+  const url = new URL(path, `${OFFICIAL1_URL}/`);
   if (searchParams) {
     for (const [key, value] of Object.entries(searchParams)) {
       if (value != null) url.searchParams.set(key, String(value));
@@ -33,7 +37,7 @@ async function fetchSiteExplorerJson(path, { searchParams } = {}) {
 }
 
 export async function fetchIndexerChainHead() {
-  const data = await fetchSiteExplorerJson('/api/explorer/chain/head');
+  const data = await fetchIndexerJson('/api/explorer/chain/head');
   const height = data?.height ?? data?.pinHeight;
   if (height == null) {
     throw new Error('Unexpected indexer head response');
@@ -42,7 +46,7 @@ export async function fetchIndexerChainHead() {
 }
 
 export async function fetchIndexerLatestBlocks(count = 10) {
-  const data = await fetchSiteExplorerJson('/api/explorer/blocks/latest', {
+  const data = await fetchIndexerJson('/api/explorer/blocks/latest', {
     searchParams: { count },
   });
   const blocks = Array.isArray(data?.blocks)
@@ -54,7 +58,7 @@ export async function fetchIndexerLatestBlocks(count = 10) {
 }
 
 export async function fetchIndexerBlock(height) {
-  const data = await fetchSiteExplorerJson(`/api/explorer/blocks/${height}`);
+  const data = await fetchIndexerJson(`/api/explorer/blocks/${height}`);
   if (!data) {
     throw new Error('Block not found');
   }
@@ -63,9 +67,8 @@ export async function fetchIndexerBlock(height) {
 
 export async function fetchIndexerAccount(address, { includeTxCount = false } = {}) {
   const addr = String(address || '').trim().toLowerCase();
-  const data = await fetchSiteExplorerJson('/api/explorer/account', {
+  const data = await fetchIndexerJson(`/api/explorer/accounts/${addr}`, {
     searchParams: {
-      address: addr,
       includeTxCount: includeTxCount ? '1' : '0',
     },
   });
@@ -108,8 +111,8 @@ export async function fetchIndexerAccountTransactions(address, page = 1, count =
 
   // Head is cached 30s so pagination doesn't re-hit chain/head every time.
   const [data, headHeight] = await Promise.all([
-    fetchSiteExplorerJson('/api/explorer/account-history', {
-      searchParams: { address: addr, page: p, count: c, includeTotal: '0' },
+    fetchIndexerJson(`/api/explorer/accounts/${addr}/transactions`, {
+      searchParams: { page: p, count: c, includeTotal: '0' },
     }),
     cachedHeadHeight(),
   ]);
@@ -143,7 +146,7 @@ export async function fetchIndexerAccountTransactions(address, page = 1, count =
   };
 }
 
-/** True when the selected node should use the site indexer proxy. */
+/** True when the selected node should use the official node's indexer. */
 export function shouldUseExplorerIndexer(selectedNode) {
   if (selectedNode == null && typeof window !== 'undefined') {
     return nodeHasIndexer(localStorage.getItem('selectedNode'));

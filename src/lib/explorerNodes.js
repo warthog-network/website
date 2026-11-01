@@ -186,7 +186,7 @@ export function getExplorerHost(node) {
   return OFFICIAL1_URL;
 }
 
-/** Whether this selection should use the site indexer proxy (`/api/explorer/*`). */
+/** Whether this selection should read history from the official node's indexer. */
 export function nodeHasIndexer(node) {
   return normalizeSelectedNode(node) === OFFICIAL1_KEY;
 }

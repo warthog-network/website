@@ -1,5 +1,4 @@
 import { ensureWorkerCrypto } from './ensureBuffer.js';
-import { shouldUseNodeProxy } from './nodeAccess.js';
 import { createBrowserWarthogApi } from './browserWarthogApi.js';
 
 let WarthogApiClass = null;
@@ -24,14 +23,12 @@ export function normalizeNodeUrl(nodeBase) {
 
 /**
  * Create a WarthogApi client for browser use.
- * Loopback nodes on HTTP pages connect directly; everything else uses /api/proxy.
+ * The browser calls the node directly. HTTPS pages cannot reach plain HTTP nodes.
  */
 export async function createWarthogApi(nodeBase) {
   const WarthogApi = await loadWarthogApiClass();
   const normalized = normalizeNodeUrl(nodeBase);
-  return createBrowserWarthogApi(WarthogApi, normalized, {
-    useProxy: shouldUseNodeProxy(normalized),
-  });
+  return createBrowserWarthogApi(WarthogApi, normalized);
 }
 
 /** Unwrap a WarthogApi result or throw with the node error message. */

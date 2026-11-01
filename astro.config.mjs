@@ -21,7 +21,7 @@ experimental: {
   csp: {
     directives: [
       "default-src 'self'",
-      "connect-src 'self' ws: wss: https://api.coingecko.com https://api.coinpaprika.com http://localhost:3000 https://warthognode.duckdns.org",
+      "connect-src 'self' ws: wss: https: http://localhost:3000 http://127.0.0.1:3000",
       "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com",
       "img-src 'self' data:",
       "object-src 'self'",

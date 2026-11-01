@@ -5,6 +5,7 @@ import TransactionHistory from './TransactionHistory';
 import WalletOverviewCard from './WalletOverviewCard.jsx';
 import WalletQrExportModal from './WalletQrExportModal.jsx';
 import { buildNodeList, resolveNodeUrl } from '../lib/nodesCache';
+import { nodeHttpUrl } from '../lib/nodeAccess.js';
 import {
   ADD_CUSTOM_KEY,
   OFFICIAL1_KEY,
@@ -43,8 +44,6 @@ import {
   getNumberColorClass,
   loadNumberDisplayPrefs,
 } from '../utils/numberDisplay.js';
-
-const API_URL = '/api/proxy';
 
 const Wallet = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -344,10 +343,8 @@ const Wallet = () => {
     }
 
     try {
-      const nodeBaseParam = `nodeBase=${encodeURIComponent(nodeUrl)}`;
-      console.log('Sending chain head request to:', `${API_URL}?nodePath=chain/head&${nodeBaseParam}`);
-      const chainHeadResponse = await axios.get(`${API_URL}?nodePath=chain/head&${nodeBaseParam}`, {
-        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+      const chainHeadResponse = await axios.get(nodeHttpUrl(nodeUrl, 'chain/head'), {
+        headers: { Accept: 'application/json' },
       });
       console.log('Chain head response status:', chainHeadResponse.status);
       const chainHeadRaw = chainHeadResponse.data.data || chainHeadResponse.data;
@@ -355,9 +352,8 @@ const Wallet = () => {
       const chainHeadData = chainHeadRaw?.chainHead || chainHeadRaw;
       console.log('Chain head response data:', chainHeadData);
 
-      console.log('Sending balance request to:', `${API_URL}?nodePath=account/${address}/balance&${nodeBaseParam}`);
-      const balanceResponse = await axios.get(`${API_URL}?nodePath=account/${address}/balance&${nodeBaseParam}`, {
-        headers: { 'Content-Type': 'application/json' },
+      const balanceResponse = await axios.get(nodeHttpUrl(nodeUrl, `account/${address}/balance`), {
+        headers: { Accept: 'application/json' },
       });
       console.log('Balance response status:', balanceResponse.status);
       const balanceData = balanceResponse.data.data || balanceResponse.data;
@@ -407,12 +403,11 @@ const Wallet = () => {
   const updateTxStatuses = async () => {
     const nodeUrl = resolveNodeUrl(selectedNode);
     if (!nodeUrl) return;
-    const nodeBaseParam = `nodeBase=${encodeURIComponent(nodeUrl)}`;
     const updatedTxs = await Promise.all(
       sentTransactions.map(async (tx) => {
         if (tx.status === 'confirmed') return tx;
         try {
-          const response = await axios.get(`${API_URL}?nodePath=transaction/lookup/${tx.txHash}&${nodeBaseParam}`);
+          const response = await axios.get(nodeHttpUrl(nodeUrl, `transaction/lookup/${tx.txHash}`));
           const data = response.data.data?.transaction || response.data.data || response.data;
           if (data.blockHeight !== undefined && data.confirmations > 0) {
             return { ...tx, status: 'confirmed', confirmations: data.confirmations };
@@ -948,9 +943,8 @@ const Wallet = () => {
   const getRoundedFeeE8 = async (feeWart) => {
     const nodeUrl = resolveNodeUrl(selectedNode);
     if (!nodeUrl) return null;
-    const nodeBaseParam = `nodeBase=${encodeURIComponent(nodeUrl)}`;
     try {
-      const response = await axios.get(`${API_URL}?nodePath=tools/encode16bit/from_string/${feeWart}&${nodeBaseParam}`);
+      const response = await axios.get(nodeHttpUrl(nodeUrl, `tools/encode16bit/from_string/${feeWart}`));
       const feeData = response.data.data || response.data;
       // Mainnet: roundedE8; DeFi nodes: rounded.E8
       const rounded = feeData.roundedE8 ?? feeData.rounded?.E8 ?? null;
@@ -1067,24 +1061,17 @@ const Wallet = () => {
         setSending(false);
         return;
       }
-      // Envelope POST — works with current /api/proxy (legacy query+body also fixed server-side)
-      console.log('Sending transaction request via proxy envelope to:', nodeUrl);
       const response = await axios.post(
-        API_URL,
+        nodeHttpUrl(nodeUrl, 'transaction/add'),
         {
-          nodeBase: nodeUrl,
-          nodePath: 'transaction/add',
-          method: 'POST',
-          body: {
-            pinHeight: usePinHeight,
-            nonceId: txNonce,
-            toAddr,
-            amountE8,
-            feeE8,
-            signature65,
-          },
+          pinHeight: usePinHeight,
+          nonceId: txNonce,
+          toAddr,
+          amountE8,
+          feeE8,
+          signature65,
         },
-        { headers: { 'Content-Type': 'application/json' } }
+        { headers: { 'Content-Type': 'application/json', Accept: 'application/json' } }
       );
       console.log('Send transaction response status:', response.status);
       const data = response.data;
