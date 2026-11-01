@@ -30,6 +30,8 @@
  *  }
  */
 
+import { parseLedgerRecord } from './ledgerSession.js';
+
 const ENVELOPE_KIND = 'warthog-wallet-v1';
 const ENVELOPE_V = 1;
 const IDB_NAME = 'warthog-passkey-v1';
@@ -165,6 +167,7 @@ export function serializeEnvelope(env) {
  * For pure password blobs, returns the raw string unchanged.
  */
 export function getPasswordCipherFromBlob(raw) {
+  if (parseLedgerRecord(raw)) return null;
   const env = tryParseEnvelope(raw);
   if (env) return env.password || null;
   return raw == null || raw === '' ? null : String(raw);
@@ -182,6 +185,19 @@ export function getPasswordCipherFromBlob(raw) {
  * }}
  */
 export function inspectWalletBlob(raw) {
+  const ledger = parseLedgerRecord(raw);
+  if (ledger) {
+    return {
+      hasPassword: false,
+      hasPasskey: false,
+      passkeyMode: null,
+      require2fa: false,
+      addressHint: ledger.addressHint || '',
+      envelope: null,
+      ledger: true,
+      ledgerRecord: ledger,
+    };
+  }
   const env = tryParseEnvelope(raw);
   if (!env) {
     return {
@@ -191,6 +207,7 @@ export function inspectWalletBlob(raw) {
       require2fa: false,
       addressHint: '',
       envelope: null,
+      ledger: false,
     };
   }
   const hasPassword = Boolean(env.password);
@@ -203,6 +220,7 @@ export function inspectWalletBlob(raw) {
     require2fa: Boolean(env.require2fa) && hasPassword && hasPasskey,
     addressHint: env.addressHint || '',
     envelope: env,
+    ledger: false,
   };
 }
 
@@ -767,6 +785,7 @@ export async function unlockEnvelopeWith2fa(envelope, password, decryptPasswordF
  */
 export function authBadgeForBlob(raw) {
   const info = inspectWalletBlob(raw);
+  if (info.ledger) return 'Ledger';
   if (info.require2fa) return 'Password + passkey (2FA)';
   if (info.hasPasskey && info.hasPassword) return 'Passkey or password';
   if (info.hasPasskey) {

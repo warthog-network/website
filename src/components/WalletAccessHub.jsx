@@ -11,9 +11,12 @@ import {
   decryptWallet,
   encryptWallet,
   getSavedWalletEntries,
+  ledgerRecordForName,
   loadNamedWalletEncrypted,
+  saveLedgerNamedWallet,
   storeNamedWalletEncrypted,
 } from '../utils/warthogWalletUtils';
+import { sameWartAddress } from '../utils/ledgerSession.js';
 import {
   buildEnvelopeWithPasskey,
   decryptWithPasskey,
@@ -109,10 +112,15 @@ function importFromPrivateKey(privKey) {
 }
 
 /**
- * @param {{ onActivate: (data: object, name: string|null) => void }} props
+ * @param {{
+ *   onActivate: (data: object, name: string|null) => void,
+ *   resume?: { name?: string, pathType?: string, index?: number, saved?: boolean, notice?: string } | null,
+ * }} props
  */
-export default function WalletAccessHub({ onActivate }) {
-  const [path, setPath] = useState(/** @type {AccessPath} */ ('hub'));
+export default function WalletAccessHub({ onActivate, resume = null }) {
+  const [path, setPath] = useState(/** @type {AccessPath} */ (
+    resume?.notice ? (resume.saved ? 'login' : 'ledger') : 'hub'
+  ));
   const [secureStep, setSecureStep] = useState(/** @type {SecureStep} */ ('save'));
   const [entries, setEntries] = useState(() => getSavedWalletEntries());
   const [error, setError] = useState(null);
@@ -120,13 +128,19 @@ export default function WalletAccessHub({ onActivate }) {
   const [awaitingPasskey, setAwaitingPasskey] = useState(false);
   const [passkeysSupported, setPasskeysSupported] = useState(false);
 
-  const [walletName, setWalletName] = useState('');
+  const [walletName, setWalletName] = useState(resume?.name || '');
   const [wordCount, setWordCount] = useState('12');
-  const [pathType, setPathType] = useState('hardened');
+  const [pathType, setPathType] = useState(
+    resume?.pathType === 'non-hardened' ? 'non-hardened' : 'hardened',
+  );
   const [mnemonic, setMnemonic] = useState('');
   const [privateKey, setPrivateKey] = useState('');
-  const [ledgerIndex, setLedgerIndex] = useState('0');
+  const [ledgerIndex, setLedgerIndex] = useState(
+    resume?.index != null ? String(resume.index) : '0',
+  );
   const [ledgerFrom, setLedgerFrom] = useState('hub');
+  const [saveLedger, setSaveLedger] = useState(true);
+  const notice = resume?.notice || '';
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -136,7 +150,7 @@ export default function WalletAccessHub({ onActivate }) {
   const [pendingWallet, setPendingWallet] = useState(null);
   const [secureOrigin, setSecureOrigin] = useState('create');
 
-  const [selectedName, setSelectedName] = useState('');
+  const [selectedName, setSelectedName] = useState(resume?.saved ? resume.name || '' : '');
   const [uploadedFile, setUploadedFile] = useState(null);
 
   const hasSaved = entries.length > 0;
@@ -176,7 +190,7 @@ export default function WalletAccessHub({ onActivate }) {
     hub: hasSaved
       ? 'Unlock with passkey or password, or start another path.'
       : 'Create with passkey (password manager or this device; optional password / 2FA).',
-    login: 'Choose a saved wallet, then unlock with passkey or password.',
+    login: 'Choose a saved wallet, then unlock with passkey, password, or the Ledger.',
     create: 'Name the wallet first. Then unlock options, then write down your seed.',
     have: 'Restore from seed, private key, encrypted file, or a saved browser wallet.',
     derive: 'Enter your 12 or 24-word seed phrase.',
@@ -257,6 +271,9 @@ export default function WalletAccessHub({ onActivate }) {
     try {
       const session = await connectLedgerAccount(pathType, index);
       const name = walletName.trim() || 'Ledger';
+      if (saveLedger) {
+        saveLedgerNamedWallet(name, session);
+      }
       onActivate(
         {
           ledger: true,
@@ -329,6 +346,41 @@ export default function WalletAccessHub({ onActivate }) {
     selectedEntry.hasPasskey &&
     passkeysSupported &&
     Boolean(password);
+
+  const unlockLedger = async () => {
+    setError(null);
+    if (!selectedName) {
+      setError('Select a saved wallet');
+      return;
+    }
+    const record = ledgerRecordForName(selectedName);
+    if (!record) {
+      setError('Saved Ledger account was not found');
+      return;
+    }
+    setBusy(true);
+    try {
+      const session = await connectLedgerAccount(record.pathType, record.index);
+      if (!sameWartAddress(session.address, record.address)) {
+        throw new Error('This Ledger account does not match the saved wallet. Check the path and account index.');
+      }
+      onActivate(
+        {
+          ledger: true,
+          address: session.address,
+          publicKey: session.publicKey,
+          pathType: session.pathType,
+          index: session.index,
+          name: selectedName,
+        },
+        selectedName,
+      );
+    } catch (e) {
+      setError(e?.message || 'Ledger login failed');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const unlockPassword = async () => {
     setError(null);
@@ -507,6 +559,7 @@ export default function WalletAccessHub({ onActivate }) {
           {pathTitle[path]}
         </h2>
         <p className="bunker-text bunker-muted text-sm leading-relaxed">{pathHint[path]}</p>
+        {notice && <p className="text-sm text-amber-300 mt-2 mb-0">{notice}</p>}
       </div>
 
       {path === 'hub' && (
@@ -517,7 +570,7 @@ export default function WalletAccessHub({ onActivate }) {
               label="Unlock saved wallet"
               meta={`${entries.length} in this browser${
                 entries.some((e) => e.hasPasskey) ? ' · passkey ready' : ''
-              }`}
+              }${entries.some((e) => e.ledger) ? ' · Ledger' : ''}`}
               onClick={() => goPath('login')}
             />
           )}
@@ -605,6 +658,15 @@ export default function WalletAccessHub({ onActivate }) {
               />
             </div>
           </div>
+          <label className="bunker-check-label">
+            <input
+              type="checkbox"
+              className="bunker-checkbox"
+              checked={saveLedger}
+              onChange={(e) => setSaveLedger(e.target.checked)}
+            />
+            <span>Save this Ledger account in this browser</span>
+          </label>
           <button
             type="button"
             className="bunker-btn bunker-btn--primary"
@@ -843,13 +905,25 @@ export default function WalletAccessHub({ onActivate }) {
           {selectedEntry && (
             <>
               <p className="text-xs bunker-muted">
-                {selectedEntry.require2fa
+                {selectedEntry.ledger
+                  ? 'Unlock the Nano, open the Warthog app, then open this account. The saved entry has no key.'
+                  : selectedEntry.require2fa
                   ? '2FA: enter password, then confirm with passkey.'
                   : selectedEntry.hasPasskey
                     ? 'Tap Unlock with passkey, or use password if you set one.'
                     : 'Enter the password for this saved wallet.'}
               </p>
-              {(selectedEntry.hasPassword || selectedEntry.require2fa) && (
+              {selectedEntry.ledger && (
+                <button
+                  type="button"
+                  className="bunker-btn bunker-btn--primary"
+                  disabled={busy}
+                  onClick={() => void unlockLedger()}
+                >
+                  {busy ? 'Waiting for the Ledger…' : 'Open with Ledger'}
+                </button>
+              )}
+              {!selectedEntry.ledger && (selectedEntry.hasPassword || selectedEntry.require2fa) && (
                 <div>
                   <label className="bunker-label">Password</label>
                   <div className="bunker-input-wrap">
@@ -879,7 +953,7 @@ export default function WalletAccessHub({ onActivate }) {
                 </div>
               )}
 
-              {selectedEntry.require2fa ? (
+              {!selectedEntry.ledger && (selectedEntry.require2fa ? (
                 <button
                   type="button"
                   className="bunker-btn bunker-btn--primary"
@@ -921,7 +995,7 @@ export default function WalletAccessHub({ onActivate }) {
                     </button>
                   )}
                 </div>
-              )}
+              ))}
             </>
           )}
         </div>

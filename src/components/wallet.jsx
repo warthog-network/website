@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { ethers } from 'ethers';
 import TransactionHistory from './TransactionHistory';
@@ -19,10 +19,22 @@ import {
   decryptWallet,
   getSavedWallets,
   getSavedWalletEntries,
+  ledgerRecordForName,
   loadNamedWalletEncrypted,
+  saveLedgerNamedWallet,
   saveNamedWalletBlob,
   inspectNamedBlob,
 } from '../utils/warthogWalletUtils';
+import {
+  DEFAULT_AUTO_LOCK_MINUTES,
+  isLedgerSessionFresh,
+  ledgerLastActiveAt,
+  LEDGER_LOCK_KEY,
+  LEDGER_SESSION_KEY,
+  readAutoLockMinutes,
+  sameWartAddress,
+  writeAutoLockMinutes,
+} from '../utils/ledgerSession.js';
 import {
   isWebAuthnAvailable,
   buildEnvelopeWithPasskey,
@@ -74,6 +86,10 @@ const Wallet = () => {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [isWalletProcessed, setIsWalletProcessed] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
+  const [ledgerResume, setLedgerResume] = useState(null);
+  const [autoLockMinutes, setAutoLockMinutes] = useState(DEFAULT_AUTO_LOCK_MINUTES);
+  const [ledgerSaveMsg, setLedgerSaveMsg] = useState('');
   const [nodeList, setNodeList] = useState([]);
   const [nodesLoading, setNodesLoading] = useState(true);
   const [nodesError, setNodesError] = useState(null);
@@ -250,23 +266,65 @@ const Wallet = () => {
     };
   }, []);
 
+  const expireLedgerRef = useRef(() => {});
+  expireLedgerRef.current = (session, name) => {
+    const saved = ledgerRecordForName(name || session?.name);
+    const resume = {
+      name: name || session?.name || '',
+      pathType: session?.pathType === 'non-hardened' ? 'non-hardened' : 'hardened',
+      index: Number.isFinite(Number(session?.index)) ? Number(session.index) : 0,
+      saved: Boolean(saved && sameWartAddress(saved.address, session?.address)),
+      notice: 'You left this page. Open the Ledger account on the device again.',
+    };
+    sessionStorage.removeItem(LEDGER_SESSION_KEY);
+    sessionStorage.setItem(LEDGER_LOCK_KEY, JSON.stringify(resume));
+    setLedgerResume(resume);
+    setWallet(null);
+    setCurrentWalletName(null);
+    setIsLoggedIn(false);
+    setShowSendPanel(false);
+    setShowReceivePanel(false);
+    setWalletSection('overview');
+    setError(null);
+    setSessionReady(true);
+  };
+
   useEffect(() => {
+    setAutoLockMinutes(readAutoLockMinutes());
     try {
-      const raw = sessionStorage.getItem('warthogLedgerSession');
+      const raw = sessionStorage.getItem(LEDGER_SESSION_KEY);
       if (raw) {
         const session = JSON.parse(raw);
-        if (session?.ledger && session.address) {
+        const minutes = readAutoLockMinutes();
+        if (session?.ledger && session.address && isLedgerSessionFresh(ledgerLastActiveAt(session), minutes)) {
+          sessionStorage.removeItem(LEDGER_LOCK_KEY);
+          setLedgerResume(null);
           activateWalletSession(session, session.name || 'Ledger');
+          setSessionReady(true);
+          return;
+        }
+        if (session?.ledger && session.address) {
+          expireLedgerRef.current(session, session.name);
+          return;
+        }
+      }
+      const parked = sessionStorage.getItem(LEDGER_LOCK_KEY);
+      if (parked) {
+        const resume = JSON.parse(parked);
+        if (resume?.notice) {
+          setLedgerResume(resume);
+          setSessionReady(true);
           return;
         }
       }
     } catch {
-      sessionStorage.removeItem('warthogLedgerSession');
+      sessionStorage.removeItem(LEDGER_SESSION_KEY);
     }
     const encryptedWallet = localStorage.getItem('warthogWallet');
     if (encryptedWallet) {
       setShowPasswordPrompt(true);
     }
+    setSessionReady(true);
   }, []);
 
   useEffect(() => {
@@ -276,6 +334,87 @@ const Wallet = () => {
       setShowNamePrompt(false);
     }
   }, [isLoggedIn, wallet, currentWalletName, namePromptDismissed]);
+
+  useEffect(() => {
+    if (!isLoggedIn || !wallet?.ledger) return undefined;
+    const minutes = autoLockMinutes;
+    const sessionSnapshot = wallet;
+    let timer = 0;
+    let beat = 0;
+
+    const storedActive = () => {
+      try {
+        const raw = sessionStorage.getItem(LEDGER_SESSION_KEY);
+        if (!raw) return ledgerLastActiveAt(sessionSnapshot);
+        return ledgerLastActiveAt(JSON.parse(raw));
+      } catch {
+        return ledgerLastActiveAt(sessionSnapshot);
+      }
+    };
+
+    const stamp = (at = Date.now()) => {
+      try {
+        const raw = sessionStorage.getItem(LEDGER_SESSION_KEY);
+        if (!raw) return;
+        const session = JSON.parse(raw);
+        if (!session?.ledger) return;
+        session.lastActiveAt = at;
+        sessionStorage.setItem(LEDGER_SESSION_KEY, JSON.stringify(session));
+      } catch {
+        /* the open page still has the in-memory account */
+      }
+    };
+
+    const lockIfAway = () => {
+      if (document.visibilityState === 'visible') return false;
+      if (isLedgerSessionFresh(storedActive(), minutes)) return false;
+      expireLedgerRef.current(sessionSnapshot, sessionSnapshot.name || currentWalletName);
+      return true;
+    };
+
+    const arm = () => {
+      window.clearTimeout(timer);
+      const remain = storedActive() + minutes * 60 * 1000 - Date.now();
+      timer = window.setTimeout(() => {
+        if (lockIfAway()) return;
+        if (document.visibilityState === 'visible') stamp();
+        arm();
+      }, Math.max(250, remain));
+    };
+
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') {
+        stamp();
+        arm();
+        return;
+      }
+      if (!isLedgerSessionFresh(storedActive(), minutes)) {
+        expireLedgerRef.current(sessionSnapshot, sessionSnapshot.name || currentWalletName);
+        return;
+      }
+      stamp();
+      arm();
+    };
+
+    beat = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        stamp();
+        arm();
+      }
+    }, 10000);
+
+    if (document.visibilityState === 'visible') stamp();
+    arm();
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('pageshow', onVis);
+    return () => {
+      stamp();
+      window.clearTimeout(timer);
+      window.clearInterval(beat);
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('pageshow', onVis);
+    };
+  }, [isLoggedIn, wallet, currentWalletName, autoLockMinutes]);
 
   useEffect(() => {
     if (selectedNode === ADD_CUSTOM_KEY) return;
@@ -475,12 +614,20 @@ const Wallet = () => {
         pathType: decryptedWallet.pathType === 'non-hardened' ? 'non-hardened' : 'hardened',
         index: Number.isFinite(decryptedWallet.index) ? decryptedWallet.index : 0,
         name: name || decryptedWallet.name || 'Ledger',
+        unlockedAt: Number.isFinite(Number(decryptedWallet.unlockedAt))
+          ? Number(decryptedWallet.unlockedAt)
+          : Date.now(),
+        lastActiveAt: ledgerLastActiveAt(decryptedWallet) || Date.now(),
       };
-      sessionStorage.setItem('warthogLedgerSession', JSON.stringify(session));
+      sessionStorage.setItem(LEDGER_SESSION_KEY, JSON.stringify(session));
+      sessionStorage.removeItem(LEDGER_LOCK_KEY);
+      setLedgerResume(null);
       decryptedWallet = session;
       name = session.name;
     } else {
-      sessionStorage.removeItem('warthogLedgerSession');
+      sessionStorage.removeItem(LEDGER_SESSION_KEY);
+      sessionStorage.removeItem(LEDGER_LOCK_KEY);
+      setLedgerResume(null);
     }
     setWallet(decryptedWallet);
     setCurrentWalletName(name);
@@ -700,6 +847,10 @@ const Wallet = () => {
     try {
       const { encrypted, walletLabel } = resolveEncryptedBlob(savedName);
       const info = inspectNamedBlob(encrypted);
+      if (info.ledger) {
+        setError('This is a Ledger account. Open it with the Ledger.');
+        return;
+      }
 
       if (info.require2fa) {
         if (!password) {
@@ -742,6 +893,10 @@ const Wallet = () => {
     try {
       const { encrypted, walletLabel } = resolveEncryptedBlob(savedName);
       const info = inspectNamedBlob(encrypted);
+      if (info.ledger) {
+        setError('This is a Ledger account. Open it with the Ledger.');
+        return;
+      }
       if (info.require2fa) {
         setError('This wallet requires password + passkey. Enter password, then tap Login.');
         return;
@@ -764,7 +919,9 @@ const Wallet = () => {
   };
 
   const clearWallet = () => {
-    sessionStorage.removeItem('warthogLedgerSession');
+    sessionStorage.removeItem(LEDGER_SESSION_KEY);
+    sessionStorage.removeItem(LEDGER_LOCK_KEY);
+    setLedgerResume(null);
     if (!currentWalletName) {
       localStorage.removeItem('warthogWallet');
     }
@@ -989,11 +1146,50 @@ const Wallet = () => {
     }
   };
 
+  const handleSaveLedgerAccount = (name) => {
+    if (!wallet?.ledger) throw new Error('Open a Ledger account first');
+    const saved = saveLedgerNamedWallet(name, wallet);
+    setCurrentWalletName(saved);
+    setWallet((prev) => (prev ? { ...prev, name: saved } : prev));
+    try {
+      const raw = sessionStorage.getItem(LEDGER_SESSION_KEY);
+      if (raw) {
+        const session = JSON.parse(raw);
+        session.name = saved;
+        sessionStorage.setItem(LEDGER_SESSION_KEY, JSON.stringify(session));
+      }
+    } catch {
+      /* the open session still has the address */
+    }
+    refreshSavedWalletList();
+    setLedgerSaveMsg(`Saved as “${saved}”.`);
+    return saved;
+  };
+
+  const handleAutoLockChange = (minutes) => {
+    const next = writeAutoLockMinutes(minutes);
+    setAutoLockMinutes(next);
+  };
+
   const handleSendTransaction = async () => {
     if (sending) return; // Prevent multiple sends
     setSending(true);
     setError(null);
-   
+    if (wallet?.ledger) {
+      let activeAt = ledgerLastActiveAt(wallet);
+      try {
+        const raw = sessionStorage.getItem(LEDGER_SESSION_KEY);
+        if (raw) activeAt = ledgerLastActiveAt(JSON.parse(raw));
+      } catch {
+        /* use the account open time */
+      }
+      if (!isLedgerSessionFresh(activeAt, autoLockMinutes)) {
+        expireLedgerRef.current(wallet, wallet.name || currentWalletName);
+        setSending(false);
+        return;
+      }
+    }
+
     if (!toAddr || !amount || !fee) {
       setError('Please fill in all transaction fields');
       setSending(false);
@@ -1535,6 +1731,15 @@ const Wallet = () => {
                     onCustomNodeUrlChange={setCustomNodeUrl}
                     onSaveCustomNode={handleSaveCustomNode}
                     isLedger={Boolean(wallet?.ledger)}
+                    autoLockMinutes={autoLockMinutes}
+                    onAutoLockChange={handleAutoLockChange}
+                    onSaveLedger={handleSaveLedgerAccount}
+                    ledgerSaveMsg={ledgerSaveMsg}
+                    ledgerSaved={Boolean(
+                      wallet?.ledger
+                      && ledgerRecordForName(currentWalletName)
+                      && sameWartAddress(ledgerRecordForName(currentWalletName)?.address, wallet.address),
+                    )}
                     validateInput={address}
                     onValidateInputChange={(value) => setAddress(value.trim())}
                     onValidate={handleValidateAddress}
@@ -1633,8 +1838,13 @@ const Wallet = () => {
             </div>
           )}
 
-          {!isLoggedIn && (
+          {!sessionReady && !isLoggedIn && (
+            <p className="bunker-muted">Loading wallet…</p>
+          )}
+
+          {!isLoggedIn && sessionReady && (
             <WalletAccessHub
+              resume={ledgerResume}
               onActivate={(data, name) => {
                 setError(null);
                 activateWalletSession(data, name);
